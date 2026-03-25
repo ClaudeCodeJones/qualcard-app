@@ -308,7 +308,7 @@ export default function CardPage() {
       <div className="max-w-sm mx-auto flex flex-col min-h-screen">
 
         {/* ── Hero Header ── */}
-        <div className="bg-[#2d4a5e] px-5 pt-6 pb-28">
+        <div className="bg-[#2d4a5e] px-5 pt-6 pb-28 rounded-t-3xl mt-3">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/50 text-[9px] font-bold tracking-[0.18em] uppercase mb-1">
