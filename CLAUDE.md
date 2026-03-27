@@ -161,25 +161,30 @@ Always use `NEXT_PUBLIC_APP_URL` env var — never hardcode qualcard.co.nz or lo
 
 | Role | Hex | Usage |
 |------|-----|-------|
-| Primary | `#34495E` | Buttons, headers, active tabs |
+| Primary | `#34495E` | Headers, active tabs, structural chrome |
 | Primary Deep | `#2C3E50` | Gradient end point |
-| Secondary | `#5A5452` | Dark mushroom grey |
+| Accent | `#2f6f6a` | Action buttons, focus ring, active badges, highlights |
+| Secondary | `#374151` | Muted text, secondary elements |
+| Table Headings | `#6B7280` | Table column headers |
 | Background | `#D9DEE5` | Page background |
 | Foreground | `#333333` | Body text |
 | Card | `#FFFFFF` | Card backgrounds |
-| Muted | `#DAD6D4` | Borders, muted backgrounds |
+| Muted | `#E5E7EB` | Borders, muted backgrounds |
 | Destructive | `#EF4444` | Delete/error actions |
-| Focus Ring | `#A78BFA` | Purple focus ring |
+| Focus Ring | `#2f6f6a` | Teal focus ring |
 
 ### Primary Gradient
 `radial-gradient(circle, #34495E 0%, #2C3E50 100%)`
-Used on: headers, buttons, active tabs, icon circles, card hero sections.
+Used on: headers, active tabs, structural chrome only. NOT on action buttons.
+
+### Action Buttons
+All primary action buttons use solid `#2f6f6a` (teal). Not the gradient.
 
 ### Status Badge Colours
 
 | Status | Hex |
 |--------|-----|
-| Active | `#22C55E` |
+| Active | `#2f6f6a` |
 | Inactive | `#4A5568` |
 | Pending | `#F97316` |
 | Company Managed | `#0EA5E9` |
@@ -187,8 +192,8 @@ Used on: headers, buttons, active tabs, icon circles, card hero sections.
 | Expired | `#EF4444` |
 
 ### Chart Colours
-- Chart 1: `#A78BFA` (Purple)
-- Chart 2: `#5A5452` (Dark Mushroom)
+- Chart 1: `#2f6f6a` (Teal)
+- Chart 2: `#374151` (Slate)
 
 ---
 
@@ -293,9 +298,11 @@ AUTOSEND_API_KEY=
 - Company registration form `/register/company` — complete, saves to registration_drafts table
 - Registration confirmation page `/register/confirm` — complete
 - RLS policy on `registration_drafts` — anonymous insert allowed for public registration
+- `/superadmin` portal — Overview, Pending Approvals, Users, Companies tabs complete
+- All superadmin API routes using service role key to bypass RLS
 
 ### Next
-- `/superadmin` portal
+- `/superadmin` Cardholders tab
 - `/dashboard` portal
 - Cardholder management
 - Credential management

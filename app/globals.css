@@ -8,16 +8,16 @@
   --color-primary: #34495E;
   --color-primary-deep: #2C3E50;
   --color-primary-gradient: radial-gradient(circle, #34495E 0%, #2C3E50 100%);
-  --color-secondary: #5A5452;
+  --color-secondary: #374151;
   --color-bg-page: #D9DEE5;
   --color-fg: #333333;
   --color-card: #FFFFFF;
-  --color-muted: #DAD6D4;
+  --color-muted: #E5E7EB;
   --color-destructive: #EF4444;
-  --color-focus-ring: #A78BFA;
+  --color-focus-ring: #2f6f6a;
 
   /* Status badges */
-  --color-status-active: #22C55E;
+  --color-status-active: #2f6f6a;
   --color-status-inactive: #4A5568;
   --color-status-pending: #F97316;
   --color-status-managed: #0EA5E9;
@@ -25,8 +25,8 @@
   --color-status-expired: #EF4444;
 
   /* Charts */
-  --color-chart-1: #A78BFA;
-  --color-chart-2: #5A5452;
+  --color-chart-1: #2f6f6a;
+  --color-chart-2: #374151;
 }
 
 @theme inline {
@@ -39,7 +39,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Inter, "Helvetica Neue", Arial, sans-serif;
 }
 
 @keyframes skeleton-pulse {

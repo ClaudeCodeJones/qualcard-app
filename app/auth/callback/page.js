@@ -66,7 +66,7 @@ export default function AuthCallbackPage() {
       backgroundColor: "#D9DEE5",
       fontFamily: "Inter, sans-serif",
     }}>
-      <p style={{ color: "#5A5452", fontSize: "0.9375rem" }}>Signing you in...</p>
+      <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Signing you in...</p>
     </div>
   )
 }

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { ClipboardCheck, Building2, Users, LogOut } from "lucide-react"
 import Image from "next/image"
+import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function RoleBadge({ role }) {
       fontSize: "0.75rem",
       fontWeight: 700,
       color: "#FFFFFF",
-      background: isQcAdmin ? "#A78BFA" : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+      background: isQcAdmin ? "#2f6f6a" : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
       whiteSpace: "nowrap",
     }}>
       {isQcAdmin ? "QualCard Admin" : "Company Admin"}
@@ -53,7 +54,7 @@ function RoleBadge({ role }) {
 
 function StatusBadge({ status }) {
   const map = {
-    active:            { label: "Active",           color: "#22C55E" },
+    active:            { label: "Active",           color: "#2f6f6a" },
     pending_approval:  { label: "Pending",          color: "#F97316" },
     pending:           { label: "Pending",          color: "#F97316" },
     declined:          { label: "Declined",         color: "#EF4444" },
@@ -88,7 +89,7 @@ function LoadingScreen() {
       backgroundColor: "#D9DEE5",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
-      <p style={{ color: "#5A5452", fontSize: "0.9375rem" }}>Loading...</p>
+      <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Loading...</p>
     </div>
   )
 }
@@ -132,14 +133,14 @@ function Avatar({ fullName, email, role }) {
           width: "38px",
           height: "38px",
           borderRadius: "50%",
-          background: isQcAdmin ? "rgba(167, 139, 250, 0.2)" : "#FFFFFF",
-          border: isQcAdmin ? "2px solid rgba(167, 139, 250, 0.5)" : "2px solid rgba(255,255,255,0.3)",
+          background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
+          border: isQcAdmin ? "2px solid rgba(47, 111, 106, 0.4)" : "2px solid rgba(255,255,255,0.3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: "0.875rem",
           fontWeight: 700,
-          color: isQcAdmin ? "#FFFFFF" : "#2C3E50",
+          color: isQcAdmin ? "#FFFFFF" : "#34495E",
           letterSpacing: "0.02em",
         }}>
           {initials}
@@ -148,7 +149,7 @@ function Avatar({ fullName, email, role }) {
           <span style={{
             fontSize: "0.625rem",
             fontWeight: 700,
-            color: "#A78BFA",
+            color: "#2f6f6a",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}>
@@ -169,14 +170,14 @@ function Avatar({ fullName, email, role }) {
           zIndex: 50,
         }}>
           <div style={{ padding: "1rem 1.25rem" }}>
-            <p style={{ margin: 0, fontWeight: 700, color: "#2C3E50", fontSize: "0.9375rem" }}>
+            <p style={{ margin: 0, fontWeight: 700, color: "#34495E", fontSize: "0.9375rem" }}>
               {fullName || email}
             </p>
-            <p style={{ margin: "0.25rem 0 0", fontSize: "0.8125rem", color: "#8A9BB0" }}>
+            <p style={{ margin: "0.25rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
               {isQcAdmin ? "QualCard Admin" : "Company Admin"}
             </p>
           </div>
-          <div style={{ height: "1px", backgroundColor: "#DAD6D4" }} />
+          <div style={{ height: "1px", backgroundColor: "#E5E7EB" }} />
           <div style={{ padding: "0.5rem" }}>
             <button
               onClick={handleLogout}
@@ -213,22 +214,27 @@ function Header({ user }) {
   return (
     <header style={{
       background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
-      padding: "0.875rem 1.5rem",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
       position: "sticky",
       top: 0,
       zIndex: 10,
     }}>
-      <Image
-        src="/images/qualcard_logo_white.png"
-        alt="QualCard"
-        width={120}
-        height={32}
-        style={{ objectFit: "contain", height: "auto" }}
-      />
-      <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
+      <div style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "0.875rem 1.5rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <Image
+          src="/images/qualcard_logo_white.png"
+          alt="QualCard"
+          width={120}
+          height={32}
+          style={{ objectFit: "contain", height: "auto" }}
+        />
+        <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
+      </div>
     </header>
   )
 }
@@ -237,12 +243,16 @@ function TabBar({ activeTab, onTabChange }) {
   return (
     <div style={{
       backgroundColor: "#FFFFFF",
-      borderBottom: "1px solid #DAD6D4",
-      padding: "0.625rem 1.5rem",
-      display: "flex",
-      gap: "0.375rem",
-      overflowX: "auto",
+      borderBottom: "1px solid #E5E7EB",
     }}>
+      <div style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "0.625rem 1.5rem",
+        display: "flex",
+        gap: "0.375rem",
+        overflowX: "auto",
+      }}>
       {TABS.map((tab) => {
         const isActive = tab === activeTab
         return (
@@ -260,7 +270,7 @@ function TabBar({ activeTab, onTabChange }) {
               fontFamily: "inherit",
               transition: "background-color 0.15s ease, color 0.15s ease",
               backgroundColor: isActive ? "#34495E" : "transparent",
-              color: isActive ? "#FFFFFF" : "#5A5452",
+              color: isActive ? "#FFFFFF" : "#374151",
             }}
             onMouseEnter={(e) => {
               if (!isActive) e.currentTarget.style.backgroundColor = "#EFF3F7"
@@ -273,6 +283,7 @@ function TabBar({ activeTab, onTabChange }) {
           </button>
         )
       })}
+      </div>
     </div>
   )
 }
@@ -309,7 +320,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           right: "-24px",
           width: "90px",
           textAlign: "center",
-          background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+          background: "#2f6f6a",
           color: "#FFFFFF",
           fontSize: "0.625rem",
           fontWeight: 800,
@@ -326,7 +337,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           width: "46px",
           height: "46px",
           borderRadius: "0.75rem",
-          backgroundColor: "rgba(52, 73, 94, 0.07)",
+          backgroundColor: "rgba(44, 62, 80, 0.07)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -338,7 +349,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           margin: 0,
           fontSize: "1rem",
           fontWeight: 700,
-          color: "#2C3E50",
+          color: "#34495E",
           letterSpacing: "-0.02em",
         }}>
           {title}
@@ -374,7 +385,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           borderRadius: "1rem",
           border: "none",
           cursor: "pointer",
-          background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+          background: "#2f6f6a",
           color: "#FFFFFF",
           fontSize: "0.875rem",
           fontWeight: 700,
@@ -410,22 +421,22 @@ function OverviewTab({ setActiveTab }) {
   }, [])
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px" }}>
+    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{ marginBottom: "2.5rem" }}>
         <h1 style={{
           margin: 0,
           fontSize: "1.75rem",
           fontWeight: 800,
-          color: "#2C3E50",
+          color: "#34495E",
           letterSpacing: "-0.03em",
           lineHeight: 1.2,
         }}>
           QUALCARD ADMIN DASHBOARD
         </h1>
-        <p style={{ margin: "0.5rem 0 0.125rem", fontSize: "0.9375rem", color: "#8A9BB0", lineHeight: 1.7 }}>
+        <p style={{ margin: "0.5rem 0 0.125rem", fontSize: "0.9375rem", color: "#6B7280", lineHeight: 1.7 }}>
           • Full platform control
         </p>
-        <p style={{ margin: 0, fontSize: "0.9375rem", color: "#8A9BB0", lineHeight: 1.7 }}>
+        <p style={{ margin: 0, fontSize: "0.9375rem", color: "#6B7280", lineHeight: 1.7 }}>
           • Manage companies, users, approvals, and system settings
         </p>
       </div>
@@ -485,7 +496,7 @@ function Toast({ message, type, onDismiss }) {
       position: "fixed",
       bottom: "1.5rem",
       right: "1.5rem",
-      backgroundColor: type === "error" ? "#EF4444" : "#22C55E",
+      backgroundColor: type === "error" ? "#EF4444" : "#2f6f6a",
       color: "#FFFFFF",
       padding: "0.75rem 1.25rem",
       borderRadius: "0.75rem",
@@ -518,7 +529,7 @@ function ConfirmModal({ message, onConfirm, onCancel, loading }) {
         width: "calc(100% - 2rem)",
         boxShadow: "0 8px 32px rgba(44, 62, 80, 0.15)",
       }}>
-        <p style={{ margin: "0 0 1.5rem", fontSize: "1rem", color: "#2C3E50", lineHeight: 1.6 }}>
+        <p style={{ margin: "0 0 1.5rem", fontSize: "1rem", color: "#34495E", lineHeight: 1.6 }}>
           {message}
         </p>
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
@@ -528,9 +539,9 @@ function ConfirmModal({ message, onConfirm, onCancel, loading }) {
             style={{
               padding: "0.625rem 1.25rem",
               borderRadius: "1rem",
-              border: "1px solid #DAD6D4",
+              border: "1px solid #E5E7EB",
               backgroundColor: "#FFFFFF",
-              color: "#5A5452",
+              color: "#374151",
               fontSize: "0.875rem",
               fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer",
@@ -546,7 +557,7 @@ function ConfirmModal({ message, onConfirm, onCancel, loading }) {
               padding: "0.625rem 1.25rem",
               borderRadius: "1rem",
               border: "none",
-              background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+              background: "#2f6f6a",
               color: "#FFFFFF",
               fontSize: "0.875rem",
               fontWeight: 700,
@@ -614,19 +625,19 @@ function PendingApprovalsTab() {
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px" }}>
+    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         backgroundColor: "#FFFFFF",
         borderRadius: "1rem",
         boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
         overflow: "hidden",
       }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #DAD6D4" }}>
+        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB" }}>
           <h2 style={{
             margin: 0,
             fontSize: "1.0625rem",
             fontWeight: 700,
-            color: "#2C3E50",
+            color: "#34495E",
             letterSpacing: "-0.02em",
           }}>
             Pending User Access - Company Admin
@@ -641,7 +652,7 @@ function PendingApprovalsTab() {
           </div>
         ) : users.length === 0 ? (
           <div style={{ padding: "3rem 1.5rem", textAlign: "center" }}>
-            <p style={{ margin: 0, color: "#8A9BB0", fontSize: "0.9375rem" }}>
+            <p style={{ margin: 0, color: "#6B7280", fontSize: "0.9375rem" }}>
               No pending company admin approvals
             </p>
           </div>
@@ -656,17 +667,17 @@ function PendingApprovalsTab() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: "1rem",
-                  borderBottom: index < users.length - 1 ? "1px solid #DAD6D4" : "none",
+                  borderBottom: index < users.length - 1 ? "1px solid #E5E7EB" : "none",
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: "#2C3E50", fontSize: "0.9375rem" }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: "#34495E", fontSize: "0.9375rem" }}>
                     {user.full_name || "—"}
                   </p>
-                  <p style={{ margin: "0.125rem 0 0", color: "#8A9BB0", fontSize: "0.8125rem" }}>
+                  <p style={{ margin: "0.125rem 0 0", color: "#6B7280", fontSize: "0.8125rem" }}>
                     {user.email}
                   </p>
-                  <p style={{ margin: "0.125rem 0 0", color: "#8A9BB0", fontSize: "0.8125rem" }}>
+                  <p style={{ margin: "0.125rem 0 0", color: "#6B7280", fontSize: "0.8125rem" }}>
                     {user.companies?.company_name ?? "—"} &middot; {formatDate(user.created_at)}
                   </p>
                 </div>
@@ -679,7 +690,7 @@ function PendingApprovalsTab() {
                       padding: "0.5rem 1rem",
                       borderRadius: "1rem",
                       border: "none",
-                      background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                      background: "#2f6f6a",
                       color: "#FFFFFF",
                       fontSize: "0.8125rem",
                       fontWeight: 700,
@@ -793,10 +804,10 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
     width: "100%",
     padding: "0.625rem 0.75rem",
     borderRadius: "0.625rem",
-    border: "1.5px solid #DAD6D4",
+    border: "1.5px solid #E5E7EB",
     fontSize: "0.875rem",
     fontFamily: "inherit",
-    color: "#2C3E50",
+    color: "#34495E",
     outline: "none",
     boxSizing: "border-box",
   }
@@ -804,7 +815,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
     display: "block",
     fontSize: "0.75rem",
     fontWeight: 700,
-    color: "#5A5452",
+    color: "#374151",
     marginBottom: "0.375rem",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
@@ -832,9 +843,9 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
             margin: 0,
             padding: "0.625rem 0.75rem",
             borderRadius: "0.625rem",
-            border: "1.5px solid #DAD6D4",
+            border: "1.5px solid #E5E7EB",
             fontSize: "0.875rem",
-            color: "#8A9BB0",
+            color: "#6B7280",
             backgroundColor: "#F8FAFC",
           }}>
             QualCard Admin
@@ -868,13 +879,13 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
               cursor: "pointer",
               background: "#FFFFFF",
               textAlign: "left",
-              border: `1.5px solid ${companyOpen ? "#34495E" : "#DAD6D4"}`,
+              border: `1.5px solid ${companyOpen ? "#34495E" : "#E5E7EB"}`,
             }}
           >
-            <span style={{ color: selectedCompanyName ? "#2C3E50" : "#8A9BB0" }}>
+            <span style={{ color: selectedCompanyName ? "#34495E" : "#6B7280" }}>
               {selectedCompanyName || "— None —"}
             </span>
-            <span style={{ color: "#8A9BB0", fontSize: "0.75rem", marginLeft: "0.5rem" }}>▾</span>
+            <span style={{ color: "#6B7280", fontSize: "0.75rem", marginLeft: "0.5rem" }}>▾</span>
           </button>
 
           {companyOpen && (
@@ -884,7 +895,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
               left: 0,
               right: 0,
               backgroundColor: "#FFFFFF",
-              border: "1.5px solid #DAD6D4",
+              border: "1.5px solid #E5E7EB",
               borderRadius: "0.625rem",
               zIndex: 20,
               boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12)",
@@ -896,7 +907,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
                   placeholder="Search companies..."
                   value={companySearch}
                   onChange={(e) => setCompanySearch(e.target.value)}
-                  style={{ ...inputStyle, border: "1.5px solid #DAD6D4" }}
+                  style={{ ...inputStyle, border: "1.5px solid #E5E7EB" }}
                 />
               </div>
               <div style={{ maxHeight: "180px", overflowY: "auto" }}>
@@ -904,12 +915,12 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
                   onClick={() => { set("company_id", ""); setCompanyOpen(false) }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#EFF3F7"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  style={{ padding: "0.625rem 0.875rem", cursor: "pointer", fontSize: "0.875rem", color: "#8A9BB0" }}
+                  style={{ padding: "0.625rem 0.875rem", cursor: "pointer", fontSize: "0.875rem", color: "#6B7280" }}
                 >
                   — None —
                 </div>
                 {filteredCompanies.length === 0 ? (
-                  <p style={{ margin: 0, padding: "0.625rem 0.875rem", fontSize: "0.875rem", color: "#8A9BB0" }}>
+                  <p style={{ margin: 0, padding: "0.625rem 0.875rem", fontSize: "0.875rem", color: "#6B7280" }}>
                     No matches
                   </p>
                 ) : filteredCompanies.map((c) => {
@@ -924,7 +935,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
                         padding: "0.625rem 0.875rem",
                         cursor: "pointer",
                         fontSize: "0.875rem",
-                        color: isSelected ? "#FFFFFF" : "#2C3E50",
+                        color: isSelected ? "#FFFFFF" : "#34495E",
                         backgroundColor: isSelected ? "#34495E" : "transparent",
                       }}
                     >
@@ -951,7 +962,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
             padding: "0.75rem",
             borderRadius: "1rem",
             border: "none",
-            background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+            background: "#2f6f6a",
             color: "#FFFFFF",
             fontSize: "0.875rem",
             fontWeight: 700,
@@ -968,9 +979,9 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
           style={{
             padding: "0.75rem 1.25rem",
             borderRadius: "1rem",
-            border: "1.5px solid #DAD6D4",
+            border: "1.5px solid #E5E7EB",
             backgroundColor: "#FFFFFF",
-            color: "#5A5452",
+            color: "#374151",
             fontSize: "0.875rem",
             fontWeight: 600,
             cursor: saving ? "not-allowed" : "pointer",
@@ -1003,8 +1014,8 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
     onUserUpdated(updated)
   }
 
-  const labelStyle = { fontSize: "0.75rem", fontWeight: 700, color: "#8A9BB0", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }
-  const valueStyle = { fontSize: "0.9375rem", color: "#2C3E50", lineHeight: 1.5 }
+  const labelStyle = { fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }
+  const valueStyle = { fontSize: "0.9375rem", color: "#34495E", lineHeight: 1.5 }
 
   return (
     <>
@@ -1036,13 +1047,13 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
       }}>
         <div style={{
           padding: "1.25rem 1.5rem",
-          borderBottom: "1px solid #DAD6D4",
+          borderBottom: "1px solid #E5E7EB",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexShrink: 0,
         }}>
-          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#2C3E50" }}>
+          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#34495E" }}>
             {editing ? "Edit Profile" : "User Profile"}
           </h2>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -1053,7 +1064,7 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
                   padding: "0.5rem 1rem",
                   borderRadius: "1rem",
                   border: "none",
-                  background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                  background: "#2f6f6a",
                   color: "#FFFFFF",
                   fontSize: "0.8125rem",
                   fontWeight: 700,
@@ -1077,7 +1088,7 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "1rem",
-                color: "#5A5452",
+                color: "#374151",
                 flexShrink: 0,
               }}
             >
@@ -1097,10 +1108,10 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div>
-                <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#2C3E50", letterSpacing: "-0.02em" }}>
+                <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#34495E", letterSpacing: "-0.02em" }}>
                   {user.full_name || "—"}
                 </p>
-                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "#8A9BB0" }}>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "#6B7280" }}>
                   {user.email}
                 </p>
               </div>
@@ -1165,10 +1176,10 @@ function UsersTab() {
   const controlStyle = {
     padding: "0.5625rem 0.875rem",
     borderRadius: "0.625rem",
-    border: "1.5px solid #DAD6D4",
+    border: "1.5px solid #E5E7EB",
     fontSize: "0.875rem",
     fontFamily: "inherit",
-    color: "#2C3E50",
+    color: "#34495E",
     backgroundColor: "#FFFFFF",
     outline: "none",
   }
@@ -1178,23 +1189,23 @@ function UsersTab() {
     textAlign: "left",
     fontSize: "0.75rem",
     fontWeight: 700,
-    color: "#8A9BB0",
+    color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: "0.05em",
     whiteSpace: "nowrap",
-    borderBottom: "1px solid #DAD6D4",
+    borderBottom: "1px solid #E5E7EB",
   }
 
   const tdStyle = {
     padding: "0.875rem 1rem",
     fontSize: "0.875rem",
-    color: "#2C3E50",
+    color: "#34495E",
     borderBottom: "1px solid #EFF3F7",
     verticalAlign: "middle",
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem" }}>
+    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         display: "flex",
         gap: "0.75rem",
@@ -1252,7 +1263,7 @@ function UsersTab() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "#8A9BB0", padding: "3rem" }}>
+                    <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "#6B7280", padding: "3rem" }}>
                       No users found
                     </td>
                   </tr>
@@ -1265,12 +1276,12 @@ function UsersTab() {
                     style={{ cursor: "pointer" }}
                   >
                     <td style={{ ...tdStyle, fontWeight: 700 }}>{u.full_name || "—"}</td>
-                    <td style={{ ...tdStyle, color: "#5A5452" }}>{u.email}</td>
+                    <td style={{ ...tdStyle, color: "#374151" }}>{u.email}</td>
                     <td style={tdStyle}><RoleBadge role={u.role} /></td>
-                    <td style={{ ...tdStyle, color: "#5A5452" }}>{u.companies?.company_name ?? "System"}</td>
+                    <td style={{ ...tdStyle, color: "#374151" }}>{u.companies?.company_name ?? "System"}</td>
                     <td style={tdStyle}><StatusBadge status={u.account_status} /></td>
-                    <td style={{ ...tdStyle, color: "#5A5452", whiteSpace: "nowrap" }}>{formatDateTime(u.last_login)}</td>
-                    <td style={{ ...tdStyle, color: "#5A5452", whiteSpace: "nowrap" }}>
+                    <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>{formatDateTime(u.last_login)}</td>
+                    <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>
                       {u.created_at ? formatDate(u.created_at) : "—"}
                     </td>
                   </tr>
@@ -1337,8 +1348,8 @@ function CompanyPanel({ company, onClose }) {
     setTimeout(onClose, 250)
   }
 
-  const labelStyle = { fontSize: "0.75rem", fontWeight: 700, color: "#8A9BB0", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }
-  const valueStyle = { margin: 0, fontSize: "0.9375rem", color: "#2C3E50", lineHeight: 1.5 }
+  const labelStyle = { fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }
+  const valueStyle = { margin: 0, fontSize: "0.9375rem", color: "#34495E", lineHeight: 1.5 }
 
   return (
     <>
@@ -1357,16 +1368,16 @@ function CompanyPanel({ company, onClose }) {
         transition: "transform 0.25s ease", overflowY: "auto",
       }}>
         <div style={{
-          padding: "1.25rem 1.5rem", borderBottom: "1px solid #DAD6D4",
+          padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
           display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
         }}>
-          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#2C3E50" }}>Company</h2>
+          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#34495E" }}>Company</h2>
           <button
             onClick={handleClose}
             style={{
               width: "32px", height: "32px", borderRadius: "50%", border: "none",
               backgroundColor: "#EFF3F7", cursor: "pointer", display: "flex",
-              alignItems: "center", justifyContent: "center", fontSize: "1rem", color: "#5A5452",
+              alignItems: "center", justifyContent: "center", fontSize: "1rem", color: "#374151",
             }}
           >
             ✕
@@ -1375,7 +1386,7 @@ function CompanyPanel({ company, onClose }) {
 
         <div style={{ padding: "1.5rem", flex: 1, display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#2C3E50", letterSpacing: "-0.02em" }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#34495E", letterSpacing: "-0.02em" }}>
               {company.company_name}
             </p>
             <div style={{ marginTop: "0.5rem" }}>
@@ -1387,8 +1398,8 @@ function CompanyPanel({ company, onClose }) {
             <div>
               <p style={labelStyle}>Address</p>
               <p style={valueStyle}>{company.street_address ?? "—"}</p>
-              {company.suburb && <p style={{ ...valueStyle, color: "#8A9BB0", fontSize: "0.875rem" }}>{company.suburb}</p>}
-              <p style={{ ...valueStyle, color: "#8A9BB0", fontSize: "0.875rem" }}>{company.city ?? "—"}</p>
+              {company.suburb && <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.suburb}</p>}
+              <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.city ?? "—"}</p>
             </div>
             <div>
               <p style={labelStyle}>Phone</p>
@@ -1412,7 +1423,7 @@ function CompanyPanel({ company, onClose }) {
             onClick={() => router.push(`/superadmin/companies/${company.id}`)}
             style={{
               width: "100%", padding: "0.75rem", borderRadius: "1rem", border: "none",
-              background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+              background: "#2f6f6a",
               color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
             }}
@@ -1467,11 +1478,11 @@ function CreateCompanyModal({ onClose, onCreated }) {
 
   const inputStyle = {
     width: "100%", padding: "0.625rem 0.75rem", borderRadius: "0.625rem",
-    border: "1.5px solid #DAD6D4", fontSize: "0.875rem", fontFamily: "inherit",
-    color: "#2C3E50", outline: "none", boxSizing: "border-box",
+    border: "1.5px solid #E5E7EB", fontSize: "0.875rem", fontFamily: "inherit",
+    color: "#34495E", outline: "none", boxSizing: "border-box",
   }
   const labelStyle = {
-    display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#5A5452",
+    display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151",
     marginBottom: "0.375rem", textTransform: "uppercase", letterSpacing: "0.05em",
   }
   const fieldStyle = { display: "flex", flexDirection: "column" }
@@ -1487,18 +1498,18 @@ function CreateCompanyModal({ onClose, onCreated }) {
         boxShadow: "0 8px 32px rgba(44, 62, 80, 0.18)",
       }}>
         <div style={{
-          padding: "1.25rem 1.5rem", borderBottom: "1px solid #DAD6D4",
+          padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           position: "sticky", top: 0, backgroundColor: "#FFFFFF", zIndex: 1,
         }}>
-          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#2C3E50" }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#34495E" }}>
             Create Company
           </h2>
           <button
             onClick={onClose}
             style={{
               width: "32px", height: "32px", borderRadius: "50%", border: "none",
-              backgroundColor: "#EFF3F7", cursor: "pointer", fontSize: "1rem", color: "#5A5452",
+              backgroundColor: "#EFF3F7", cursor: "pointer", fontSize: "1rem", color: "#374151",
             }}
           >
             ✕
@@ -1513,11 +1524,10 @@ function CreateCompanyModal({ onClose, onCreated }) {
 
           <div style={fieldStyle}>
             <label style={labelStyle}>Logo (optional)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-              style={{ fontSize: "0.875rem", color: "#5A5452", fontFamily: "inherit" }}
+            <FileUploadArea
+              accept="image/jpeg,image/png,image/webp"
+              file={logoFile}
+              onFile={setLogoFile}
             />
           </div>
 
@@ -1557,7 +1567,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
             </select>
           </div>
 
-          <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", fontWeight: 700, color: "#2C3E50", letterSpacing: "-0.01em" }}>
+          <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", fontWeight: 700, color: "#34495E", letterSpacing: "-0.01em" }}>
             Primary Company Contact
           </p>
 
@@ -1585,7 +1595,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
               disabled={!isValid || submitting}
               style={{
                 flex: 1, padding: "0.75rem", borderRadius: "1rem", border: "none",
-                background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                background: "#2f6f6a",
                 color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 700,
                 cursor: !isValid || submitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit", opacity: !isValid || submitting ? 0.6 : 1,
@@ -1597,8 +1607,8 @@ function CreateCompanyModal({ onClose, onCreated }) {
               onClick={onClose}
               disabled={submitting}
               style={{
-                padding: "0.75rem 1.25rem", borderRadius: "1rem", border: "1.5px solid #DAD6D4",
-                backgroundColor: "#FFFFFF", color: "#5A5452", fontSize: "0.875rem",
+                padding: "0.75rem 1.25rem", borderRadius: "1rem", border: "1.5px solid #E5E7EB",
+                backgroundColor: "#FFFFFF", color: "#374151", fontSize: "0.875rem",
                 fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -1647,39 +1657,39 @@ function CompaniesTab() {
   const visible = filtered.slice(0, visibleCount)
 
   const controlStyle = {
-    padding: "0.5625rem 0.875rem", borderRadius: "0.625rem", border: "1.5px solid #DAD6D4",
-    fontSize: "0.875rem", fontFamily: "inherit", color: "#2C3E50", backgroundColor: "#FFFFFF", outline: "none",
+    padding: "0.5625rem 0.875rem", borderRadius: "0.625rem", border: "1.5px solid #E5E7EB",
+    fontSize: "0.875rem", fontFamily: "inherit", color: "#34495E", backgroundColor: "#FFFFFF", outline: "none",
   }
   const thStyle = {
     padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 700,
-    color: "#8A9BB0", textTransform: "uppercase", letterSpacing: "0.05em",
-    whiteSpace: "nowrap", borderBottom: "1px solid #DAD6D4",
+    color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em",
+    whiteSpace: "nowrap", borderBottom: "1px solid #E5E7EB",
   }
   const tdStyle = {
-    padding: "0.875rem 1rem", fontSize: "0.875rem", color: "#2C3E50",
+    padding: "0.875rem 1rem", fontSize: "0.875rem", color: "#34495E",
     borderBottom: "1px solid #EFF3F7", verticalAlign: "middle",
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem" }}>
+    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         backgroundColor: "#FFFFFF", borderRadius: "1rem",
         boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
         overflow: "hidden",
       }}>
         <div style={{
-          padding: "1.25rem 1.5rem", borderBottom: "1px solid #DAD6D4",
+          padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
           display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap",
         }}>
-          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#2C3E50", letterSpacing: "-0.02em" }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#34495E", letterSpacing: "-0.02em" }}>
             All Companies
           </h2>
           <div style={{ display: "flex", gap: "0.625rem" }}>
             <button
               onClick={() => exportCompaniesCSV(filtered)}
               style={{
-                padding: "0.5rem 1rem", borderRadius: "1rem", border: "1.5px solid #DAD6D4",
-                backgroundColor: "#FFFFFF", color: "#5A5452", fontSize: "0.8125rem",
+                padding: "0.5rem 1rem", borderRadius: "1rem", border: "1.5px solid #E5E7EB",
+                backgroundColor: "#FFFFFF", color: "#374151", fontSize: "0.8125rem",
                 fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#EFF3F7"}
@@ -1691,7 +1701,7 @@ function CompaniesTab() {
               onClick={() => setShowCreate(true)}
               style={{
                 padding: "0.5rem 1rem", borderRadius: "1rem", border: "none",
-                background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                background: "#2f6f6a",
                 color: "#FFFFFF", fontSize: "0.8125rem", fontWeight: 700,
                 cursor: "pointer", fontFamily: "inherit",
               }}
@@ -1755,7 +1765,7 @@ function CompaniesTab() {
                 <tbody>
                   {visible.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "#8A9BB0", padding: "3rem" }}>
+                      <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "#6B7280", padding: "3rem" }}>
                         No companies found
                       </td>
                     </tr>
@@ -1768,11 +1778,11 @@ function CompaniesTab() {
                       style={{ cursor: "pointer" }}
                     >
                       <td style={{ ...tdStyle, fontWeight: 700 }}>{c.company_name}</td>
-                      <td style={{ ...tdStyle, color: "#5A5452" }}>{c.street_address ?? "—"}</td>
-                      <td style={{ ...tdStyle, color: "#5A5452" }}>{c.city ?? "—"}</td>
-                      <td style={{ ...tdStyle, color: "#5A5452" }}>{c.cardholder_count}</td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{c.street_address ?? "—"}</td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{c.city ?? "—"}</td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{c.cardholder_count}</td>
                       <td style={tdStyle}><StatusBadge status={c.status} /></td>
-                      <td style={{ ...tdStyle, color: "#5A5452", whiteSpace: "nowrap" }}>
+                      <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>
                         {c.created_at ? formatDate(c.created_at) : "—"}
                       </td>
                     </tr>
@@ -1786,8 +1796,8 @@ function CompaniesTab() {
                 <button
                   onClick={() => setVisibleCount((v) => v + 10)}
                   style={{
-                    padding: "0.625rem 2rem", borderRadius: "1rem", border: "1.5px solid #DAD6D4",
-                    backgroundColor: "#FFFFFF", color: "#5A5452", fontSize: "0.875rem",
+                    padding: "0.625rem 2rem", borderRadius: "1rem", border: "1.5px solid #E5E7EB",
+                    backgroundColor: "#FFFFFF", color: "#374151", fontSize: "0.875rem",
                     fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#EFF3F7"}
@@ -1826,16 +1836,676 @@ function CompaniesTab() {
   )
 }
 
+// ─── Cardholders Tab ──────────────────────────────────────────────────────────
+
+function CardholderStatusBadge({ status }) {
+  const map = {
+    active:             { label: "Active",   color: "#2f6f6a" },
+    inactive:           { label: "Inactive", color: "#4A5568" },
+    pending:            { label: "Pending",  color: "#F97316" },
+    pending_activation: { label: "Pending",  color: "#F97316" },
+  }
+  const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
+  return (
+    <span style={{
+      display: "inline-block",
+      padding: "0.25rem 0.625rem",
+      borderRadius: "1rem",
+      fontSize: "0.75rem",
+      fontWeight: 600,
+      color,
+      border: `1.5px solid ${color}`,
+      whiteSpace: "nowrap",
+    }}>
+      {label}
+    </span>
+  )
+}
+
+function AddCardholderModal({ token, companies, onCreated, onClose }) {
+  const router = useRouter()
+  const [form, setForm] = useState({
+    full_name: "",
+    company_id: "",
+    status: "pending_activation",
+  })
+  const [photoFile, setPhotoFile] = useState(null)
+  const [companySearch, setCompanySearch] = useState("")
+  const [companyOpen, setCompanyOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const companyRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (companyRef.current && !companyRef.current.contains(e.target)) setCompanyOpen(false)
+    }
+    if (companyOpen) document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [companyOpen])
+
+  function set(key, val) {
+    setForm((prev) => ({ ...prev, [key]: val }))
+  }
+
+  const isValid = form.full_name.trim() && form.company_id && form.status
+
+  function generateSlug(fullName) {
+    const base = fullName
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+    const digits = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join("")
+    return `${base}-${digits}`
+  }
+
+  async function handleSave() {
+    if (!isValid) return
+    setSaving(true)
+    setError(null)
+    try {
+      let photo_url = null
+
+      if (photoFile) {
+        const filePath = `${form.company_id}/${Date.now()}-${photoFile.name}`
+        const { error: uploadError } = await supabase.storage
+          .from("cardholder-photos")
+          .upload(filePath, photoFile, { contentType: photoFile.type, upsert: false })
+        if (uploadError) {
+          setError(uploadError.message)
+          setSaving(false)
+          return
+        }
+        const { data: { publicUrl } } = supabase.storage.from("cardholder-photos").getPublicUrl(filePath)
+        photo_url = publicUrl
+      }
+
+      const slug = generateSlug(form.full_name)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/superadmin/cardholders", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: form.full_name.trim(),
+          company_id: form.company_id,
+          status: form.status,
+          photo_url,
+          slug,
+          created_by: "qc_admin",
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error); setSaving(false); return }
+      onCreated(data.cardholder)
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+    }
+  }
+
+  const modalInputStyle = {
+    width: "100%",
+    padding: "0.625rem 0.75rem",
+    borderRadius: "0.625rem",
+    border: "1.5px solid #E5E7EB",
+    fontSize: "0.875rem",
+    fontFamily: "inherit",
+    color: "#34495E",
+    outline: "none",
+    boxSizing: "border-box",
+    background: "#FFFFFF",
+  }
+  const labelStyle = {
+    display: "block",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    color: "#374151",
+    marginBottom: "0.375rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  }
+
+  const selectedCompanyName = companies.find((c) => c.id === form.company_id)?.company_name ?? ""
+  const filteredCompanies = companies.filter((c) =>
+    c.company_name.toLowerCase().includes(companySearch.toLowerCase())
+  )
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(44, 62, 80, 0.45)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 90,
+        padding: "1rem",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "1rem",
+          width: "100%",
+          maxWidth: "480px",
+          maxHeight: "88vh",
+          overflowY: "auto",
+          boxShadow: "0 8px 32px rgba(44, 62, 80, 0.18)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          padding: "1.25rem 1.5rem",
+          borderBottom: "1px solid #E5E7EB",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "sticky",
+          top: 0,
+          backgroundColor: "#FFFFFF",
+          zIndex: 1,
+        }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#34495E" }}>
+            Add New Cardholder
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              border: "none",
+              backgroundColor: "#EFF3F7",
+              cursor: "pointer",
+              fontSize: "1rem",
+              color: "#374151",
+              flexShrink: 0,
+            }}
+          >
+            &#x2715;
+          </button>
+        </div>
+
+        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={labelStyle}>Full Name <span style={{ color: "#EF4444" }}>*</span></label>
+            <input
+              style={modalInputStyle}
+              value={form.full_name}
+              onChange={(e) => set("full_name", e.target.value)}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+              onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+              placeholder="e.g. John Smith"
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Photo (optional)</label>
+            <FileUploadArea
+              accept="image/jpeg,image/png,image/webp"
+              file={photoFile}
+              onFile={setPhotoFile}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Company <span style={{ color: "#EF4444" }}>*</span></label>
+            <div ref={companyRef} style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => { setCompanyOpen((v) => !v); setCompanySearch("") }}
+                style={{
+                  ...modalInputStyle,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  border: `1.5px solid ${companyOpen ? "#2f6f6a" : "#E5E7EB"}`,
+                }}
+              >
+                <span style={{ color: selectedCompanyName ? "#34495E" : "#9CA3AF" }}>
+                  {selectedCompanyName || "Select a company..."}
+                </span>
+                <span style={{ color: "#6B7280", fontSize: "0.75rem", marginLeft: "0.5rem" }}>&#9662;</span>
+              </button>
+
+              {companyOpen && (
+                <div style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  left: 0,
+                  right: 0,
+                  backgroundColor: "#FFFFFF",
+                  border: "1.5px solid #E5E7EB",
+                  borderRadius: "0.625rem",
+                  zIndex: 20,
+                  boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12)",
+                  overflow: "hidden",
+                }}>
+                  <div style={{ padding: "0.5rem", borderBottom: "1px solid #EFF3F7" }}>
+                    <input
+                      autoFocus
+                      placeholder="Search companies..."
+                      value={companySearch}
+                      onChange={(e) => setCompanySearch(e.target.value)}
+                      style={{ ...modalInputStyle, border: "1.5px solid #E5E7EB" }}
+                    />
+                  </div>
+                  <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                    {filteredCompanies.length === 0 ? (
+                      <p style={{ margin: 0, padding: "0.625rem 0.875rem", fontSize: "0.875rem", color: "#6B7280" }}>
+                        No matches
+                      </p>
+                    ) : filteredCompanies.map((c) => {
+                      const isSelected = form.company_id === c.id
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => { set("company_id", c.id); setCompanyOpen(false) }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = "#EFF3F7" }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = isSelected ? "#34495E" : "transparent" }}
+                          style={{
+                            padding: "0.625rem 0.875rem",
+                            cursor: "pointer",
+                            fontSize: "0.875rem",
+                            color: isSelected ? "#FFFFFF" : "#34495E",
+                            backgroundColor: isSelected ? "#34495E" : "transparent",
+                          }}
+                        >
+                          {c.company_name}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Status <span style={{ color: "#EF4444" }}>*</span></label>
+            <select
+              style={modalInputStyle}
+              value={form.status}
+              onChange={(e) => set("status", e.target.value)}
+            >
+              <option value="pending_activation">Pending Activation</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+            <button
+              onClick={handleSave}
+              disabled={!isValid || saving}
+              style={{
+                flex: 1,
+                padding: "0.75rem",
+                borderRadius: "1rem",
+                border: "none",
+                background: "#2f6f6a",
+                color: "#FFFFFF",
+                fontSize: "0.875rem",
+                fontWeight: 700,
+                cursor: !isValid || saving ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                opacity: !isValid || saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? "Creating..." : "Create Cardholder"}
+            </button>
+            <button
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding: "0.75rem 1.25rem",
+                borderRadius: "1rem",
+                border: "1.5px solid #E5E7EB",
+                backgroundColor: "#FFFFFF",
+                color: "#374151",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CardholdersTab() {
+  const router = useRouter()
+  const [cardholders, setCardholders] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [companyFilter, setCompanyFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [showAdd, setShowAdd] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [token, setToken] = useState(null)
+
+  async function fetchCardholders(tok, s, c, st) {
+    const params = new URLSearchParams()
+    if (s) params.set("search", s)
+    if (c) params.set("company", c)
+    if (st) params.set("status", st)
+    const res = await fetch(`/api/superadmin/cardholders?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${tok}` },
+    })
+    const data = await res.json()
+    setCardholders(data.cardholders ?? [])
+    if (data.companies) setCompanies(data.companies)
+  }
+
+  useEffect(() => {
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      setToken(session.access_token)
+      await fetchCardholders(session.access_token, "", "", "")
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  useEffect(() => {
+    if (!token) return
+    setVisibleCount(10)
+    fetchCardholders(token, search, companyFilter, statusFilter)
+  }, [search, companyFilter, statusFilter])
+
+  const visible = cardholders.slice(0, visibleCount)
+  const hasMore = cardholders.length > visibleCount
+
+  function exportCSV() {
+    const headers = ["Full Name", "Company", "Status"]
+    const rows = cardholders.map((ch) => [
+      ch.full_name ?? "",
+      ch.company_name ?? "",
+      ch.status ?? "",
+    ])
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "cardholders.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const controlStyle = {
+    padding: "0.5625rem 0.875rem",
+    borderRadius: "0.625rem",
+    border: "1.5px solid #E5E7EB",
+    fontSize: "0.875rem",
+    fontFamily: "inherit",
+    color: "#34495E",
+    backgroundColor: "#FFFFFF",
+    outline: "none",
+  }
+
+  const thStyle = {
+    padding: "0.75rem 1rem",
+    textAlign: "left",
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    whiteSpace: "nowrap",
+    borderBottom: "1px solid #E5E7EB",
+  }
+
+  const tdStyle = {
+    padding: "0.875rem 1rem",
+    fontSize: "0.875rem",
+    color: "#34495E",
+    borderBottom: "1px solid #EFF3F7",
+    verticalAlign: "middle",
+  }
+
+  return (
+    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+      <div style={{
+        backgroundColor: "#FFFFFF",
+        borderRadius: "1rem",
+        boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+        overflow: "hidden",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "1.25rem 1.5rem",
+          borderBottom: "1px solid #E5E7EB",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#333333", letterSpacing: "-0.02em" }}>
+            All Cardholders
+          </h2>
+          <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
+            {["Bulk Update", "Bulk Upload"].map((label) => (
+              <button
+                key={label}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "1rem",
+                  border: "1.5px solid #E5E7EB",
+                  backgroundColor: "#FFFFFF",
+                  color: "#374151",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              onClick={exportCSV}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "1rem",
+                border: "1.5px solid #E5E7EB",
+                backgroundColor: "#FFFFFF",
+                color: "#374151",
+                fontSize: "0.8125rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
+            >
+              &#8615; Export CSV
+            </button>
+            <button
+              onClick={() => setShowAdd(true)}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "1rem",
+                border: "none",
+                background: "#2f6f6a",
+                color: "#FFFFFF",
+                fontSize: "0.8125rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            >
+              + Add Cardholder
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{
+          padding: "1rem 1.5rem",
+          borderBottom: "1px solid #EFF3F7",
+          display: "flex",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+        }}>
+          <input
+            type="text"
+            placeholder="Search cardholders..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ ...controlStyle, minWidth: "200px", flex: 1 }}
+          />
+          <select
+            style={controlStyle}
+            value={companyFilter}
+            onChange={(e) => setCompanyFilter(e.target.value)}
+          >
+            <option value="">All Companies</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>{c.company_name}</option>
+            ))}
+          </select>
+          <select
+            style={controlStyle}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="pending">Pending</option>
+            <option value="pending_activation">Pending Activation</option>
+          </select>
+        </div>
+
+        {/* Table */}
+        {loading ? (
+          <div className="skeleton-pulse" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} style={{ height: "3rem", borderRadius: "0.5rem", backgroundColor: "#E8ECF0" }} />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Company</th>
+                    <th style={thStyle}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "3rem" }}>
+                        No cardholders found
+                      </td>
+                    </tr>
+                  ) : visible.map((ch) => (
+                    <tr
+                      key={ch.id}
+                      onClick={() => router.push(`/superadmin/cardholders/${ch.id}`)}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F8FAFC")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td style={{ ...tdStyle, fontWeight: 700 }}>{ch.full_name || "—"}</td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{ch.company_name ?? "—"}</td>
+                      <td style={tdStyle}><CardholderStatusBadge status={ch.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {hasMore && (
+              <div style={{ padding: "1.25rem 1.5rem", borderTop: "1px solid #EFF3F7", textAlign: "center" }}>
+                <button
+                  onClick={() => setVisibleCount((v) => v + 10)}
+                  style={{
+                    width: "100%",
+                    padding: "0.625rem 2rem",
+                    borderRadius: "1rem",
+                    border: "1.5px solid #E5E7EB",
+                    backgroundColor: "#FFFFFF",
+                    color: "#374151",
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
+                >
+                  Load More ({cardholders.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {showAdd && (
+        <AddCardholderModal
+          token={token}
+          companies={companies}
+          onCreated={(newCh) => {
+            setCardholders((prev) => [newCh, ...prev])
+            setShowAdd(false)
+            setToast({ message: "Cardholder created", type: "success" })
+          }}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+      )}
+    </div>
+  )
+}
+
 function TabContent({ activeTab, setActiveTab }) {
   if (activeTab === "Overview") return <OverviewTab setActiveTab={setActiveTab} />
   if (activeTab === "Pending Approvals") return <PendingApprovalsTab />
   if (activeTab === "Users") return <UsersTab />
   if (activeTab === "Companies") return <CompaniesTab />
+  if (activeTab === "Cardholders") return <CardholdersTab />
 
   return (
     <div style={{
       padding: "2rem 1.5rem",
-      color: "#5A5452",
+      maxWidth: "1280px",
+      margin: "0 auto",
+      color: "#374151",
       fontSize: "0.9375rem",
     }}>
       {activeTab} content goes here
@@ -1847,8 +2517,11 @@ function TabContent({ activeTab, setActiveTab }) {
 
 export default function SuperAdminPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState(null)
-  const [activeTab, setActiveTab] = useState("Overview")
+  const tabParam = searchParams.get("tab")
+  const initialTab = TABS.find((t) => t.toLowerCase() === tabParam?.toLowerCase()) ?? "Overview"
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

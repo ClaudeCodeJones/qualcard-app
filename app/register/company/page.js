@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ function validate(form) {
 const inputStyle = {
   width: "100%",
   padding: "0.625rem 0.875rem",
-  border: "1px solid #DAD6D4",
+  border: "1px solid #E5E7EB",
   borderRadius: "0.5rem",
   fontSize: "0.9375rem",
   color: "#333333",
@@ -75,7 +76,7 @@ const labelStyle = {
 
 const helperStyle = {
   fontSize: "0.8125rem",
-  color: "#5A5452",
+  color: "#374151",
   marginTop: "0.3rem",
   lineHeight: 1.5,
 }
@@ -89,12 +90,12 @@ const fieldErrorStyle = {
 const sectionLabelStyle = {
   fontSize: "0.6875rem",
   fontWeight: 700,
-  color: "#5A5452",
+  color: "#374151",
   textTransform: "uppercase",
   letterSpacing: "0.07em",
   marginBottom: "1rem",
   paddingBottom: "0.5rem",
-  borderBottom: "1px solid #DAD6D4",
+  borderBottom: "1px solid #E5E7EB",
 }
 
 // ─── Field ────────────────────────────────────────────────────────────────────
@@ -132,6 +133,7 @@ export default function CompanyRegistrationPage() {
   const [errors, setErrors] = useState({})
   const [generalError, setGeneralError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [logoFile, setLogoFile] = useState(null)
 
   function handleChange(field) {
     return (e) => {
@@ -151,7 +153,7 @@ export default function CompanyRegistrationPage() {
   }
 
   function onBlur(e, field) {
-    if (!errors[field]) e.target.style.borderColor = "#DAD6D4"
+    if (!errors[field]) e.target.style.borderColor = "#E5E7EB"
   }
 
   async function handleSubmit(e) {
@@ -231,6 +233,9 @@ export default function CompanyRegistrationPage() {
         flexDirection: "column",
         alignItems: "center",
         padding: "2rem 1rem 3rem",
+        maxWidth: "1280px",
+        margin: "0 auto",
+        width: "100%",
       }}>
 
         {/* Back link */}
@@ -276,7 +281,7 @@ export default function CompanyRegistrationPage() {
             Register Your Company
           </h1>
           <p style={{
-            color: "#5A5452",
+            color: "#374151",
             fontSize: "0.9rem",
             lineHeight: 1.6,
             marginBottom: "1.5rem",
@@ -397,20 +402,11 @@ export default function CompanyRegistrationPage() {
               />
             </Field>
 
-            <Field
-              label="Company Logo"
-              helper="Upload an image file (max 5MB). JPG or PNG recommended."
-            >
-              <input
-                type="file"
+            <Field label="Company Logo">
+              <FileUploadArea
                 accept="image/jpeg,image/png,image/webp"
-                style={{
-                  width: "100%",
-                  fontSize: "0.875rem",
-                  color: "#333333",
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                }}
+                file={logoFile}
+                onFile={setLogoFile}
               />
             </Field>
 
@@ -466,7 +462,7 @@ export default function CompanyRegistrationPage() {
               borderRadius: "0.75rem",
               padding: "1.125rem 1.25rem",
               fontSize: "0.875rem",
-              color: "#5A5452",
+              color: "#374151",
               lineHeight: 1.7,
             }}>
               <p style={{ fontWeight: 600, color: "#333333", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
@@ -489,7 +485,7 @@ export default function CompanyRegistrationPage() {
                 padding: "0.8125rem",
                 background: loading
                   ? "#8FA3B1"
-                  : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                  : "#2f6f6a",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "1rem",
@@ -518,13 +514,13 @@ export default function CompanyRegistrationPage() {
         flexWrap: "wrap",
         gap: "0.5rem",
       }}>
-        <span style={{ fontSize: "0.8125rem", color: "#5A5452" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#374151" }}>
           QualCard &copy; 2026 All rights reserved
         </span>
         <div style={{ display: "flex", gap: "1.25rem" }}>
           <Link
             href="/privacy"
-            style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+            style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
@@ -532,7 +528,7 @@ export default function CompanyRegistrationPage() {
           </Link>
           <Link
             href="/terms"
-            style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+            style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >

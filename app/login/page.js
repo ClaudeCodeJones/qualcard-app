@@ -39,7 +39,7 @@ function getAuthErrorMessage(error) {
 const inputStyle = {
   width: "100%",
   padding: "0.625rem 0.875rem",
-  border: "1px solid #DAD6D4",
+  border: "1px solid #E5E7EB",
   borderRadius: "0.5rem",
   fontSize: "0.9375rem",
   color: "#333333",
@@ -162,6 +162,9 @@ export default function LoginPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem 1rem",
+        maxWidth: "1280px",
+        margin: "0 auto",
+        width: "100%",
       }}>
         <div style={{
           backgroundColor: "#FFFFFF",
@@ -218,7 +221,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 style={inputStyle}
                 onFocus={(e) => (e.target.style.borderColor = "#34495E")}
-                onBlur={(e) => (e.target.style.borderColor = "#DAD6D4")}
+                onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
               />
             </div>
 
@@ -240,7 +243,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 style={inputStyle}
                 onFocus={(e) => (e.target.style.borderColor = "#34495E")}
-                onBlur={(e) => (e.target.style.borderColor = "#DAD6D4")}
+                onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
               />
             </div>
 
@@ -252,7 +255,7 @@ export default function LoginPage() {
                 padding: "0.75rem",
                 background: loading
                   ? "#8FA3B1"
-                  : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+                  : "#2f6f6a",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "1rem",
@@ -272,9 +275,9 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "1.5rem 0" }}>
-            <div style={{ flex: 1, height: "1px", backgroundColor: "#DAD6D4" }} />
-            <span style={{ fontSize: "0.8125rem", color: "#5A5452" }}>or</span>
-            <div style={{ flex: 1, height: "1px", backgroundColor: "#DAD6D4" }} />
+            <div style={{ flex: 1, height: "1px", backgroundColor: "#E5E7EB" }} />
+            <span style={{ fontSize: "0.8125rem", color: "#374151" }}>or</span>
+            <div style={{ flex: 1, height: "1px", backgroundColor: "#E5E7EB" }} />
           </div>
 
           {/* Google */}
@@ -286,7 +289,7 @@ export default function LoginPage() {
               width: "100%",
               padding: "0.75rem",
               backgroundColor: "#FFFFFF",
-              border: "1px solid #DAD6D4",
+              border: "1px solid #E5E7EB",
               borderRadius: "1rem",
               fontSize: "0.9375rem",
               fontWeight: 500,
@@ -307,7 +310,7 @@ export default function LoginPage() {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "#FFFFFF"
-              e.currentTarget.style.borderColor = "#DAD6D4"
+              e.currentTarget.style.borderColor = "#E5E7EB"
             }}
           >
             <GoogleIcon />
@@ -317,7 +320,7 @@ export default function LoginPage() {
           <p style={{
             textAlign: "center",
             fontSize: "0.8125rem",
-            color: "#5A5452",
+            color: "#374151",
             marginTop: "1.75rem",
             lineHeight: 1.6,
           }}>
@@ -346,17 +349,17 @@ export default function LoginPage() {
         flexWrap: "wrap",
         gap: "0.5rem",
       }}>
-        <span style={{ fontSize: "0.8125rem", color: "#5A5452" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#374151" }}>
           QualCard &copy; 2026 All rights reserved
         </span>
         <div style={{ display: "flex", gap: "1.25rem" }}>
-          <Link href="/privacy" style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+          <Link href="/privacy" style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
             Privacy Policy
           </Link>
-          <Link href="/terms" style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+          <Link href="/terms" style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >

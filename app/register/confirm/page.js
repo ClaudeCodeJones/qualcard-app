@@ -10,12 +10,12 @@ function CheckIcon() {
       width: "64px",
       height: "64px",
       borderRadius: "50%",
-      backgroundColor: "#22C55E",
+      backgroundColor: "#2f6f6a",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       margin: "0 auto 1.5rem",
-      boxShadow: "0 4px 12px rgba(34, 197, 94, 0.3)",
+      boxShadow: "0 4px 12px rgba(47, 111, 106, 0.3)",
     }}>
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -62,6 +62,9 @@ export default function ConfirmPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem 1rem",
+        maxWidth: "1280px",
+        margin: "0 auto",
+        width: "100%",
       }}>
         <div style={{
           backgroundColor: "#FFFFFF",
@@ -100,7 +103,7 @@ export default function ConfirmPage() {
           </p>
 
           <p style={{
-            color: "#5A5452",
+            color: "#374151",
             fontSize: "0.9rem",
             lineHeight: 1.7,
             marginBottom: "1.75rem",
@@ -133,13 +136,13 @@ export default function ConfirmPage() {
         flexWrap: "wrap",
         gap: "0.5rem",
       }}>
-        <span style={{ fontSize: "0.8125rem", color: "#5A5452" }}>
+        <span style={{ fontSize: "0.8125rem", color: "#374151" }}>
           QualCard &copy; 2026 All rights reserved
         </span>
         <div style={{ display: "flex", gap: "1.25rem" }}>
           <Link
             href="/privacy"
-            style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+            style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
@@ -147,7 +150,7 @@ export default function ConfirmPage() {
           </Link>
           <Link
             href="/terms"
-            style={{ fontSize: "0.8125rem", color: "#5A5452", textDecoration: "none" }}
+            style={{ fontSize: "0.8125rem", color: "#374151", textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >
