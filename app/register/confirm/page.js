@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -30,7 +31,7 @@ function CheckIcon() {
   )
 }
 
-export default function ConfirmPage() {
+function ConfirmContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get("email") || ""
 
@@ -160,5 +161,13 @@ export default function ConfirmPage() {
       </footer>
 
     </div>
+  )
+}
+
+export default function ConfirmPage() {
+  return (
+    <Suspense>
+      <ConfirmContent />
+    </Suspense>
   )
 }
