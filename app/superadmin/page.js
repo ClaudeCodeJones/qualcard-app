@@ -229,8 +229,8 @@ function Header({ user }) {
         <Image
           src="/images/qualcard_logo_white.png"
           alt="QualCard"
-          width={120}
-          height={32}
+          width={240}
+          height={64}
           style={{ objectFit: "contain", height: "auto" }}
         />
         <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
@@ -388,7 +388,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           background: "#2f6f6a",
           color: "#FFFFFF",
           fontSize: "0.875rem",
-          fontWeight: 700,
+          fontWeight: 500,
           fontFamily: "inherit",
           letterSpacing: "0.01em",
           opacity: hovered ? 0.88 : 1,
@@ -421,7 +421,7 @@ function OverviewTab({ setActiveTab }) {
   }, [])
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{ marginBottom: "2.5rem" }}>
         <h1 style={{
           margin: 0,
@@ -560,7 +560,7 @@ function ConfirmModal({ message, onConfirm, onCancel, loading }) {
               background: "#2f6f6a",
               color: "#FFFFFF",
               fontSize: "0.875rem",
-              fontWeight: 700,
+              fontWeight: 500,
               cursor: loading ? "not-allowed" : "pointer",
               fontFamily: "inherit",
               opacity: loading ? 0.7 : 1,
@@ -625,12 +625,14 @@ function PendingApprovalsTab() {
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         backgroundColor: "#FFFFFF",
         borderRadius: "1rem",
-        boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         overflow: "hidden",
+        paddingBottom: "1.5rem",
       }}>
         <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB" }}>
           <h2 style={{
@@ -661,6 +663,8 @@ function PendingApprovalsTab() {
             {users.map((user, index) => (
               <div
                 key={user.id}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                 style={{
                   padding: "1.25rem 1.5rem",
                   display: "flex",
@@ -668,6 +672,8 @@ function PendingApprovalsTab() {
                   justifyContent: "space-between",
                   gap: "1rem",
                   borderBottom: index < users.length - 1 ? "1px solid #E5E7EB" : "none",
+                  transition: "background 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -693,7 +699,7 @@ function PendingApprovalsTab() {
                       background: "#2f6f6a",
                       color: "#FFFFFF",
                       fontSize: "0.8125rem",
-                      fontWeight: 700,
+                      fontWeight: 500,
                       cursor: "pointer",
                       fontFamily: "inherit",
                       transition: "opacity 0.15s ease, transform 0.15s ease",
@@ -846,7 +852,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
             border: "1.5px solid #E5E7EB",
             fontSize: "0.875rem",
             color: "#6B7280",
-            backgroundColor: "#F8FAFC",
+            backgroundColor: "#F9FAFB",
           }}>
             QualCard Admin
           </p>
@@ -965,7 +971,7 @@ function EditUserForm({ user, companies, onSave, onCancel }) {
             background: "#2f6f6a",
             color: "#FFFFFF",
             fontSize: "0.875rem",
-            fontWeight: 700,
+            fontWeight: 500,
             cursor: saving ? "not-allowed" : "pointer",
             fontFamily: "inherit",
             opacity: saving ? 0.7 : 1,
@@ -1067,7 +1073,7 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
                   background: "#2f6f6a",
                   color: "#FFFFFF",
                   fontSize: "0.8125rem",
-                  fontWeight: 700,
+                  fontWeight: 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -1205,7 +1211,7 @@ function UsersTab() {
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         display: "flex",
         gap: "0.75rem",
@@ -1237,8 +1243,10 @@ function UsersTab() {
       <div style={{
         backgroundColor: "#FFFFFF",
         borderRadius: "1rem",
-        boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         overflow: "hidden",
+        paddingBottom: "1.5rem",
       }}>
         {loading ? (
           <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -1247,7 +1255,7 @@ function UsersTab() {
             ))}
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", padding: "0 1.5rem" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -1271,9 +1279,9 @@ function UsersTab() {
                   <tr
                     key={u.id}
                     onClick={() => setSelectedUser(u)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F8FAFC"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                    style={{ cursor: "pointer" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    style={{ cursor: "pointer", transition: "background 0.15s ease" }}
                   >
                     <td style={{ ...tdStyle, fontWeight: 700 }}>{u.full_name || "—"}</td>
                     <td style={{ ...tdStyle, color: "#374151" }}>{u.email}</td>
@@ -1361,7 +1369,7 @@ function CompanyPanel({ company, onClose }) {
         }}
       />
       <div style={{
-        position: "fixed", top: 0, right: 0, height: "100vh", width: "400px",
+        position: "fixed", top: 0, right: 0, height: "100vh", width: "560px",
         backgroundColor: "#FFFFFF", boxShadow: "-4px 0 24px rgba(44, 62, 80, 0.12)",
         zIndex: 80, display: "flex", flexDirection: "column",
         transform: visible ? "translateX(0)" : "translateX(100%)",
@@ -1394,28 +1402,62 @@ function CompanyPanel({ company, onClose }) {
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div>
-              <p style={labelStyle}>Address</p>
-              <p style={valueStyle}>{company.street_address ?? "—"}</p>
-              {company.suburb && <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.suburb}</p>}
-              <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.city ?? "—"}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div style={{ backgroundColor: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: "1rem", padding: "1.25rem", boxShadow: "0 2px 8px rgba(44, 62, 80, 0.07), 0 1px 3px rgba(44, 62, 80, 0.04)" }}>
+              <p style={{ margin: "0 0 0.75rem", fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>General Contact</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div>
+                  <p style={labelStyle}>Address</p>
+                  <p style={valueStyle}>{company.street_address ?? "—"}</p>
+                  {company.suburb && <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.suburb}</p>}
+                  <p style={{ ...valueStyle, color: "#6B7280", fontSize: "0.875rem" }}>{company.city ?? "—"}</p>
+                </div>
+                <div>
+                  <p style={labelStyle}>Phone</p>
+                  <p style={valueStyle}>{company.phone ?? "—"}</p>
+                </div>
+                <div>
+                  <p style={labelStyle}>General Email</p>
+                  <p style={valueStyle}>{company.general_email ?? "—"}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p style={labelStyle}>Phone</p>
-              <p style={valueStyle}>{company.phone ?? "—"}</p>
+
+            <div style={{ backgroundColor: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: "1rem", padding: "1.25rem", boxShadow: "0 2px 8px rgba(44, 62, 80, 0.07), 0 1px 3px rgba(44, 62, 80, 0.04)" }}>
+              <p style={{ margin: "0 0 0.75rem", fontSize: "0.75rem", fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Primary Contact</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div>
+                  <p style={labelStyle}>Contact Name</p>
+                  <p style={valueStyle}>{company.primary_contact_name ?? "—"}</p>
+                </div>
+                {company.primary_contact_role && (
+                  <div>
+                    <p style={labelStyle}>Contact Role</p>
+                    <p style={valueStyle}>{company.primary_contact_role}</p>
+                  </div>
+                )}
+                <div>
+                  <p style={labelStyle}>Contact Email</p>
+                  <p style={valueStyle}>{company.primary_contact_email ?? "—"}</p>
+                </div>
+                <div>
+                  <p style={labelStyle}>Contact Phone</p>
+                  <p style={valueStyle}>{company.primary_contact_phone ?? "—"}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p style={labelStyle}>General Email</p>
-              <p style={valueStyle}>{company.general_email ?? "—"}</p>
-            </div>
-            <div>
-              <p style={labelStyle}>Cardholders</p>
-              <p style={valueStyle}>{company.cardholder_count ?? 0}</p>
-            </div>
-            <div>
-              <p style={labelStyle}>Created At</p>
-              <p style={valueStyle}>{company.created_at ? formatDate(company.created_at) : "—"}</p>
+          </div>
+
+          <div style={{ backgroundColor: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: "1rem", padding: "1rem", boxShadow: "0 2px 8px rgba(44, 62, 80, 0.07), 0 1px 3px rgba(44, 62, 80, 0.04)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div>
+                <p style={labelStyle}>Cardholders</p>
+                <p style={valueStyle}>{company.cardholder_count ?? 0}</p>
+              </div>
+              <div>
+                <p style={labelStyle}>Created At</p>
+                <p style={valueStyle}>{company.created_at ? formatDate(company.created_at) : "—"}</p>
+              </div>
             </div>
           </div>
 
@@ -1424,7 +1466,7 @@ function CompanyPanel({ company, onClose }) {
             style={{
               width: "100%", padding: "0.75rem", borderRadius: "1rem", border: "none",
               background: "#2f6f6a",
-              color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 700,
+              color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 500,
               cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
             }}
           >
@@ -1440,7 +1482,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     company_name: "", street_address: "", suburb: "", city: "",
     phone: "", general_email: "", status: "active",
-    primary_contact_name: "", primary_contact_email: "", primary_contact_phone: "",
+    primary_contact_name: "", primary_contact_email: "", primary_contact_phone: "", primary_contact_role: "",
   })
   const [logoFile, setLogoFile] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -1576,6 +1618,11 @@ function CreateCompanyModal({ onClose, onCreated }) {
             <input style={inputStyle} value={form.primary_contact_name} onChange={(e) => set("primary_contact_name", e.target.value)} />
           </div>
 
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Primary Contact Role</label>
+            <input style={inputStyle} placeholder="e.g. Health & Safety Manager" value={form.primary_contact_role} onChange={(e) => set("primary_contact_role", e.target.value)} />
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Contact Email <span style={{ color: "#EF4444" }}>*</span></label>
@@ -1596,7 +1643,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
               style={{
                 flex: 1, padding: "0.75rem", borderRadius: "1rem", border: "none",
                 background: "#2f6f6a",
-                color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 700,
+                color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 500,
                 cursor: !isValid || submitting ? "not-allowed" : "pointer",
                 fontFamily: "inherit", opacity: !isValid || submitting ? 0.6 : 1,
               }}
@@ -1671,11 +1718,13 @@ function CompaniesTab() {
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         backgroundColor: "#FFFFFF", borderRadius: "1rem",
-        boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         overflow: "hidden",
+        paddingBottom: "1.5rem",
       }}>
         <div style={{
           padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
@@ -1702,7 +1751,7 @@ function CompaniesTab() {
               style={{
                 padding: "0.5rem 1rem", borderRadius: "1rem", border: "none",
                 background: "#2f6f6a",
-                color: "#FFFFFF", fontSize: "0.8125rem", fontWeight: 700,
+                color: "#FFFFFF", fontSize: "0.8125rem", fontWeight: 500,
                 cursor: "pointer", fontFamily: "inherit",
               }}
               onMouseEnter={(e) => e.currentTarget.style.opacity = "0.88"}
@@ -1750,7 +1799,7 @@ function CompaniesTab() {
           </div>
         ) : (
           <>
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", padding: "0 1.5rem" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
@@ -1773,9 +1822,9 @@ function CompaniesTab() {
                     <tr
                       key={c.id}
                       onClick={() => setSelectedCompany(c)}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#F8FAFC"}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                      style={{ cursor: "pointer" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      style={{ cursor: "pointer", transition: "background 0.15s ease" }}
                     >
                       <td style={{ ...tdStyle, fontWeight: 700 }}>{c.company_name}</td>
                       <td style={{ ...tdStyle, color: "#374151" }}>{c.street_address ?? "—"}</td>
@@ -1843,7 +1892,7 @@ function CardholderStatusBadge({ status }) {
     active:             { label: "Active",   color: "#2f6f6a" },
     inactive:           { label: "Inactive", color: "#4A5568" },
     pending:            { label: "Pending",  color: "#F97316" },
-    pending_activation: { label: "Pending",  color: "#F97316" },
+    pending_activation: { label: "Payment Pending",  color: "#F97316" },
   }
   const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
   return (
@@ -2137,7 +2186,7 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
               value={form.status}
               onChange={(e) => set("status", e.target.value)}
             >
-              <option value="pending_activation">Pending Activation</option>
+              <option value="pending_activation">Payment Pending</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
@@ -2157,7 +2206,7 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
                 background: "#2f6f6a",
                 color: "#FFFFFF",
                 fontSize: "0.875rem",
-                fontWeight: 700,
+                fontWeight: 500,
                 cursor: !isValid || saving ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
                 opacity: !isValid || saving ? 0.6 : 1,
@@ -2235,11 +2284,23 @@ function CardholdersTab() {
   const visible = cardholders.slice(0, visibleCount)
   const hasMore = cardholders.length > visibleCount
 
+  function formatExpiryDate(dateStr) {
+    if (!dateStr) return null
+    return new Date(dateStr).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+  }
+
+  function isExpired(dateStr) {
+    if (!dateStr) return false
+    return new Date(dateStr) < new Date()
+  }
+
   function exportCSV() {
-    const headers = ["Full Name", "Company", "Status"]
+    const headers = ["Full Name", "Company", "Subscription Expiry", "Created", "Status"]
     const rows = cardholders.map((ch) => [
       ch.full_name ?? "",
       ch.company_name ?? "",
+      ch.licence_end_date ? formatExpiryDate(ch.licence_end_date) : "Not set",
+      ch.created_at ? formatExpiryDate(ch.created_at) : "",
       ch.status ?? "",
     ])
     const csv = [headers, ...rows]
@@ -2275,23 +2336,26 @@ function CardholdersTab() {
     letterSpacing: "0.05em",
     whiteSpace: "nowrap",
     borderBottom: "1px solid #E5E7EB",
+    backgroundColor: "#F9FAFB",
   }
 
   const tdStyle = {
-    padding: "0.875rem 1rem",
+    padding: "0.75rem 1rem",
     fontSize: "0.875rem",
     color: "#34495E",
-    borderBottom: "1px solid #EFF3F7",
+    borderBottom: "1px solid #E5E7EB",
     verticalAlign: "middle",
   }
 
   return (
-    <div style={{ padding: "2rem 1.5rem", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
         backgroundColor: "#FFFFFF",
         borderRadius: "1rem",
-        boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         overflow: "hidden",
+        paddingBottom: "2.5rem",
       }}>
         {/* Header */}
         <div style={{
@@ -2354,7 +2418,7 @@ function CardholdersTab() {
                 background: "#2f6f6a",
                 color: "#FFFFFF",
                 fontSize: "0.8125rem",
-                fontWeight: 700,
+                fontWeight: 500,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -2413,35 +2477,48 @@ function CardholdersTab() {
           </div>
         ) : (
           <>
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", padding: "0 1.5rem" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
                     <th style={thStyle}>Name</th>
                     <th style={thStyle}>Company</th>
+                    <th style={thStyle}>Subscription Expiry</th>
+                    <th style={thStyle}>Created</th>
                     <th style={thStyle}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visible.length === 0 ? (
                     <tr>
-                      <td colSpan={3} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "3rem" }}>
+                      <td colSpan={5} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "3rem" }}>
                         No cardholders found
                       </td>
                     </tr>
-                  ) : visible.map((ch) => (
-                    <tr
-                      key={ch.id}
-                      onClick={() => router.push(`/superadmin/cardholders/${ch.id}`)}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F8FAFC")}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td style={{ ...tdStyle, fontWeight: 700 }}>{ch.full_name || "—"}</td>
-                      <td style={{ ...tdStyle, color: "#374151" }}>{ch.company_name ?? "—"}</td>
-                      <td style={tdStyle}><CardholderStatusBadge status={ch.status} /></td>
-                    </tr>
-                  ))}
+                  ) : visible.map((ch) => {
+                    const expiry = formatExpiryDate(ch.licence_end_date)
+                    const expired = isExpired(ch.licence_end_date)
+                    const created = ch.created_at
+                      ? new Date(ch.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"
+                    return (
+                      <tr
+                        key={ch.id}
+                        onClick={() => router.push(`/superadmin/cardholders/${ch.id}`)}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                      >
+                        <td style={{ ...tdStyle, fontWeight: 700 }}>{ch.full_name || "—"}</td>
+                        <td style={{ ...tdStyle, color: "#374151" }}>{ch.company_name ?? "—"}</td>
+                        <td style={{ ...tdStyle, color: expiry ? (expired ? "#EF4444" : "#34495E") : "#9CA3AF" }}>
+                          {expiry ?? "Not set"}
+                        </td>
+                        <td style={{ ...tdStyle, color: "#374151" }}>{created}</td>
+                        <td style={tdStyle}><CardholderStatusBadge status={ch.status} /></td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2471,6 +2548,7 @@ function CardholdersTab() {
             )}
           </>
         )}
+        <div style={{ height: "1.5rem" }} />
       </div>
 
       {showAdd && (
@@ -2502,7 +2580,7 @@ function TabContent({ activeTab, setActiveTab }) {
 
   return (
     <div style={{
-      padding: "2rem 1.5rem",
+      padding: "2rem 1.5rem 4rem",
       maxWidth: "1280px",
       margin: "0 auto",
       color: "#374151",
@@ -2520,9 +2598,19 @@ function SuperAdminPageInner() {
   const searchParams = useSearchParams()
   const [user, setUser] = useState(null)
   const tabParam = searchParams.get("tab")
-  const initialTab = TABS.find((t) => t.toLowerCase() === tabParam?.toLowerCase()) ?? "Overview"
-  const [activeTab, setActiveTab] = useState(initialTab)
+  const initialTab = TABS.find((t) => t.toLowerCase() === tabParam?.replace(/_/g, " ").toLowerCase()) ?? "Overview"
+  const [activeTab, setActiveTabState] = useState(initialTab)
   const [loading, setLoading] = useState(true)
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab)
+    const tabQuery = tab === "Overview" ? "" : `?tab=${tab.replace(/ /g, "_")}`
+    router.push(`/superadmin${tabQuery}`)
+  }
+
+  useEffect(() => {
+    setActiveTabState(initialTab)
+  }, [tabParam])
 
   useEffect(() => {
     async function checkAuth() {

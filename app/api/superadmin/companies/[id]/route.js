@@ -91,6 +91,7 @@ export async function PATCH(request, ctx) {
       "primary_contact_name",
       "primary_contact_email",
       "primary_contact_phone",
+      "primary_contact_role",
       "status",
       "logo_url",
     ]

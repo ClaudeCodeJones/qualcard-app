@@ -5,7 +5,8 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase"
-import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, FileText } from "lucide-react"
+import Header from "@/app/components/Header"
+import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, FileText, Image as ImageIcon } from "lucide-react"
 import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -96,7 +97,7 @@ function ModalActions({ onCancel, onConfirm, confirmLabel, confirmBg, confirmCol
           background: confirmBg,
           color: confirmColor,
           fontSize: "0.875rem",
-          fontWeight: 700,
+          fontWeight: 500,
           cursor: saving || disabled ? "not-allowed" : "pointer",
           fontFamily: "inherit",
           opacity: saving || disabled ? 0.7 : 1,
@@ -181,7 +182,7 @@ function CardholderStatusBadge({ status }) {
     active:             { label: "Active",   color: "#2f6f6a" },
     inactive:           { label: "Inactive", color: "#4A5568" },
     pending:            { label: "Pending",  color: "#F97316" },
-    pending_activation: { label: "Pending",  color: "#F97316" },
+    pending_activation: { label: "Payment Pending",  color: "#F97316" },
   }
   const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
   return (
@@ -309,12 +310,14 @@ function EditPrimaryModal({ company, token, onSave, onClose }) {
     primary_contact_name: company.primary_contact_name || "",
     primary_contact_email: company.primary_contact_email || "",
     primary_contact_phone: company.primary_contact_phone || "",
+    primary_contact_role: company.primary_contact_role || "",
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   const fields = [
     { key: "primary_contact_name", label: "Contact Name" },
+    { key: "primary_contact_role", label: "Primary Contact Role", placeholder: "e.g. Health & Safety Manager" },
     { key: "primary_contact_email", label: "Contact Email", type: "email" },
     { key: "primary_contact_phone", label: "Contact Phone" },
   ]
@@ -343,11 +346,12 @@ function EditPrimaryModal({ company, token, onSave, onClose }) {
         Edit Primary Contact
       </h2>
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {fields.map(({ key, label, type = "text" }) => (
+        {fields.map(({ key, label, type = "text", placeholder }) => (
           <div key={key}>
             <label style={fieldLabelStyle}>{label}</label>
             <input
               type={type}
+              placeholder={placeholder}
               value={form[key]}
               onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
               style={inputStyle}
@@ -433,7 +437,7 @@ function EditLogoModal({ company, token, onSave, onClose }) {
             background: "#2f6f6a",
             color: "#FFFFFF",
             fontSize: "0.875rem",
-            fontWeight: 700,
+            fontWeight: 500,
             cursor: !file || uploading ? "not-allowed" : "pointer",
             fontFamily: "inherit",
             opacity: !file || uploading ? 0.6 : 1,
@@ -690,7 +694,7 @@ export default function CompanyDetailPage() {
 
       const { data: userData } = await supabase
         .from("users")
-        .select("full_name")
+        .select("full_name, email, role")
         .eq("id", session.user.id)
         .single()
       setCurrentUser(userData ?? null)
@@ -774,11 +778,13 @@ export default function CompanyDetailPage() {
     { label: "Phone",          value: company.phone },
     { label: "General Email",  value: company.general_email },
     { label: "Street Address", value: company.street_address },
+    { label: "Suburb",         value: company.suburb },
     { label: "City",           value: company.city },
   ]
 
   const primaryFields = [
     { label: "Contact Name",  value: company.primary_contact_name },
+    { label: "Contact Role",  value: company.primary_contact_role },
     { label: "Contact Email", value: company.primary_contact_email },
     { label: "Contact Phone", value: company.primary_contact_phone },
   ]
@@ -795,27 +801,6 @@ export default function CompanyDetailPage() {
   const moreCount = filteredCardholders.length - INITIAL_SHOW
 
   const actions = [
-    {
-      key: "editGeneral",
-      Icon: Edit2,
-      label: "Edit General Contact",
-      desc: "Update address & contact info",
-      iconBg: "#2f6f6a",
-    },
-    {
-      key: "editPrimary",
-      Icon: UserCircle,
-      label: "Edit Primary Contact",
-      desc: "Update admin contact details",
-      iconBg: "#2f6f6a",
-    },
-    {
-      key: "editLogo",
-      Icon: ImageIcon,
-      label: "Edit Logo",
-      desc: "Upload company logo",
-      iconBg: "#2f6f6a",
-    },
     {
       key: "changeStatus",
       Icon: ToggleLeft,
@@ -847,6 +832,7 @@ export default function CompanyDetailPage() {
       background: "#D9DEE5",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
+      <Header user={currentUser} />
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -918,48 +904,74 @@ export default function CompanyDetailPage() {
             <StatusBadge status={company.status} />
           </div>
 
-          {company.logo_url ? (
-            <div style={{
-              background: "#FFFFFF",
-              borderRadius: "0.875rem",
-              padding: "0.75rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 96,
-              height: 80,
-              flexShrink: 0,
-            }}>
-              <Image
-                src={company.logo_url}
-                alt={`${company.company_name} logo`}
-                width={80}
-                height={56}
-                style={{ objectFit: "contain", width: "100%", height: "auto" }}
-              />
-            </div>
-          ) : (
-            <div style={{
-              background: "rgba(255,255,255,0.14)",
-              borderRadius: "0.875rem",
-              width: 96,
-              height: 80,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}>
-              <span style={{
-                color: "#FFFFFF",
-                fontSize: "1.625rem",
-                fontWeight: 800,
-                letterSpacing: "-0.02em",
-                opacity: 0.9,
+          <div style={{ position: "relative", width: "fit-content" }}>
+            {company.logo_url ? (
+              <div style={{
+                background: "#FFFFFF",
+                borderRadius: "0.875rem",
+                padding: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 96,
+                height: 80,
+                flexShrink: 0,
               }}>
+                <Image
+                  src={company.logo_url}
+                  alt={`${company.company_name} logo`}
+                  width={80}
+                  height={56}
+                  style={{ objectFit: "contain", width: "100%", height: "auto" }}
+                />
+              </div>
+            ) : (
+              <div style={{
+                background: "#FFFFFF",
+                borderRadius: "0.75rem",
+                border: "1px solid #E5E7EB",
+                boxShadow: "0 2px 8px rgba(44, 62, 80, 0.10)",
+                width: 80,
+                height: 80,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  color: "#2C3E50",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                }}>
                 {getInitials(company.company_name)}
               </span>
             </div>
-          )}
+            )}
+            <button
+              onClick={() => setModal("editLogo")}
+              style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                background: "#2f6f6a",
+                border: "none",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "#FFFFFF",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#1F2937" }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#2f6f6a" }}
+              title="Edit logo"
+            >
+              <Edit2 size={16} />
+            </button>
+          </div>
         </div>
 
         {/* ── Section 3: Contact tabs ──────────────────────────────────── */}
@@ -975,35 +987,58 @@ export default function CompanyDetailPage() {
             gap: "0.5rem",
             padding: "0.875rem 1.25rem",
             borderBottom: "1px solid #E5E7EB",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}>
-            {[
-              { key: "general", label: "General Contact" },
-              { key: "primary", label: "Primary Contact" },
-            ].map(({ key, label }) => {
-              const isActive = contactTab === key
-              return (
-                <button
-                  key={key}
-                  onClick={() => setContactTab(key)}
-                  style={{
-                    padding: "0.5rem 1.125rem",
-                    borderRadius: "1rem",
-                    border: isActive ? "none" : "1.5px solid #E5E7EB",
-                    cursor: "pointer",
-                    fontSize: "0.875rem",
-                    fontWeight: isActive ? 600 : 400,
-                    fontFamily: "inherit",
-                    background: isActive ? GRADIENT : "#FFFFFF",
-                    color: isActive ? "#FFFFFF" : "#374151",
-                    transition: "background 0.15s ease, color 0.15s ease, border-color 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "#34495E" }}
-                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "#E5E7EB" }}
-                >
-                  {label}
-                </button>
-              )
-            })}
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {[
+                { key: "general", label: "General Contact" },
+                { key: "primary", label: "Primary Contact" },
+              ].map(({ key, label }) => {
+                const isActive = contactTab === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setContactTab(key)}
+                    style={{
+                      padding: "0.5rem 1.125rem",
+                      borderRadius: "1rem",
+                      border: isActive ? "none" : "1.5px solid #E5E7EB",
+                      cursor: "pointer",
+                      fontSize: "0.875rem",
+                      fontWeight: isActive ? 600 : 400,
+                      fontFamily: "inherit",
+                      background: isActive ? GRADIENT : "#FFFFFF",
+                      color: isActive ? "#FFFFFF" : "#374151",
+                      transition: "background 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = "#34495E" }}
+                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = "#E5E7EB" }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              onClick={() => setModal(contactTab === "general" ? "editGeneral" : "editPrimary")}
+              style={{
+                background: "none",
+                border: "none",
+                padding: "0.375rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#2f6f6a",
+                transition: "color 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#1F2937" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#2f6f6a" }}
+              title="Edit contact information"
+            >
+              <Edit2 size={16} />
+            </button>
           </div>
 
           <div style={{
@@ -1025,6 +1060,7 @@ export default function CompanyDetailPage() {
           marginBottom: "1.5rem",
           boxShadow: "0 2px 8px rgba(44, 62, 80, 0.07), 0 1px 3px rgba(44, 62, 80, 0.04)",
           overflow: "hidden",
+          paddingBottom: "1rem",
         }}>
 
           {/* Header */}
@@ -1081,7 +1117,7 @@ export default function CompanyDetailPage() {
                   background: "#2f6f6a",
                   color: "#FFFFFF",
                   fontSize: "0.8125rem",
-                  fontWeight: 700,
+                  fontWeight: 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
@@ -1239,7 +1275,7 @@ export default function CompanyDetailPage() {
                 background: "#2f6f6a",
                 color: "#FFFFFF",
                 fontSize: "0.8125rem",
-                fontWeight: 700,
+                fontWeight: 500,
                 cursor: "pointer",
                 fontFamily: "inherit",
                 flexShrink: 0,

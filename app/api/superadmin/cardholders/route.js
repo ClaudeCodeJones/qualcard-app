@@ -33,7 +33,7 @@ export async function GET(request) {
 
     let query = supabaseAdmin
       .from("cardholders")
-      .select("id, full_name, photo_url, status, company_id, companies(company_name)")
+      .select("id, full_name, photo_url, status, company_id, licence_end_date, created_at, companies(company_name)")
       .neq("status", "deleted")
       .order("full_name", { ascending: true })
 
@@ -104,7 +104,7 @@ export async function POST(request) {
         slug,
         created_by: created_by ?? "qc_admin",
       })
-      .select("id, full_name, photo_url, status, company_id")
+      .select("id, full_name, photo_url, status, company_id, created_at, licence_end_date")
       .single()
 
     if (insertError) {

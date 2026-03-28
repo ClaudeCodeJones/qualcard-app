@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import Header from "@/app/components/Header"
 import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -208,23 +209,7 @@ export default function CompanyRegistrationPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#D9DEE5" }}>
 
-      {/* Header */}
-      <header style={{
-        background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
-        padding: "1rem 1.5rem",
-        display: "flex",
-        alignItems: "center",
-      }}>
-        <Image
-          src="/images/qualcard_logo_white.png"
-          alt="QualCard"
-          width={0}
-          height={0}
-          sizes="100vw"
-          style={{ width: "140px", height: "auto" }}
-          priority
-        />
-      </header>
+      <Header user={null} />
 
       {/* Main */}
       <main style={{
@@ -232,7 +217,7 @@ export default function CompanyRegistrationPage() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "2rem 1rem 3rem",
+        padding: "2rem 1rem 4rem",
         maxWidth: "1280px",
         margin: "0 auto",
         width: "100%",
@@ -490,7 +475,7 @@ export default function CompanyRegistrationPage() {
                 border: "none",
                 borderRadius: "1rem",
                 fontSize: "0.9375rem",
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: loading ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
                 transition: "opacity 0.15s ease",

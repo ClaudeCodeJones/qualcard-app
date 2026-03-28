@@ -285,12 +285,12 @@ export default function CardPage() {
     },
     {
       title: "SITE INDUCTIONS",
-      icon: <ClipboardCheck className="w-5 h-5 text-teal-500" />,
+      icon: <ClipboardCheck className="w-5 h-5 text-violet-600" />,
       credentials: SITE_INDUCTIONS,
       defaultCount: 3,
-      borderClass: "border-teal-500",
-      textClass: "text-teal-500",
-      badgeAccent: "border-teal-500 text-teal-500",
+      borderClass: "border-violet-600",
+      textClass: "text-violet-600",
+      badgeAccent: "border-violet-600 text-violet-600",
     },
     {
       title: "PERMITS & CERTIFICATES",

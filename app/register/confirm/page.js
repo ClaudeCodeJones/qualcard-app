@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import Header from "@/app/components/Header"
 
 function CheckIcon() {
   return (
@@ -38,23 +39,7 @@ function ConfirmContent() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#D9DEE5" }}>
 
-      {/* Header */}
-      <header style={{
-        background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
-        padding: "1rem 1.5rem",
-        display: "flex",
-        alignItems: "center",
-      }}>
-        <Image
-          src="/images/qualcard_logo_white.png"
-          alt="QualCard"
-          width={0}
-          height={0}
-          sizes="100vw"
-          style={{ width: "140px", height: "auto" }}
-          priority
-        />
-      </header>
+      <Header user={null} />
 
       {/* Main */}
       <main style={{
@@ -62,7 +47,7 @@ function ConfirmContent() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "2rem 1rem",
+        padding: "2rem 1rem 4rem",
         maxWidth: "1280px",
         margin: "0 auto",
         width: "100%",

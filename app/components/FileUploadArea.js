@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { UploadCloud } from "lucide-react"
 
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 
 export default function FileUploadArea({ accept = "image/jpeg,image/png,image/webp", file, onFile }) {
   const [dragActive, setDragActive] = useState(false)
@@ -25,7 +25,7 @@ export default function FileUploadArea({ accept = "image/jpeg,image/png,image/we
   function handleFile(f) {
     if (!f) return
     if (f.size > MAX_SIZE) {
-      setSizeError("File too large. Maximum size is 5MB.")
+      setSizeError("File too large. Maximum size is 2MB.")
       return
     }
     setSizeError(null)

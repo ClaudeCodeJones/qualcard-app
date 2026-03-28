@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import Header from "@/app/components/Header"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -61,12 +62,19 @@ export default function AuthCallbackPage() {
     <div style={{
       minHeight: "100vh",
       display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      flexDirection: "column",
       backgroundColor: "#D9DEE5",
       fontFamily: "Inter, sans-serif",
     }}>
-      <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Signing you in...</p>
+      <Header user={null} />
+      <div style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Signing you in...</p>
+      </div>
     </div>
   )
 }
