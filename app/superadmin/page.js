@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { ClipboardCheck, Building2, Users, LogOut } from "lucide-react"
@@ -2515,7 +2515,7 @@ function TabContent({ activeTab, setActiveTab }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function SuperAdminPage() {
+function SuperAdminPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState(null)
@@ -2572,5 +2572,13 @@ export default function SuperAdminPage() {
         <TabContent activeTab={activeTab} setActiveTab={setActiveTab} />
       </main>
     </div>
+  )
+}
+
+export default function SuperAdminPage() {
+  return (
+    <Suspense>
+      <SuperAdminPageInner />
+    </Suspense>
   )
 }
