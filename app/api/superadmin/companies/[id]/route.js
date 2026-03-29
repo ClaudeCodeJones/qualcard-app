@@ -83,6 +83,7 @@ export async function PATCH(request, ctx) {
     const body = await request.json()
 
     const ALLOWED_FIELDS = [
+      "company_name",
       "phone",
       "general_email",
       "street_address",

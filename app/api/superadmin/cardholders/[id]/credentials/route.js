@@ -15,6 +15,38 @@ async function verifyQcAdmin(token, supabaseAdmin) {
   return data?.role === "qc_admin"
 }
 
+async function resolveProvider(supabaseAdmin, custom_provider) {
+  const { provider_name, is_global, company_id } = custom_provider
+  if (!provider_name?.trim()) return { error: "Provider name is required" }
+
+  const orClause = company_id
+    ? `is_global.eq.true,company_id.eq.${company_id}`
+    : `is_global.eq.true`
+
+  const { data: existingList } = await supabaseAdmin
+    .from("training_providers")
+    .select("id")
+    .ilike("provider_name", provider_name.trim())
+    .or(orClause)
+    .limit(1)
+
+  if (existingList?.[0]) return { id: existingList[0].id }
+
+  const { data: created, error } = await supabaseAdmin
+    .from("training_providers")
+    .insert({
+      provider_name: provider_name.trim(),
+      is_global: is_global ?? false,
+      company_id: company_id ?? null,
+      status: "active",
+    })
+    .select("id")
+    .single()
+
+  if (error) return { error: error.message }
+  return { id: created.id }
+}
+
 export async function POST(request, { params }) {
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
@@ -29,7 +61,9 @@ export async function POST(request, { params }) {
     const body = await request.json()
     const {
       qual_comp_id,
+      custom_credential,
       training_provider_id,
+      custom_provider,
       issue_date,
       expiry_date,
       confirmation_checked,
@@ -37,17 +71,68 @@ export async function POST(request, { params }) {
       confirmation_date,
     } = body
 
-    if (!qual_comp_id) return Response.json({ error: "qual_comp_id is required" }, { status: 400 })
     if (!issue_date) return Response.json({ error: "issue_date is required" }, { status: 400 })
     if (!confirmation_checked) return Response.json({ error: "Confirmation is required" }, { status: 400 })
     if (!confirmation_initials?.trim()) return Response.json({ error: "Confirmation initials are required" }, { status: 400 })
+
+    let resolvedProviderId = training_provider_id ?? null
+    if (custom_provider) {
+      const result = await resolveProvider(supabaseAdmin, custom_provider)
+      if (result.error) return Response.json({ error: result.error }, { status: 400 })
+      resolvedProviderId = result.id
+    }
+
+    let resolvedQualCompId = qual_comp_id
+
+    if (!resolvedQualCompId && custom_credential) {
+      const { name, type, scope_company_id, ...codeFields } = custom_credential
+      if (!name?.trim()) return Response.json({ error: "Credential name is required" }, { status: 400 })
+      if (!type) return Response.json({ error: "Credential type is required" }, { status: 400 })
+
+      // Deduplication: match by name (case-insensitive) + type within global and scoped company
+      const orClause = scope_company_id
+        ? `company_id.is.null,company_id.eq.${scope_company_id}`
+        : `company_id.is.null`
+      const { data: existingList } = await supabaseAdmin
+        .from("qualifications_competencies")
+        .select("id")
+        .ilike("name", name.trim())
+        .eq("type", type)
+        .or(orClause)
+        .limit(1)
+
+      const existing = existingList?.[0] ?? null
+
+      if (existing) {
+        resolvedQualCompId = existing.id
+      } else {
+        const { data: created, error: createError } = await supabaseAdmin
+          .from("qualifications_competencies")
+          .insert({
+            name: name.trim(),
+            type,
+            company_id: scope_company_id ?? null,
+            ...codeFields,
+          })
+          .select("id")
+          .single()
+
+        if (createError) {
+          console.error("qual_comp create error:", JSON.stringify(createError))
+          return Response.json({ error: createError.message }, { status: 500 })
+        }
+        resolvedQualCompId = created.id
+      }
+    }
+
+    if (!resolvedQualCompId) return Response.json({ error: "qual_comp_id is required" }, { status: 400 })
 
     const { data, error } = await supabaseAdmin
       .from("cardholder_credentials")
       .insert({
         cardholder_id,
-        qual_comp_id,
-        training_provider_id: training_provider_id ?? null,
+        qual_comp_id: resolvedQualCompId,
+        training_provider_id: resolvedProviderId,
         issue_date,
         expiry_date: expiry_date ?? null,
         confirmation_checked: true,
@@ -55,7 +140,7 @@ export async function POST(request, { params }) {
         confirmation_date: confirmation_date ?? new Date().toISOString(),
       })
       .select(`
-        id, cardholder_id, qual_comp_id, issue_date, expiry_date,
+        id, cardholder_id, qual_comp_id, training_provider_id, issue_date, expiry_date,
         is_manually_ordered, display_order, confirmation_checked,
         confirmation_initials, confirmation_date,
         qualifications_competencies(name, type, unit_standard_number, competency_code, permit_number, induction_code),

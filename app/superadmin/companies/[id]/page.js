@@ -585,6 +585,58 @@ function DeleteModal({ company, token, router, onClose }) {
   )
 }
 
+function EditCompanyNameModal({ company, token, onSave, onClose }) {
+  const [name, setName] = useState(company.company_name || "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function handleSave() {
+    if (!name.trim()) { setError("Company name is required."); return }
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/superadmin/companies/${company.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ company_name: name.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error); setSaving(false); return }
+      onSave(data.company)
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <h2 style={{ margin: "0 0 1.5rem", fontSize: "1.0625rem", fontWeight: 700, color: "#333333" }}>
+        Edit Company Name
+      </h2>
+      <div>
+        <label style={fieldLabelStyle}>Company Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={inputStyle}
+          onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+          onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+        />
+      </div>
+      {error && <p style={{ margin: "0.75rem 0 0", color: "#EF4444", fontSize: "0.8125rem" }}>{error}</p>}
+      <ModalActions
+        onCancel={onClose}
+        onConfirm={handleSave}
+        confirmLabel="Save Changes"
+        confirmBg="#2f6f6a"
+        saving={saving}
+      />
+    </ModalOverlay>
+  )
+}
+
 function AddNoteModal({ companyId, token, currentUser, onAdd, onClose }) {
   const defaultInitials = currentUser ? getInitials(currentUser.full_name) : ""
   const [note, setNote] = useState("")
@@ -817,12 +869,11 @@ export default function CompanyDetailPage() {
       destructive: true,
     },
     {
-      key: null,
-      Icon: Lock,
-      label: "Coming Soon",
-      desc: "More actions coming",
-      iconBg: "#E5E7EB",
-      muted: true,
+      key: "editCompanyName",
+      Icon: Edit2,
+      label: "Edit Company Name",
+      desc: "Update the company's trading name",
+      iconBg: "#2f6f6a",
     },
   ]
 
@@ -1418,6 +1469,14 @@ export default function CompanyDetailPage() {
       </div>
 
       {/* ── Modals ────────────────────────────────────────────────────────── */}
+      {modal === "editCompanyName" && (
+        <EditCompanyNameModal
+          company={company}
+          token={token}
+          onSave={(updated) => handleSave(updated, "Company name updated")}
+          onClose={() => setModal(null)}
+        />
+      )}
       {modal === "editGeneral" && (
         <EditGeneralModal
           company={company}

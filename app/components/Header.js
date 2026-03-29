@@ -154,7 +154,8 @@ export default function Header({ user }) {
             alt="QualCard"
             width={240}
             height={64}
-            style={{ objectFit: "contain", height: "auto", cursor: "pointer" }}
+            priority
+            style={{ objectFit: "contain", width: "auto", height: "auto", cursor: "pointer" }}
           />
         </Link>
         <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />

@@ -36,7 +36,7 @@ export async function GET(request, { params }) {
       supabaseAdmin
         .from("cardholder_credentials")
         .select(`
-          id, cardholder_id, qual_comp_id, issue_date, expiry_date,
+          id, cardholder_id, qual_comp_id, training_provider_id, issue_date, expiry_date,
           is_manually_ordered, display_order, confirmation_checked,
           confirmation_initials, confirmation_date,
           qualifications_competencies(name, type, unit_standard_number, competency_code, permit_number, induction_code),
@@ -87,7 +87,7 @@ export async function PATCH(request, { params }) {
     const { id } = await params
     const body = await request.json()
 
-    const allowed = ["full_name", "photo_url", "status", "company_id"]
+    const allowed = ["full_name", "photo_url", "status", "company_id", "licence_start_date", "licence_end_date"]
     const updates = {}
     for (const field of allowed) {
       if (field in body) updates[field] = body[field]
@@ -152,7 +152,7 @@ export async function DELETE(request, { params }) {
 
     const { error } = await supabaseAdmin
       .from("cardholders")
-      .delete()
+      .update({ status: "deleted" })
       .eq("id", id)
 
     if (error) {

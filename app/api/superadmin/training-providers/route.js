@@ -8,11 +8,11 @@ function adminClient() {
   )
 }
 
-async function verifyQcAdmin(token, supabaseAdmin) {
+async function verifyAuthenticated(token, supabaseAdmin) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
   if (error || !user) return false
   const { data } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single()
-  return data?.role === "qc_admin"
+  return data?.role === "qc_admin" || data?.role === "company_admin"
 }
 
 export async function GET(request) {
@@ -21,15 +21,15 @@ export async function GET(request) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    if (!await verifyAuthenticated(token, supabaseAdmin)) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const { data, error } = await supabaseAdmin
       .from("training_providers")
-      .select("id, provider_name")
+      .select("id, provider_name, is_global, company_id")
       .eq("status", "active")
-      .order("sort_order", { ascending: true })
+      .order("provider_name", { ascending: true })
 
     if (error) {
       console.error("training-providers GET error:", JSON.stringify(error))

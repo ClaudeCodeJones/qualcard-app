@@ -12,7 +12,7 @@ import {
   ArrowLeft, ExternalLink, Copy, Check,
   GraduationCap, Award, ClipboardCheck, ShieldCheck,
   Pencil, Trash2, Search, X, ChevronDown, ChevronUp,
-  Camera, RefreshCw, Archive, Building2, Users,
+  Camera, RefreshCw, Archive, RotateCcw, Building2, Users,
 } from "lucide-react"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -33,12 +33,14 @@ const QC_ACTIONS = [
   { key: "change-status",       label: "Change Status",        Icon: RefreshCw },
   { key: "change-photo",        label: "Change Photo",         Icon: Camera    },
   { key: "archive",             label: "Archive Cardholder",   Icon: Archive   },
+  { key: "restore",             label: "Restore Cardholder",   Icon: RotateCcw },
   { key: "delete-cardholder",   label: "Delete Cardholder",    Icon: Trash2    },
 ]
 
 const COMPANY_ACTIONS = [
   { key: "change-photo",        label: "Change Photo",         Icon: Camera    },
   { key: "archive",             label: "Archive Cardholder",   Icon: Archive   },
+  { key: "restore",             label: "Restore Cardholder",   Icon: RotateCcw },
   { key: "delete-cardholder",   label: "Delete Cardholder",    Icon: Trash2    },
 ]
 
@@ -100,13 +102,13 @@ function getPhotoBorderColor(status) {
 }
 
 function getCredentialBadge(expiryDate) {
-  if (!expiryDate) return { label: "Active", color: "#2f6f6a" }
+  if (!expiryDate) return null
   const now = new Date()
   const end = new Date(expiryDate)
   const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
-  if (daysLeft < 0) return { label: "Expired", color: "#EF4444" }
-  if (daysLeft <= 30) return { label: "Expiring", color: "#F59E0B" }
-  return { label: "Active", color: "#2f6f6a" }
+  if (daysLeft < 0) return { label: "Expired", filled: true, color: "#EF4444" }
+  if (daysLeft <= 30) return { label: "Expiring", filled: true, color: "#F59E0B" }
+  return { label: "Active", filled: false, color: "#16A34A" }
 }
 
 function getCredentialCode(cred) {
@@ -415,14 +417,247 @@ function ConfirmDeleteModal({ credentialName, onConfirm, onCancel, deleting }) {
   )
 }
 
+// ─── EditCredentialModal ──────────────────────────────────────────────────────
+
+function EditCredentialModal({ cred, token, cardholderId, companyId, userRole, onSave, onClose }) {
+  const qc = cred.qualifications_competencies ?? {}
+  const credType = qc.type ?? "qualification"
+
+  const TYPE_LABELS = {
+    qualification:  "Qualification",
+    competency:     "Competency",
+    site_induction: "Site Induction",
+    permit:         "Permit & Certificate",
+  }
+  const typeLabel = TYPE_LABELS[credType] ?? credType
+
+  const [providerId, setProviderId] = useState(cred.training_provider_id ?? "")
+  const [otherProviderName, setOtherProviderName] = useState("")
+  const [issueDate, setIssueDate] = useState(cred.issue_date ?? "")
+  const [expiryDate, setExpiryDate] = useState(cred.expiry_date ?? "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [providerOptions, setProviderOptions] = useState([])
+  const [loadingProviders, setLoadingProviders] = useState(true)
+
+  const isOtherProvider = providerId === OTHER_PROVIDER
+
+  useEffect(() => {
+    async function fetchProviders() {
+      const res = await fetch("/api/superadmin/training-providers", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      const filtered = (json.providers ?? []).filter((p) => p.is_global || p.company_id === companyId)
+      filtered.sort((a, b) => {
+        if (a.provider_name === "MW Training & Planning") return -1
+        if (b.provider_name === "MW Training & Planning") return 1
+        return a.provider_name.localeCompare(b.provider_name)
+      })
+      setProviderOptions([
+        { value: "", label: "None" },
+        ...filtered.map((p) => ({ value: p.id, label: p.provider_name })),
+        { value: OTHER_PROVIDER, label: "Other / Not Listed" },
+      ])
+      setLoadingProviders(false)
+    }
+    fetchProviders()
+  }, [])
+
+  async function handleSave() {
+    setError("")
+    if (!issueDate) { setError("Issue date is required."); return }
+    if (isOtherProvider && !otherProviderName.trim()) { setError("Please enter a provider name."); return }
+    setSaving(true)
+
+    const body = { issue_date: issueDate, expiry_date: expiryDate || null }
+    if (isOtherProvider) {
+      body.custom_provider = {
+        provider_name: otherProviderName.trim(),
+        is_global: userRole === "qc_admin",
+        company_id: userRole === "qc_admin" ? null : (companyId ?? null),
+      }
+    } else {
+      body.training_provider_id = providerId || null
+    }
+
+    const res = await fetch(`/api/superadmin/cardholders/${cardholderId}/credentials/${cred.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(json.error ?? "Failed to update credential."); return }
+    onSave(json.credential)
+  }
+
+  const readOnlyFields = []
+  if (credType === "qualification") {
+    readOnlyFields.push({ label: "Qualification Name", value: qc.name })
+    if (qc.unit_standard_number) readOnlyFields.push({ label: "Unit Standard Number", value: qc.unit_standard_number })
+  } else if (credType === "competency") {
+    readOnlyFields.push({ label: "Competency Name", value: qc.name })
+    if (qc.competency_code) readOnlyFields.push({ label: "Competency Code", value: qc.competency_code })
+  } else if (credType === "site_induction") {
+    readOnlyFields.push({ label: "Site Induction Name", value: qc.name })
+  } else if (credType === "permit") {
+    readOnlyFields.push({ label: "Permit Name", value: qc.name })
+    if (qc.permit_number) readOnlyFields.push({ label: "Permit Number", value: qc.permit_number })
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(44,62,80,0.45)",
+        zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "#FFFFFF", borderRadius: "1rem", padding: "2rem",
+          width: "100%", maxWidth: "520px",
+          boxShadow: "0 8px 32px rgba(44,62,80,0.18)",
+          maxHeight: "90vh", overflowY: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#333333" }}>
+            Edit {typeLabel}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: "0.25rem", display: "flex" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
+            {readOnlyFields.map(({ label, value }) => (
+              <div key={label}>
+                <label style={fieldLabelStyle}>{label}</label>
+                <input
+                  type="text"
+                  value={value ?? ""}
+                  readOnly
+                  style={{ ...inputStyle, background: "#F9FAFB", color: "#9CA3AF", cursor: "default" }}
+                />
+              </div>
+            ))}
+
+            <div>
+              <label style={fieldLabelStyle}>Training Provider</label>
+              {loadingProviders ? (
+                <div style={{ ...inputStyle, color: "#9CA3AF" }}>Loading providers...</div>
+              ) : (
+                <SearchableDropdown
+                  options={providerOptions}
+                  value={providerId}
+                  onChange={(v) => { setProviderId(v); if (v !== OTHER_PROVIDER) setOtherProviderName("") }}
+                  placeholder="Select provider..."
+                />
+              )}
+              {isOtherProvider && (
+                <input
+                  type="text"
+                  value={otherProviderName}
+                  onChange={(e) => setOtherProviderName(e.target.value)}
+                  placeholder="Enter provider name..."
+                  style={{ ...inputStyle, marginTop: "0.625rem" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              )}
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Issue Date <span style={{ color: "#EF4444" }}>*</span></label>
+              <input
+                type="date"
+                value={issueDate}
+                onChange={(e) => setIssueDate(e.target.value)}
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+              />
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Expiry Date</label>
+              <input
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+              />
+              <p style={{ margin: "0.375rem 0 0", fontSize: "0.75rem", color: "#9CA3AF" }}>
+                Clear the date to remove the expiry
+              </p>
+            </div>
+
+            {error && (
+              <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>
+            )}
+
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.25rem" }}>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: "0.75rem", borderRadius: "1rem", border: "none",
+                  background: "#2f6f6a", color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 500,
+                  cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit",
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? "Saving..." : `Update ${typeLabel}`}
+              </button>
+              <button
+                onClick={onClose}
+                disabled={saving}
+                style={{
+                  flex: 1, padding: "0.75rem", borderRadius: "1rem",
+                  border: "1.5px solid #E5E7EB", background: "#FFFFFF",
+                  color: "#374151", fontSize: "0.875rem", fontWeight: 500,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── AddCredentialModal ───────────────────────────────────────────────────────
+
+const OTHER_VALUE = "__other__"
+const OTHER_PROVIDER = "__other_provider__"
+
+const TYPE_CONFIG = {
+  qualification:  { nameLabel: "Qualification Name",  codeLabel: "Unit Standard Number", codeField: "unit_standard_number" },
+  competency:     { nameLabel: "Competency Name",      codeLabel: "Competency Code",       codeField: "competency_code" },
+  site_induction: { nameLabel: "Site Induction Name",  codeLabel: "Induction Code",        codeField: "induction_code" },
+  permit:         { nameLabel: "Permit Name",           codeLabel: "Permit Number",         codeField: "permit_number" },
+}
 
 function AddCredentialModal({ section, cardholderId, companyId, userInitials, userRole, token, onSave, onClose }) {
   const [qualOptions, setQualOptions] = useState([])
   const [providerOptions, setProviderOptions] = useState([])
   const [loadingOptions, setLoadingOptions] = useState(true)
-
   const [qualId, setQualId] = useState("")
+  const [otherName, setOtherName] = useState("")
+  const [otherCode, setOtherCode] = useState("")
+  const [otherProviderName, setOtherProviderName] = useState("")
   const [providerId, setProviderId] = useState("")
   const [issueDate, setIssueDate] = useState("")
   const [expiryDate, setExpiryDate] = useState("")
@@ -431,24 +666,46 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
+  const typeConfig = TYPE_CONFIG[section.key] ?? TYPE_CONFIG.qualification
+  const isOther = qualId === OTHER_VALUE
+  const isOtherProvider = providerId === OTHER_PROVIDER
+
   useEffect(() => {
     async function fetchOptions() {
       setLoadingOptions(true)
       const params = new URLSearchParams({ type: section.key })
       if (companyId) params.set("company_id", companyId)
 
-      const [qualsRes, providersRes, credentialsRes] = await Promise.all([
+      const [qualsRes, credentialsRes, providersRes] = await Promise.all([
         fetch(`/api/superadmin/qualifications?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/superadmin/training-providers`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`/api/superadmin/cardholders/${cardholderId}?include=credentials`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/superadmin/training-providers", { headers: { Authorization: `Bearer ${token}` } }),
       ])
-      const [qualsJson, providersJson, credentialsJson] = await Promise.all([qualsRes.json(), providersRes.json(), credentialsRes.json()])
+      const [qualsJson, credentialsJson, providersJson] = await Promise.all([
+        qualsRes.json(), credentialsRes.json(), providersRes.json(),
+      ])
 
       const existingQualIds = new Set((credentialsJson.credentials ?? []).map((c) => c.qual_comp_id))
       const filteredQuals = (qualsJson.qualifications ?? []).filter((q) => !existingQualIds.has(q.id))
 
-      setQualOptions(filteredQuals.map((q) => ({ value: q.id, label: q.name })))
-      setProviderOptions((providersJson.providers ?? []).map((p) => ({ value: p.id, label: p.provider_name })))
+      setQualOptions([
+        ...filteredQuals.map((q) => ({ value: q.id, label: q.name })),
+        { value: OTHER_VALUE, label: "Other / Not Listed" },
+      ])
+
+      const filteredProviders = (providersJson.providers ?? []).filter(
+        (p) => p.is_global || p.company_id === companyId
+      )
+      filteredProviders.sort((a, b) => {
+        if (a.provider_name === "MW Training & Planning") return -1
+        if (b.provider_name === "MW Training & Planning") return 1
+        return a.provider_name.localeCompare(b.provider_name)
+      })
+      setProviderOptions([
+        ...filteredProviders.map((p) => ({ value: p.id, label: p.provider_name })),
+        { value: OTHER_PROVIDER, label: "Other / Not Listed" },
+      ])
+
       setLoadingOptions(false)
     }
     fetchOptions()
@@ -457,25 +714,49 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
   async function handleSave() {
     setError("")
     const isQcAdmin = userRole === "qc_admin"
+
     if (!qualId) { setError("Please select a credential name."); return }
+    if (isOther && !otherName.trim()) { setError(`Please enter a ${typeConfig.nameLabel.toLowerCase()}.`); return }
     if (!providerId) { setError("Please select a training provider."); return }
+    if (isOtherProvider && !otherProviderName.trim()) { setError("Please enter a provider name."); return }
     if (!issueDate) { setError("Issue date is required."); return }
     if (!isQcAdmin && !confirmed) { setError("Please confirm the credential has been sighted and verified."); return }
     if (!isQcAdmin && !initials.trim()) { setError("Confirmation initials are required."); return }
 
     setSaving(true)
+    const body = {
+      issue_date: issueDate,
+      expiry_date: expiryDate || null,
+      confirmation_checked: true,
+      confirmation_initials: isQcAdmin ? "QCA" : initials.trim().toUpperCase(),
+      confirmation_date: new Date().toISOString(),
+    }
+
+    if (isOtherProvider) {
+      body.custom_provider = {
+        provider_name: otherProviderName.trim(),
+        is_global: isQcAdmin,
+        company_id: isQcAdmin ? null : (companyId ?? null),
+      }
+    } else {
+      body.training_provider_id = providerId
+    }
+
+    if (isOther) {
+      body.custom_credential = {
+        name: otherName.trim(),
+        type: section.key,
+        scope_company_id: isQcAdmin ? null : (companyId ?? null),
+        [typeConfig.codeField]: otherCode.trim() || null,
+      }
+    } else {
+      body.qual_comp_id = qualId
+    }
+
     const res = await fetch(`/api/superadmin/cardholders/${cardholderId}/credentials`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        qual_comp_id: qualId,
-        training_provider_id: providerId,
-        issue_date: issueDate,
-        expiry_date: expiryDate || null,
-        confirmation_checked: true,
-        confirmation_initials: isQcAdmin ? "QCA" : initials.trim().toUpperCase(),
-        confirmation_date: new Date().toISOString(),
-      }),
+      body: JSON.stringify(body),
     })
     const json = await res.json()
     setSaving(false)
@@ -526,10 +807,40 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
               <SearchableDropdown
                 options={qualOptions}
                 value={qualId}
-                onChange={setQualId}
+                onChange={(v) => { setQualId(v); if (v !== OTHER_VALUE) { setOtherName(""); setOtherCode("") } }}
                 placeholder="Select credential..."
               />
             </div>
+
+            {/* "Other / Not Listed" fields */}
+            {isOther && (
+              <>
+                <div>
+                  <label style={fieldLabelStyle}>{typeConfig.nameLabel} <span style={{ color: "#EF4444" }}>*</span></label>
+                  <input
+                    type="text"
+                    value={otherName}
+                    onChange={(e) => setOtherName(e.target.value)}
+                    placeholder={`Enter ${typeConfig.nameLabel.toLowerCase()}...`}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                  />
+                </div>
+                <div>
+                  <label style={fieldLabelStyle}>{typeConfig.codeLabel}</label>
+                  <input
+                    type="text"
+                    value={otherCode}
+                    onChange={(e) => setOtherCode(e.target.value)}
+                    placeholder={`Enter ${typeConfig.codeLabel.toLowerCase()}...`}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Training provider */}
             <div>
@@ -537,9 +848,20 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
               <SearchableDropdown
                 options={providerOptions}
                 value={providerId}
-                onChange={setProviderId}
+                onChange={(v) => { setProviderId(v); if (v !== OTHER_PROVIDER) setOtherProviderName("") }}
                 placeholder="Select provider..."
               />
+              {isOtherProvider && (
+                <input
+                  type="text"
+                  value={otherProviderName}
+                  onChange={(e) => setOtherProviderName(e.target.value)}
+                  placeholder="Enter provider name..."
+                  style={{ ...inputStyle, marginTop: "0.625rem" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+                />
+              )}
             </div>
 
             {/* Issue date */}
@@ -640,7 +962,7 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
 
 // ─── CredentialRow ────────────────────────────────────────────────────────────
 
-function CredentialRow({ cred, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor }) {
+function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor }) {
   const qc = cred.qualifications_competencies ?? {}
   const name = qc.name ?? "Unknown"
   const code = getCredentialCode(cred)
@@ -705,21 +1027,24 @@ function CredentialRow({ cred, onDelete, onMoveUp, onMoveDown, isFirst, isLast, 
 
       {/* Right actions */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
-        <span style={{
-          display: "inline-block",
-          padding: "0.2rem 0.625rem",
-          borderRadius: "1rem",
-          fontSize: "0.75rem",
-          fontWeight: 600,
-          color: "#FFFFFF",
-          backgroundColor: badge.color,
-          whiteSpace: "nowrap",
-        }}>
-          {badge.label}
-        </span>
+        {badge && (
+          <span style={{
+            display: "inline-block",
+            padding: "0.2rem 0.625rem",
+            borderRadius: "1rem",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: badge.filled ? "#FFFFFF" : badge.color,
+            backgroundColor: badge.filled ? badge.color : "transparent",
+            border: badge.filled ? "none" : `1.5px solid ${badge.color}`,
+            whiteSpace: "nowrap",
+          }}>
+            {badge.label}
+          </span>
+        )}
 
         <button
-          onClick={() => {}}
+          onClick={onEdit}
           title="Edit credential"
           style={{
             background: "none", border: "none", cursor: "pointer", padding: "0.25rem",
@@ -765,7 +1090,7 @@ function sortCredentials(creds, sectionKey) {
 
 // ─── CredentialSection ────────────────────────────────────────────────────────
 
-function CredentialSection({ section, credentials, searchQuery, onAdd, onDelete, onReorder, onResetOrder, token, cardholderId }) {
+function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, onDelete, onReorder, onResetOrder, token, cardholderId }) {
   const [expanded, setExpanded] = useState(false)
 
   const sorted = sortCredentials(credentials, section.key)
@@ -880,6 +1205,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onDelete,
               <CredentialRow
                 key={cred.id}
                 cred={cred}
+                onEdit={() => onEdit(cred)}
                 onDelete={() => onDelete(cred)}
                 onMoveUp={() => onReorder(cred, filtered[i - 1], filtered, i, i - 1)}
                 onMoveDown={() => onReorder(cred, filtered[i + 1], filtered, i, i + 1)}
@@ -1034,8 +1360,8 @@ function ChangeNameModal({ currentName, onSave, onClose, loading, error }) {
 
 function ChangeStatusModal({ currentStatus, onConfirm, onClose, loading, error }) {
   const isActive = currentStatus === "active"
-  const nextLabel = isActive ? "Inactive" : "Active"
-  const nextStatus = isActive ? "inactive" : "active"
+  const nextLabel = isActive ? "Archived" : "Active"
+  const nextStatus = isActive ? "archived" : "active"
 
   return (
     <ModalOverlay onClose={onClose}>
@@ -1062,11 +1388,29 @@ function ArchiveModal({ onConfirm, onClose, loading, error }) {
     <ModalOverlay onClose={onClose}>
       <ModalHeader title="Archive Cardholder" onClose={onClose} />
       <p style={{ margin: 0, fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
-        This will set the cardholder status to <strong>Inactive</strong>. Their card will no longer be publicly visible.
+        This will set the cardholder status to <strong>Archived</strong>. Their card will no longer be publicly visible.
       </p>
       {error && <p style={{ margin: "0.75rem 0 0", fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
       <ModalActions
         confirmLabel="Archive Cardholder"
+        onConfirm={onConfirm}
+        onCancel={onClose}
+        loading={loading}
+      />
+    </ModalOverlay>
+  )
+}
+
+function RestoreModal({ onConfirm, onClose, loading, error }) {
+  return (
+    <ModalOverlay onClose={onClose}>
+      <ModalHeader title="Restore Cardholder" onClose={onClose} />
+      <p style={{ margin: 0, fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
+        This will restore the cardholder to <strong>Active</strong> and reset their licence period to 12 months from today.
+      </p>
+      {error && <p style={{ margin: "0.75rem 0 0", fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+      <ModalActions
+        confirmLabel="Restore Cardholder"
         onConfirm={onConfirm}
         onCancel={onClose}
         loading={loading}
@@ -1119,11 +1463,8 @@ function DeleteCardholderModal({ name, onConfirm, onClose, loading, error }) {
   return (
     <ModalOverlay onClose={onClose}>
       <ModalHeader title="Delete Cardholder" onClose={onClose} />
-      <p style={{ margin: "0 0 0.5rem", fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
-        You are about to permanently delete <strong>{name}</strong> and all of their data.
-      </p>
-      <p style={{ margin: 0, fontSize: "0.875rem", color: "#EF4444", fontWeight: 500, lineHeight: 1.5 }}>
-        This action cannot be undone.
+      <p style={{ margin: 0, fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
+        This cardholder will be permanently hidden from the platform. This action cannot be undone in the app — to restore a deleted cardholder you must contact QualCard directly.
       </p>
       {error && <p style={{ margin: "0.75rem 0 0", fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
       <ModalActions
@@ -1158,6 +1499,7 @@ export default function CardholderDetailPage() {
   const [addSection, setAddSection] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [editTarget, setEditTarget] = useState(null)
 
   // action panel state
   const [actionModal, setActionModal] = useState(null)
@@ -1197,7 +1539,6 @@ export default function CardholderDetailPage() {
         return
       }
 
-      console.log("Cardholder data:", json.cardholder)
       setCardholder(json.cardholder)
       setCompany(json.company)
       setCredentials(json.credentials ?? [])
@@ -1226,6 +1567,11 @@ export default function CardholderDetailPage() {
   function handleCredentialAdded(newCred) {
     setCredentials((prev) => [newCred, ...prev])
     setAddSection(null)
+  }
+
+  function handleCredentialEdited(updated) {
+    setCredentials((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+    setEditTarget(null)
   }
 
   async function handleResetOrder(sectionKey) {
@@ -1332,7 +1678,10 @@ export default function CardholderDetailPage() {
   }
 
   async function handleRestore() {
-    const ok = await patchCardholder({ status: "active" })
+    const now = new Date()
+    const startDate = now.toISOString().split("T")[0]
+    const endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split("T")[0]
+    const ok = await patchCardholder({ status: "active", licence_start_date: startDate, licence_end_date: endDate })
     if (ok) setActionModal(null)
   }
 
@@ -1384,7 +1733,22 @@ export default function CardholderDetailPage() {
 
   const profileUrl = `${APP_URL}/card/${cardholder.slug}`
   const licenceBadge = getLicenceBadge(cardholder.licence_end_date)
-  const visibleActions = userRole === "qc_admin" ? QC_ACTIONS : COMPANY_ACTIONS
+  const headerAction = (() => {
+    const { status, licence_end_date } = cardholder
+    if (status === "pending_activation") return { label: "Activate Now", bg: "#F97316", onClick: () => setActionModal("change-status") }
+    if (status === "archived") return { label: "Restore Cardholder", bg: "#2f6f6a", onClick: () => setActionModal("restore") }
+    if (status === "active" && licence_end_date) {
+      const daysLeft = Math.ceil((new Date(licence_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+      if (daysLeft <= 30) return { label: "Renew Urgently", bg: "#EF4444", onClick: () => {} }
+      if (daysLeft <= 90) return { label: "Renew Now", bg: "#F59E0B", onClick: () => {} }
+    }
+    return null
+  })()
+  const visibleActions = (userRole === "qc_admin" ? QC_ACTIONS : COMPANY_ACTIONS).filter(a => {
+    if (a.key === "archive") return cardholder.status !== "archived"
+    if (a.key === "restore") return cardholder.status === "archived"
+    return true
+  })
 
   return (
     <div style={{
@@ -1489,7 +1853,7 @@ export default function CardholderDetailPage() {
               {cardholder.licence_end_date && (
                 <span style={{
                   display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 600, color: "#FFFFFF",
+                  fontSize: "0.75rem", fontWeight: 400, color: "#FFFFFF",
                   backgroundColor: "transparent",
                   border: "1.5px solid rgba(255,255,255,0.8)", whiteSpace: "nowrap",
                 }}>
@@ -1506,26 +1870,28 @@ export default function CardholderDetailPage() {
                   {licenceBadge.label}
                 </span>
               )}
+              {headerAction && (
+                <button
+                  onClick={headerAction.onClick}
+                  style={{
+                    padding: "0.25rem 0.875rem", borderRadius: "1rem", border: "none",
+                    background: headerAction.bg, color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 600,
+                    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                    transition: "opacity 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                >
+                  {headerAction.label}
+                </button>
+              )}
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+          <div style={{ flexShrink: 0 }}>
             <div style={{ background: "#FFFFFF", borderRadius: "0.5rem", padding: "0.5rem", display: "inline-flex" }}>
               <QRCodeSVG value={profileUrl} size={80} />
             </div>
-            <button
-              onClick={() => {}}
-              style={{
-                padding: "0.5rem 1.25rem", borderRadius: "1rem", border: "none",
-                background: "#F97316", color: "#FFFFFF", fontSize: "0.8125rem", fontWeight: 500,
-                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                transition: "opacity 0.15s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              Renew Now
-            </button>
           </div>
         </div>
 
@@ -1586,6 +1952,7 @@ export default function CardholderDetailPage() {
                   credentials={sectionCreds}
                   searchQuery={searchQuery}
                   onAdd={() => setAddSection(section)}
+                  onEdit={(cred) => setEditTarget(cred)}
                   onDelete={(cred) => setDeleteTarget(cred)}
                   onReorder={handleReorder}
                   onResetOrder={handleResetOrder}
@@ -1688,6 +2055,18 @@ export default function CardholderDetailPage() {
 
       {/* ── Credential modals ──────────────────────────────────────────── */}
 
+      {editTarget && (
+        <EditCredentialModal
+          cred={editTarget}
+          cardholderId={id}
+          companyId={company?.id ?? null}
+          userRole={userRole}
+          token={token}
+          onSave={handleCredentialEdited}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
+
       {addSection && (
         <AddCredentialModal
           section={addSection}
@@ -1751,6 +2130,15 @@ export default function CardholderDetailPage() {
       {actionModal === "archive" && (
         <ArchiveModal
           onConfirm={handleArchive}
+          onClose={() => setActionModal(null)}
+          loading={actionLoading}
+          error={actionError}
+        />
+      )}
+
+      {actionModal === "restore" && (
+        <RestoreModal
+          onConfirm={handleRestore}
           onClose={() => setActionModal(null)}
           loading={actionLoading}
           error={actionError}

@@ -231,7 +231,8 @@ function Header({ user }) {
           alt="QualCard"
           width={240}
           height={64}
-          style={{ objectFit: "contain", height: "auto" }}
+          priority
+          style={{ objectFit: "contain", width: "auto", height: "auto" }}
         />
         <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
       </div>
