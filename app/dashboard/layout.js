@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }) {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(to bottom, #1a3a38, #2f6f6a, #4a9e98)",
+      background: "radial-gradient(circle at top, #2f6f6a 0%, #1f4f4b 100%)",
       display: "flex",
     }}>
       <DashboardSidebar initials={initials} />
