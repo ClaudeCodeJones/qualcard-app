@@ -39,6 +39,8 @@ export async function GET(request) {
       { count: activeCompanies },
       { count: totalCardholders },
       { count: activeCardholders },
+      { count: totalCredentials },
+      { count: totalProviders },
     ] = await Promise.all([
       supabaseAdmin.from("users").select("*", { count: "exact", head: true }).eq("account_status", "pending_approval"),
       supabaseAdmin.from("users").select("*", { count: "exact", head: true }).eq("role", "company_admin"),
@@ -46,6 +48,8 @@ export async function GET(request) {
       supabaseAdmin.from("companies").select("*", { count: "exact", head: true }).eq("status", "active"),
       supabaseAdmin.from("cardholders").select("*", { count: "exact", head: true }).neq("status", "deleted"),
       supabaseAdmin.from("cardholders").select("*", { count: "exact", head: true }).eq("status", "active"),
+      supabaseAdmin.from("qualifications_competencies").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("training_providers").select("*", { count: "exact", head: true }).eq("status", "active"),
     ])
 
     return Response.json({
@@ -55,6 +59,8 @@ export async function GET(request) {
       activeCompanies: activeCompanies ?? 0,
       totalCardholders: totalCardholders ?? 0,
       activeCardholders: activeCardholders ?? 0,
+      totalCredentials: totalCredentials ?? 0,
+      totalProviders: totalProviders ?? 0,
     })
   } catch (error) {
     console.error("stats route error:", error.message)

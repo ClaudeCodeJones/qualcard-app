@@ -15,7 +15,7 @@ async function verifyQcAdmin(token, supabaseAdmin) {
   return data?.role === "qc_admin"
 }
 
-export async function GET(request) {
+export async function DELETE(request, { params }) {
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -25,41 +25,26 @@ export async function GET(request) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get("type") ?? ""
-    const company_id = searchParams.get("company_id") ?? ""
-    const admin_view = searchParams.get("admin_view") === "true"
+    const { id } = await params
 
-    let query = supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("qualifications_competencies")
-      .select("id, name, type, unit_standard_number, competency_code, permit_number, induction_code, company_id, status")
-      .order("name", { ascending: true })
-
-    if (type) query = query.eq("type", type)
-
-    if (!admin_view) {
-      if (company_id) {
-        query = query.or(`company_id.is.null,company_id.eq.${company_id}`)
-      } else {
-        query = query.is("company_id", null)
-      }
-    }
-
-    const { data, error } = await query
+      .delete()
+      .eq("id", id)
 
     if (error) {
-      console.error("qualifications GET error:", JSON.stringify(error))
+      console.error("qualifications DELETE error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
-    return Response.json({ qualifications: data ?? [] })
+    return Response.json({ success: true })
   } catch (error) {
-    console.error("qualifications GET error:", error.message)
+    console.error("qualifications/[id] DELETE error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
-export async function POST(request) {
+export async function PATCH(request, { params }) {
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -69,35 +54,34 @@ export async function POST(request) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    const { id } = await params
     const body = await request.json()
-    const { name, type, company_id, unit_standard_number, competency_code, permit_number, induction_code } = body
 
-    if (!name?.trim()) return Response.json({ error: "Name is required" }, { status: 400 })
-    if (!type) return Response.json({ error: "Type is required" }, { status: 400 })
+    const allowed = ["name", "type", "company_id", "unit_standard_number", "competency_code", "permit_number", "induction_code", "status"]
+    const updates = {}
+    for (const key of allowed) {
+      if (key in body) updates[key] = body[key]
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return Response.json({ error: "No valid fields provided" }, { status: 400 })
+    }
 
     const { data, error } = await supabaseAdmin
       .from("qualifications_competencies")
-      .insert({
-        name: name.trim(),
-        type,
-        company_id: company_id || null,
-        unit_standard_number: unit_standard_number?.trim() || null,
-        competency_code: competency_code?.trim() || null,
-        permit_number: permit_number?.trim() || null,
-        induction_code: induction_code?.trim() || null,
-        status: "active",
-      })
+      .update(updates)
+      .eq("id", id)
       .select("id, name, type, unit_standard_number, competency_code, permit_number, induction_code, company_id, status")
       .single()
 
     if (error) {
-      console.error("qualifications POST error:", JSON.stringify(error))
+      console.error("qualifications PATCH error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ qualification: data })
   } catch (error) {
-    console.error("qualifications POST error:", error.message)
+    console.error("qualifications/[id] PATCH error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

@@ -1010,9 +1010,6 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
         <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
           {name}
         </p>
-        {code && (
-          <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>{code}</p>
-        )}
         {cred.issue_date && (
           <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
             Issue date: {formatDate(cred.issue_date)}
@@ -1023,6 +1020,9 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
             Expires {formatDate(cred.expiry_date)}
           </p>
         )}
+        <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
+          {code || "\u00A0"}
+        </p>
       </div>
 
       {/* Right actions */}
@@ -1076,7 +1076,7 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
 // ─── Sort helpers ──────────────────────────────────────────────────────────────
 
 const SECTION_SORT = {
-  qualification:  (a, b) => new Date(b.issue_date ?? 0) - new Date(a.issue_date ?? 0),
+  qualification:  (a, b) => (a.qualifications_competencies?.name ?? "").localeCompare(b.qualifications_competencies?.name ?? ""),
   competency:     (a, b) => (a.qualifications_competencies?.name ?? "").localeCompare(b.qualifications_competencies?.name ?? ""),
   site_induction: (a, b) => (a.qualifications_competencies?.name ?? "").localeCompare(b.qualifications_competencies?.name ?? ""),
   permit:         (a, b) => (a.qualifications_competencies?.name ?? "").localeCompare(b.qualifications_competencies?.name ?? ""),
@@ -1182,11 +1182,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
       {/* Rows */}
       {filtered.length === 0 ? (
         <div style={{
-          background: "#FFFFFF",
-          borderRadius: "0.75rem",
-          border: "1px solid #E5E7EB",
-          boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
-          padding: "1.5rem",
+          padding: "1.5rem 0.5rem",
           minHeight: "80px",
           display: "flex",
           alignItems: "center",
@@ -1353,6 +1349,55 @@ function ChangeNameModal({ currentName, onSave, onClose, loading, error }) {
         onConfirm={() => onSave(name.trim())}
         onCancel={onClose}
         loading={loading}
+      />
+    </ModalOverlay>
+  )
+}
+
+function ReassignCompanyModal({ currentCompanyId, token, onSave, onClose, loading, error }) {
+  const [companies, setCompanies] = useState([])
+  const [loadingCompanies, setLoadingCompanies] = useState(true)
+  const [companyId, setCompanyId] = useState(currentCompanyId ?? "")
+
+  useEffect(() => {
+    async function fetchCompanies() {
+      const res = await fetch("/api/superadmin/companies", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      setCompanies(json.companies ?? [])
+      setLoadingCompanies(false)
+    }
+    fetchCompanies()
+  }, [])
+
+  const options = companies
+    .slice()
+    .sort((a, b) => a.company_name.localeCompare(b.company_name))
+    .map((c) => ({ value: c.id, label: c.company_name }))
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <ModalHeader title="Reassign Company" onClose={onClose} />
+      <div>
+        <label style={fieldLabelStyle}>Company <span style={{ color: "#EF4444" }}>*</span></label>
+        {loadingCompanies ? (
+          <div style={{ ...inputStyle, color: "#9CA3AF" }}>Loading companies...</div>
+        ) : (
+          <SearchableDropdown
+            options={options}
+            value={companyId}
+            onChange={setCompanyId}
+            placeholder="Select company..."
+          />
+        )}
+        {error && <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+      </div>
+      <ModalActions
+        confirmLabel="Save"
+        onConfirm={() => onSave(companyId, companies.find((c) => c.id === companyId) ?? null)}
+        onCancel={onClose}
+        loading={loading || loadingCompanies}
       />
     </ModalOverlay>
   )
@@ -1667,6 +1712,15 @@ export default function CardholderDetailPage() {
     if (ok) setActionModal(null)
   }
 
+  async function handleReassignCompany(newCompanyId, newCompany) {
+    if (!newCompanyId) { setActionError("Please select a company."); return }
+    const ok = await patchCardholder({ company_id: newCompanyId })
+    if (ok) {
+      setCompany(newCompany)
+      setActionModal(null)
+    }
+  }
+
   async function handleChangeStatus(newStatus) {
     const ok = await patchCardholder({ status: newStatus })
     if (ok) setActionModal(null)
@@ -1939,24 +1993,35 @@ export default function CardholderDetailPage() {
             )}
           </div>
 
-          {/* Four sections */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          {/* Four sections — 2x2 grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", alignItems: "stretch" }}>
             {SECTIONS.map((section) => {
               const sectionCreds = credentials.filter(
                 (c) => c.qualifications_competencies?.type === section.key
               )
               return (
-                <CredentialSection
+                <div
                   key={section.key}
-                  section={section}
-                  credentials={sectionCreds}
-                  searchQuery={searchQuery}
-                  onAdd={() => setAddSection(section)}
-                  onEdit={(cred) => setEditTarget(cred)}
-                  onDelete={(cred) => setDeleteTarget(cred)}
-                  onReorder={handleReorder}
-                  onResetOrder={handleResetOrder}
-                />
+                  style={{
+                    background: "#FFFFFF",
+                    borderRadius: "1rem",
+                    border: "1px solid #E5E7EB",
+                    boxShadow: "0 2px 8px rgba(44,62,80,0.06), 0 1px 2px rgba(44,62,80,0.04)",
+                    padding: "1.5rem",
+                    height: "100%",
+                  }}
+                >
+                  <CredentialSection
+                    section={section}
+                    credentials={sectionCreds}
+                    searchQuery={searchQuery}
+                    onAdd={() => setAddSection(section)}
+                    onEdit={(cred) => setEditTarget(cred)}
+                    onDelete={(cred) => setDeleteTarget(cred)}
+                    onReorder={handleReorder}
+                    onResetOrder={handleResetOrder}
+                  />
+                </div>
               )
             })}
           </div>
@@ -2102,9 +2167,13 @@ export default function CardholderDetailPage() {
       )}
 
       {actionModal === "reassign-company" && (
-        <ComingSoonModal
-          title="Reassign Company"
-          onClose={() => setActionModal(null)}
+        <ReassignCompanyModal
+          currentCompanyId={cardholder.company_id}
+          token={token}
+          onSave={handleReassignCompany}
+          onClose={() => { setActionModal(null); setActionError("") }}
+          loading={actionLoading}
+          error={actionError}
         />
       )}
 

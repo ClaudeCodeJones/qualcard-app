@@ -44,8 +44,7 @@ export async function GET(request, { params }) {
         `)
         .eq("cardholder_id", id)
         .order("is_manually_ordered", { ascending: false })
-        .order("display_order", { ascending: true })
-        .order("issue_date", { ascending: false }),
+        .order("display_order", { ascending: true }),
     ])
 
     if (cardholderResult.error) {

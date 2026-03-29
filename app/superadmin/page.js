@@ -3,13 +3,34 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { ClipboardCheck, Building2, Users, LogOut } from "lucide-react"
+import { ClipboardCheck, Building2, Users, LogOut, GraduationCap, Search, X, Pencil, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
 import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TABS = ["Overview", "Pending Approvals", "Users", "Companies", "Cardholders"]
+const TABS = ["Overview", "Pending Approvals", "Users", "Companies", "Cardholders", "Credentials"]
+
+const CRED_TYPE_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "qualification", label: "Qualifications" },
+  { key: "competency", label: "Competencies" },
+  { key: "site_induction", label: "Site Inductions" },
+  { key: "permit", label: "Permits & Certificates" },
+]
+
+const CRED_TYPE_CONFIG = {
+  qualification:  { label: "Qualification",      codeLabel: "Unit Standard No.", codeField: "unit_standard_number" },
+  competency:     { label: "Competency",          codeLabel: "Competency Code",   codeField: "competency_code" },
+  site_induction: { label: "Site Induction",      codeLabel: "Induction Code",    codeField: "induction_code" },
+  permit:         { label: "Permit & Certificate", codeLabel: "Permit No.",        codeField: "permit_number" },
+}
+
+function getCredCode(cred) {
+  const config = CRED_TYPE_CONFIG[cred.type]
+  if (!config) return null
+  return cred[config.codeField] || null
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -444,7 +465,7 @@ function OverviewTab({ setActiveTab }) {
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
+        gridTemplateColumns: "repeat(4, 1fr)",
         gap: "1.25rem",
       }}>
         <OverviewCard
@@ -479,6 +500,17 @@ function OverviewTab({ setActiveTab }) {
           ] : []}
           buttonLabel="Manage Cardholders"
           onButtonClick={() => setActiveTab("Cardholders")}
+          loading={loading}
+        />
+        <OverviewCard
+          icon={<GraduationCap size={26} color="#34495E" strokeWidth={2} />}
+          title="Credentials"
+          stats={stats ? [
+            `Total credentials: ${stats.totalCredentials}`,
+            `Active providers: ${stats.totalProviders}`,
+          ] : []}
+          buttonLabel="Manage Credentials"
+          onButtonClick={() => setActiveTab("Credentials")}
           loading={loading}
         />
       </div>
@@ -2572,12 +2604,798 @@ function CardholdersTab() {
   )
 }
 
+// ─── Credentials modals ───────────────────────────────────────────────────────
+
+const modalOverlayStyle = {
+  position: "fixed", inset: 0, background: "rgba(44,62,80,0.45)",
+  display: "flex", alignItems: "center", justifyContent: "center", zIndex: 90, padding: "1rem",
+}
+const modalCardStyle = {
+  background: "#FFFFFF", borderRadius: "1rem", padding: "2rem",
+  width: "100%", maxWidth: "480px", boxShadow: "0 8px 32px rgba(44,62,80,0.18)",
+  maxHeight: "90vh", overflowY: "auto",
+}
+const credFieldLabel = {
+  display: "block", fontSize: "0.8125rem", fontWeight: 600,
+  color: "#374151", marginBottom: "0.375rem",
+}
+const credInput = {
+  width: "100%", padding: "0.625rem 0.875rem", borderRadius: "0.625rem",
+  border: "1.5px solid #E5E7EB", fontSize: "0.875rem", fontFamily: "inherit",
+  color: "#333333", outline: "none", boxSizing: "border-box", backgroundColor: "#FFFFFF",
+}
+
+function CredModalHeader({ title, onClose }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+      <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#333333" }}>{title}</h2>
+      <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", display: "flex" }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+      >
+        <X size={18} />
+      </button>
+    </div>
+  )
+}
+
+function CredModalActions({ onSave, onCancel, saveLabel, saving }) {
+  return (
+    <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
+      <button onClick={onSave} disabled={saving} style={{
+        flex: 1, padding: "0.75rem", borderRadius: "1rem", border: "none",
+        background: "#2f6f6a", color: "#FFFFFF", fontSize: "0.875rem", fontWeight: 500,
+        cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: saving ? 0.7 : 1,
+      }}>
+        {saving ? "Saving..." : saveLabel}
+      </button>
+      <button onClick={onCancel} style={{
+        padding: "0.75rem 1.25rem", borderRadius: "1rem", border: "1.5px solid #E5E7EB",
+        background: "#FFFFFF", color: "#374151", fontSize: "0.875rem", fontWeight: 600,
+        cursor: "pointer", fontFamily: "inherit",
+      }}>
+        Cancel
+      </button>
+    </div>
+  )
+}
+
+function AddCatalogueCredentialModal({ token, companies, onSave, onClose }) {
+  const [name, setName] = useState("")
+  const [type, setType] = useState("qualification")
+  const [code, setCode] = useState("")
+  const [scopeCompanyId, setScopeCompanyId] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const typeConfig = CRED_TYPE_CONFIG[type] ?? CRED_TYPE_CONFIG.qualification
+
+  async function handleSave() {
+    if (!name.trim()) { setError("Name is required."); return }
+    setSaving(true)
+    setError("")
+    const body = { name: name.trim(), type, company_id: scopeCompanyId || null, [typeConfig.codeField]: code.trim() || null }
+    const res = await fetch("/api/superadmin/qualifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(json.error ?? "Failed to create."); return }
+    onSave(json.qualification)
+  }
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+        <CredModalHeader title="Add Credential" onClose={onClose} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={credFieldLabel}>Type *</label>
+            <select value={type} onChange={(e) => { setType(e.target.value); setCode("") }} style={{ ...credInput, cursor: "pointer" }}>
+              {Object.entries(CRED_TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={credFieldLabel}>Name *</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={`${typeConfig.label} name...`} style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>{typeConfig.codeLabel}</label>
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder={`Enter ${typeConfig.codeLabel.toLowerCase()}...`} style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>Scope</label>
+            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
+              <option value="">Global</option>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+          {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+        </div>
+        <CredModalActions onSave={handleSave} onCancel={onClose} saveLabel="Add Credential" saving={saving} />
+      </div>
+    </div>
+  )
+}
+
+function EditCatalogueCredentialModal({ token, credential, companies, onSave, onClose }) {
+  const typeConfig = CRED_TYPE_CONFIG[credential.type] ?? CRED_TYPE_CONFIG.qualification
+  const [name, setName] = useState(credential.name ?? "")
+  const [code, setCode] = useState(getCredCode(credential) ?? "")
+  const [scopeCompanyId, setScopeCompanyId] = useState(credential.company_id ?? "")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave() {
+    if (!name.trim()) { setError("Name is required."); return }
+    setSaving(true)
+    setError("")
+    const body = { name: name.trim(), company_id: scopeCompanyId || null, [typeConfig.codeField]: code.trim() || null }
+    const res = await fetch(`/api/superadmin/qualifications/${credential.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(json.error ?? "Failed to update."); return }
+    onSave(json.qualification)
+  }
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+        <CredModalHeader title={`Edit ${typeConfig.label}`} onClose={onClose} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={credFieldLabel}>Type</label>
+            <input value={typeConfig.label} readOnly style={{ ...credInput, background: "#F9FAFB", color: "#9CA3AF", cursor: "default" }} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>Name *</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>{typeConfig.codeLabel}</label>
+            <input value={code} onChange={(e) => setCode(e.target.value)} style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>Scope</label>
+            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
+              <option value="">Global</option>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+          {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+        </div>
+        <CredModalActions onSave={handleSave} onCancel={onClose} saveLabel="Save Changes" saving={saving} />
+      </div>
+    </div>
+  )
+}
+
+function AddProviderModal({ token, companies, onSave, onClose }) {
+  const [providerName, setProviderName] = useState("")
+  const [scopeCompanyId, setScopeCompanyId] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave() {
+    if (!providerName.trim()) { setError("Provider name is required."); return }
+    setSaving(true)
+    setError("")
+    const body = {
+      provider_name: providerName.trim(),
+      is_global: !scopeCompanyId,
+      company_id: scopeCompanyId || null,
+    }
+    const res = await fetch("/api/superadmin/training-providers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(json.error ?? "Failed to create."); return }
+    onSave(json.provider)
+  }
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+        <CredModalHeader title="Add Training Provider" onClose={onClose} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={credFieldLabel}>Provider Name *</label>
+            <input value={providerName} onChange={(e) => setProviderName(e.target.value)} placeholder="Enter provider name..." style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>Scope</label>
+            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
+              <option value="">Global</option>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+          {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+        </div>
+        <CredModalActions onSave={handleSave} onCancel={onClose} saveLabel="Add Provider" saving={saving} />
+      </div>
+    </div>
+  )
+}
+
+function EditProviderModal({ token, provider, companies, onSave, onClose }) {
+  const [providerName, setProviderName] = useState(provider.provider_name ?? "")
+  const [scopeCompanyId, setScopeCompanyId] = useState(provider.is_global ? "" : (provider.company_id ?? ""))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave() {
+    if (!providerName.trim()) { setError("Provider name is required."); return }
+    setSaving(true)
+    setError("")
+    const body = {
+      provider_name: providerName.trim(),
+      is_global: !scopeCompanyId,
+      company_id: scopeCompanyId || null,
+    }
+    const res = await fetch(`/api/superadmin/training-providers/${provider.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const json = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(json.error ?? "Failed to update."); return }
+    onSave(json.provider)
+  }
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
+        <CredModalHeader title="Edit Training Provider" onClose={onClose} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label style={credFieldLabel}>Provider Name *</label>
+            <input value={providerName} onChange={(e) => setProviderName(e.target.value)} style={credInput}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")} onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")} />
+          </div>
+          <div>
+            <label style={credFieldLabel}>Scope</label>
+            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
+              <option value="">Global</option>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+          {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
+        </div>
+        <CredModalActions onSave={handleSave} onCancel={onClose} saveLabel="Save Changes" saving={saving} />
+      </div>
+    </div>
+  )
+}
+
+// ─── CredentialsTab ───────────────────────────────────────────────────────────
+
+function CredentialsTab() {
+  const [token, setToken] = useState(null)
+  const [credentials, setCredentials] = useState([])
+  const [providers, setProviders] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [typeFilter, setTypeFilter] = useState("all")
+  const [credExpanded, setCredExpanded] = useState(false)
+  const [providerExpanded, setProviderExpanded] = useState(false)
+  const [credSearch, setCredSearch] = useState("")
+  const [providerSearch, setProviderSearch] = useState("")
+  const [toast, setToast] = useState(null)
+  const [addCredModal, setAddCredModal] = useState(false)
+  const [editCred, setEditCred] = useState(null)
+  const [deleteCred, setDeleteCred] = useState(null)
+  const [deletingCred, setDeletingCred] = useState(false)
+  const [addProviderModal, setAddProviderModal] = useState(false)
+  const [editProvider, setEditProvider] = useState(null)
+
+  useEffect(() => {
+    async function load() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      setToken(session.access_token)
+      const tok = session.access_token
+
+      const [credsRes, providersRes, companiesRes] = await Promise.all([
+        fetch("/api/superadmin/qualifications?admin_view=true", { headers: { Authorization: `Bearer ${tok}` } }),
+        fetch("/api/superadmin/training-providers?admin_view=true", { headers: { Authorization: `Bearer ${tok}` } }),
+        fetch("/api/superadmin/companies", { headers: { Authorization: `Bearer ${tok}` } }),
+      ])
+      const [credsJson, providersJson, companiesJson] = await Promise.all([
+        credsRes.json(), providersRes.json(), companiesRes.json(),
+      ])
+      setCredentials(credsJson.qualifications ?? [])
+      setProviders(providersJson.providers ?? [])
+      setCompanies((companiesJson.companies ?? []).sort((a, b) => a.company_name.localeCompare(b.company_name)))
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const companyMap = Object.fromEntries(companies.map((c) => [c.id, c.company_name]))
+
+  function scopeLabel(companyId, isGlobal) {
+    if (isGlobal || !companyId) return "Global"
+    return companyMap[companyId] ?? "Company"
+  }
+
+  async function toggleCredStatus(cred) {
+    const isActive = cred.status === "active" || !cred.status
+    const newStatus = isActive ? "inactive" : "active"
+    const res = await fetch(`/api/superadmin/qualifications/${cred.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    const json = await res.json()
+    if (res.ok) {
+      setCredentials((prev) => prev.map((c) => c.id === cred.id ? json.qualification : c))
+      setToast({ message: `Credential ${newStatus === "active" ? "activated" : "deactivated"}`, type: "success" })
+    }
+  }
+
+  async function handleDeleteCred() {
+    if (!deleteCred) return
+    setDeletingCred(true)
+    const res = await fetch(`/api/superadmin/qualifications/${deleteCred.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    setDeletingCred(false)
+    if (res.ok) {
+      setCredentials((prev) => prev.filter((c) => c.id !== deleteCred.id))
+      setDeleteCred(null)
+      setToast({ message: "Credential deleted", type: "success" })
+    }
+  }
+
+  async function toggleProviderStatus(provider) {
+    const newStatus = provider.status === "active" ? "inactive" : "active"
+    const res = await fetch(`/api/superadmin/training-providers/${provider.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    const json = await res.json()
+    if (res.ok) {
+      setProviders((prev) => prev.map((p) => p.id === provider.id ? json.provider : p))
+      setToast({ message: `Provider ${newStatus === "active" ? "activated" : "deactivated"}`, type: "success" })
+    }
+  }
+
+  const filteredCreds = credentials
+    .filter((c) => typeFilter === "all" || c.type === typeFilter)
+    .filter((c) => !credSearch || c.name.toLowerCase().includes(credSearch.toLowerCase()))
+
+  const CREDS_DEFAULT_VISIBLE = 3
+  const visibleCreds = credExpanded ? filteredCreds : filteredCreds.slice(0, CREDS_DEFAULT_VISIBLE)
+  const showCredsToggle = filteredCreds.length > CREDS_DEFAULT_VISIBLE
+
+  const filteredProviders = providers
+    .filter((p) => !providerSearch || p.provider_name.toLowerCase().includes(providerSearch.toLowerCase()))
+
+  const PROVIDERS_DEFAULT_VISIBLE = 3
+  const visibleProviders = providerExpanded ? filteredProviders : filteredProviders.slice(0, PROVIDERS_DEFAULT_VISIBLE)
+  const showProvidersToggle = filteredProviders.length > PROVIDERS_DEFAULT_VISIBLE
+
+  const thStyle = {
+    padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 700,
+    color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em",
+    whiteSpace: "nowrap", borderBottom: "1px solid #E5E7EB",
+  }
+  const tdStyle = {
+    padding: "0.875rem 1rem", fontSize: "0.875rem", color: "#34495E",
+    borderBottom: "1px solid #EFF3F7", verticalAlign: "middle",
+  }
+
+  function StatusBadgePill({ status }) {
+    const isActive = status === "active" || !status
+    return (
+      <span style={{
+        display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+        fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap",
+        color: isActive ? "#2f6f6a" : "#4A5568",
+        border: `1.5px solid ${isActive ? "#2f6f6a" : "#4A5568"}`,
+      }}>
+        {isActive ? "Active" : "Inactive"}
+      </span>
+    )
+  }
+
+  function TypeBadge({ type }) {
+    const config = CRED_TYPE_CONFIG[type]
+    if (!config) return null
+    const colors = {
+      qualification: "#4A90D9",
+      competency: "#F97316",
+      site_induction: "#7C3AED",
+      permit: "#16A34A",
+    }
+    return (
+      <span style={{
+        display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+        fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap",
+        color: colors[type] ?? "#374151",
+        border: `1.5px solid ${colors[type] ?? "#374151"}`,
+      }}>
+        {config.label}
+      </span>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
+        <div className="skeleton-pulse" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ height: "3rem", borderRadius: "0.5rem", backgroundColor: "#E8ECF0" }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "2rem" }}>
+
+      {/* ── Section 1: Credentials Catalogue ──────────────────────────── */}
+      <div style={{
+        backgroundColor: "#FFFFFF", borderRadius: "1rem",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+        overflow: "hidden",
+        paddingBottom: "1.5rem",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap",
+        }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#34495E", letterSpacing: "-0.02em" }}>
+            Credentials Catalogue
+          </h2>
+          <button
+            onClick={() => setAddCredModal(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.5rem 1rem", borderRadius: "1rem", border: "none",
+              background: "#2f6f6a", color: "#FFFFFF", fontSize: "0.8125rem",
+              fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Add Credential
+          </button>
+        </div>
+
+        {/* Type filter + search */}
+        <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #EFF3F7", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
+            {CRED_TYPE_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => { setTypeFilter(f.key); setCredExpanded(false) }}
+                style={{
+                  padding: "0.375rem 0.875rem", borderRadius: "1rem", border: "none",
+                  cursor: "pointer", fontSize: "0.8125rem", fontFamily: "inherit",
+                  fontWeight: typeFilter === f.key ? 600 : 400,
+                  backgroundColor: typeFilter === f.key ? "#34495E" : "transparent",
+                  color: typeFilter === f.key ? "#FFFFFF" : "#374151",
+                  transition: "background-color 0.15s ease, color 0.15s ease",
+                }}
+                onMouseEnter={(e) => { if (typeFilter !== f.key) e.currentTarget.style.backgroundColor = "#EFF3F7" }}
+                onMouseLeave={(e) => { if (typeFilter !== f.key) e.currentTarget.style.backgroundColor = "transparent" }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+            <Search size={14} color="#9CA3AF" style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)" }} />
+            <input
+              type="text"
+              placeholder="Search credentials..."
+              value={credSearch}
+              onChange={(e) => { setCredSearch(e.target.value); setCredExpanded(false) }}
+              style={{
+                width: "100%", padding: "0.5625rem 0.875rem 0.5625rem 2.25rem",
+                borderRadius: "0.625rem", border: "1.5px solid #E5E7EB",
+                fontSize: "0.875rem", fontFamily: "inherit", color: "#34495E",
+                backgroundColor: "#FFFFFF", outline: "none", boxSizing: "border-box",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+              onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#FAFAFA" }}>
+                <th style={thStyle}>Name</th>
+                <th style={thStyle}>Type</th>
+                <th style={thStyle}>Code / Number</th>
+                <th style={thStyle}>Scope</th>
+                <th style={thStyle}>Status</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCreds.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "2rem" }}>
+                    {credSearch || typeFilter !== "all" ? "No credentials match your filters" : "No credentials yet"}
+                  </td>
+                </tr>
+              ) : visibleCreds.map((cred) => (
+                <tr key={cred.id} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                  <td style={{ ...tdStyle, fontWeight: 500 }}>{cred.name}</td>
+                  <td style={tdStyle}><TypeBadge type={cred.type} /></td>
+                  <td style={{ ...tdStyle, color: "#6B7280" }}>{getCredCode(cred) ?? <span style={{ color: "#D1D5DB" }}>—</span>}</td>
+                  <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(cred.company_id, !cred.company_id)}</td>
+                  <td style={tdStyle}><StatusBadgePill status={cred.status} /></td>
+                  <td style={{ ...tdStyle, textAlign: "right" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
+                      <button
+                        onClick={() => setEditCred(cred)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
+                        title="Edit"
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                      >
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteCred(cred)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
+                        title="Delete"
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                      >
+                        <Trash2 size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => toggleCredStatus(cred)}
+                        style={{
+                          padding: "0.25rem 0.75rem", borderRadius: "1rem", cursor: "pointer",
+                          fontSize: "0.75rem", fontWeight: 600, fontFamily: "inherit",
+                          border: `1.5px solid ${cred.status === "active" || !cred.status ? "#E5E7EB" : "#2f6f6a"}`,
+                          background: "none",
+                          color: cred.status === "active" || !cred.status ? "#6B7280" : "#2f6f6a",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {cred.status === "active" || !cred.status ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {showCredsToggle && (
+          <div style={{ textAlign: "center", padding: "1rem 0 0.5rem" }}>
+            <button
+              onClick={() => setCredExpanded((v) => !v)}
+              style={{
+                padding: "0.4rem 1.2rem", borderRadius: "1rem",
+                border: "1.5px solid #2f6f6a", background: "none",
+                color: "#2f6f6a", fontSize: "0.8125rem", fontWeight: 500,
+                cursor: "pointer", fontFamily: "inherit",
+                transition: "background 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#2f6f6a"; e.currentTarget.style.color = "#FFFFFF" }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#2f6f6a" }}
+            >
+              {credExpanded ? "Show less" : `Show all (${filteredCreds.length})`}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 2: Training Providers ─────────────────────────────── */}
+      <div style={{
+        backgroundColor: "#FFFFFF", borderRadius: "1rem",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+        overflow: "hidden",
+        paddingBottom: "1.5rem",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: "1.25rem 1.5rem", borderBottom: "1px solid #E5E7EB",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem",
+        }}>
+          <h2 style={{ margin: 0, fontSize: "1.0625rem", fontWeight: 700, color: "#34495E", letterSpacing: "-0.02em" }}>
+            Training Providers
+          </h2>
+          <button
+            onClick={() => setAddProviderModal(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.5rem 1rem", borderRadius: "1rem", border: "none",
+              background: "#2f6f6a", color: "#FFFFFF", fontSize: "0.8125rem",
+              fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Add Provider
+          </button>
+        </div>
+
+        {/* Search */}
+        <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #EFF3F7" }}>
+          <div style={{ position: "relative", maxWidth: "360px" }}>
+            <Search size={14} color="#9CA3AF" style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)" }} />
+            <input
+              type="text"
+              placeholder="Search providers..."
+              value={providerSearch}
+              onChange={(e) => { setProviderSearch(e.target.value); setProviderExpanded(false) }}
+              style={{
+                width: "100%", padding: "0.5625rem 0.875rem 0.5625rem 2.25rem",
+                borderRadius: "0.625rem", border: "1.5px solid #E5E7EB",
+                fontSize: "0.875rem", fontFamily: "inherit", color: "#34495E",
+                backgroundColor: "#FFFFFF", outline: "none", boxSizing: "border-box",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+              onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#FAFAFA" }}>
+                <th style={thStyle}>Provider Name</th>
+                <th style={thStyle}>Scope</th>
+                <th style={thStyle}>Status</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProviders.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "2rem" }}>
+                    {providerSearch ? "No providers match your search" : "No providers yet"}
+                  </td>
+                </tr>
+              ) : visibleProviders.map((provider) => (
+                <tr key={provider.id} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
+                  <td style={{ ...tdStyle, fontWeight: 500 }}>{provider.provider_name}</td>
+                  <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(provider.company_id, provider.is_global)}</td>
+                  <td style={tdStyle}><StatusBadgePill status={provider.status} /></td>
+                  <td style={{ ...tdStyle, textAlign: "right" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
+                      <button
+                        onClick={() => setEditProvider(provider)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
+                        title="Edit"
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                      >
+                        <Pencil size={15} strokeWidth={2} />
+                      </button>
+                      <button
+                        onClick={() => toggleProviderStatus(provider)}
+                        style={{
+                          padding: "0.25rem 0.75rem", borderRadius: "1rem", cursor: "pointer",
+                          fontSize: "0.75rem", fontWeight: 600, fontFamily: "inherit",
+                          border: `1.5px solid ${provider.status === "active" ? "#E5E7EB" : "#2f6f6a"}`,
+                          background: "none",
+                          color: provider.status === "active" ? "#6B7280" : "#2f6f6a",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        {provider.status === "active" ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {showProvidersToggle && (
+          <div style={{ textAlign: "center", padding: "1rem 0 0.5rem" }}>
+            <button
+              onClick={() => setProviderExpanded((v) => !v)}
+              style={{
+                padding: "0.4rem 1.2rem", borderRadius: "1rem",
+                border: "1.5px solid #2f6f6a", background: "none",
+                color: "#2f6f6a", fontSize: "0.8125rem", fontWeight: 500,
+                cursor: "pointer", fontFamily: "inherit",
+                transition: "background 0.15s ease, color 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#2f6f6a"; e.currentTarget.style.color = "#FFFFFF" }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#2f6f6a" }}
+            >
+              {providerExpanded ? "Show less" : `Show all (${filteredProviders.length})`}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {deleteCred && (
+        <ConfirmModal
+          message={`Permanently delete "${deleteCred.name}" from the credentials catalogue? This cannot be undone.`}
+          onConfirm={handleDeleteCred}
+          onCancel={() => setDeleteCred(null)}
+          loading={deletingCred}
+        />
+      )}
+      {addCredModal && (
+        <AddCatalogueCredentialModal
+          token={token}
+          companies={companies}
+          onSave={(qual) => { setCredentials((prev) => [...prev, qual].sort((a, b) => a.name.localeCompare(b.name))); setAddCredModal(false); setToast({ message: "Credential added", type: "success" }) }}
+          onClose={() => setAddCredModal(false)}
+        />
+      )}
+      {editCred && (
+        <EditCatalogueCredentialModal
+          token={token}
+          credential={editCred}
+          companies={companies}
+          onSave={(qual) => { setCredentials((prev) => prev.map((c) => c.id === qual.id ? qual : c)); setEditCred(null); setToast({ message: "Credential updated", type: "success" }) }}
+          onClose={() => setEditCred(null)}
+        />
+      )}
+      {addProviderModal && (
+        <AddProviderModal
+          token={token}
+          companies={companies}
+          onSave={(p) => { setProviders((prev) => [...prev, p].sort((a, b) => a.provider_name.localeCompare(b.provider_name))); setAddProviderModal(false); setToast({ message: "Provider added", type: "success" }) }}
+          onClose={() => setAddProviderModal(false)}
+        />
+      )}
+      {editProvider && (
+        <EditProviderModal
+          token={token}
+          provider={editProvider}
+          companies={companies}
+          onSave={(p) => { setProviders((prev) => prev.map((pr) => pr.id === p.id ? p : pr)); setEditProvider(null); setToast({ message: "Provider updated", type: "success" }) }}
+          onClose={() => setEditProvider(null)}
+        />
+      )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+    </div>
+  )
+}
+
 function TabContent({ activeTab, setActiveTab }) {
   if (activeTab === "Overview") return <OverviewTab setActiveTab={setActiveTab} />
   if (activeTab === "Pending Approvals") return <PendingApprovalsTab />
   if (activeTab === "Users") return <UsersTab />
   if (activeTab === "Companies") return <CompaniesTab />
   if (activeTab === "Cardholders") return <CardholdersTab />
+  if (activeTab === "Credentials") return <CredentialsTab />
 
   return (
     <div style={{
