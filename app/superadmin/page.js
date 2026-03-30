@@ -434,6 +434,7 @@ function OverviewTab({ setActiveTab }) {
       const res = await fetch("/api/superadmin/stats", {
         headers: { "Authorization": `Bearer ${session.access_token}` },
       })
+      if (!res.ok) { setLoading(false); return }
       const data = await res.json()
       setStats(data)
       setLoading(false)
