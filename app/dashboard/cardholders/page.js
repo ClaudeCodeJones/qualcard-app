@@ -14,7 +14,7 @@ function getStatusBadge(status, licence_end_date) {
     if (exp <= in30) return { label: "Expiring Soon", bg: "rgba(245,158,11,0.15)", color: "#FCD34D" }
   }
   if (status === "active") return { label: "Active", bg: "rgba(47,111,106,0.2)", color: "#6EE7B7" }
-  if (status === "pending_activation") return { label: "Payment Pending", bg: "rgba(139,92,246,0.15)", color: "#C4B5FD" }
+  if (status === "pending_activation") return { label: "Payment Pending", bg: "rgba(249,115,22,0.15)", color: "#FDBA74" }
   return { label: status?.replace(/_/g, " ") ?? "", bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)" }
 }
 
@@ -30,11 +30,14 @@ export default function CardholdersPage() {
   const [companyName, setCompanyName] = useState("")
   const [formError, setFormError] = useState("")
   const [selectedIds, setSelectedIds] = useState([])
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkType, setBulkType] = useState(null)
 
   useEffect(() => {
     supabase
       .from("cardholders")
-      .select("id, full_name, status, licence_end_date")
+      .select("id, full_name, status, licence_end_date, created_at, photo_url")
+      .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setCardholders(data)
       })
@@ -52,6 +55,36 @@ export default function CardholdersPage() {
     })
   }, [])
 
+  async function applyActivation(id) {
+    const today = new Date()
+    const nextYear = new Date(today)
+    nextYear.setFullYear(nextYear.getFullYear() + 1)
+    const fmt = d => d.toISOString().split("T")[0]
+    const { error } = await supabase
+      .from("cardholders")
+      .update({
+        status: "active",
+        licence_start_date: fmt(today),
+        licence_end_date: fmt(nextYear),
+      })
+      .eq("id", id)
+    if (error) console.error(error)
+  }
+
+  async function handleBulkActivate() {
+    const targets = cardholders.filter(c => selectedIds.includes(c.id) && c.status === "pending_activation")
+    await Promise.all(targets.map(c => applyActivation(c.id)))
+    setSelectedIds([])
+    router.refresh()
+  }
+
+  async function handleBulkRenew() {
+    const targets = cardholders.filter(c => selectedIds.includes(c.id) && c.status === "active")
+    await Promise.all(targets.map(c => applyActivation(c.id)))
+    setSelectedIds([])
+    router.refresh()
+  }
+
   return (
     <div style={{
       background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
@@ -66,27 +99,169 @@ export default function CardholdersPage() {
         <h1 style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
           Cardholders
         </h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            padding: "0.625rem 1.125rem",
-            background: "#2f6f6a",
-            border: "none",
-            borderRadius: "0.5rem",
-            color: "#fff",
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            fontFamily: "inherit",
-            cursor: "pointer",
-            transition: "opacity 0.15s ease, transform 0.15s ease",
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-          onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-          onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-          onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
-        >
-          + Add Cardholder
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {!bulkMode && (
+            <>
+              <button
+                onClick={() => { setBulkMode(true); setBulkType("update"); setSelectedIds([]) }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Bulk Update
+              </button>
+              <button
+                onClick={() => { setBulkMode(true); setBulkType("activate"); setSelectedIds([]) }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Activate / Renew
+              </button>
+            </>
+          )}
+          {bulkMode && bulkType === "update" && (
+            <button
+              onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
+              style={{
+                padding: "0.625rem 1.125rem",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "0.5rem",
+                color: "rgba(255,255,255,0.5)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                fontFamily: "inherit",
+                cursor: "pointer",
+                transition: "opacity 0.15s ease, transform 0.15s ease",
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              Cancel
+            </button>
+          )}
+          {bulkMode && bulkType === "activate" && (
+            <>
+              {selectedIds.length > 0 && (
+                <>
+                  <button
+                    onClick={handleBulkActivate}
+                    style={{
+                      padding: "0.625rem 1.125rem",
+                      background: "rgba(249,115,22,0.2)",
+                      border: "1px solid rgba(249,115,22,0.4)",
+                      borderRadius: "0.5rem",
+                      color: "#FDBA74",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      transition: "opacity 0.15s ease, transform 0.15s ease",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                    onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                  >
+                    Activate Selected
+                  </button>
+                  <button
+                    onClick={handleBulkRenew}
+                    style={{
+                      padding: "0.625rem 1.125rem",
+                      background: "rgba(47,111,106,0.2)",
+                      border: "1px solid rgba(47,111,106,0.4)",
+                      borderRadius: "0.5rem",
+                      color: "#6EE7B7",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      transition: "opacity 0.15s ease, transform 0.15s ease",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                    onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                  >
+                    Renew Selected
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              padding: "0.625rem 1.125rem",
+              background: "#2f6f6a",
+              border: "none",
+              borderRadius: "0.5rem",
+              color: "#fff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+              transition: "opacity 0.15s ease, transform 0.15s ease",
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+            onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+          >
+            + Add Cardholder
+          </button>
+        </div>
       </div>
 
       <div style={{
@@ -97,13 +272,13 @@ export default function CardholdersPage() {
         boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
       }}>
 
-        <div style={{ marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <select
             value={filter}
             onChange={e => setFilter(e.target.value)}
             style={{
               padding: "0.625rem 1rem",
-              background: "rgba(0,0,0,0.2)",
+              background: "#1f3f3c",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: "0.5rem",
               color: "#fff",
@@ -118,6 +293,7 @@ export default function CardholdersPage() {
             <option value="payment">Payment Pending</option>
             <option value="expiring">Expiring Soon</option>
           </select>
+
         </div>
 
         {(() => {
@@ -140,140 +316,162 @@ export default function CardholdersPage() {
               </p>
             </div>
           )
-          const allSelected = filtered.length > 0 && filtered.every(c => selectedIds.includes(c.id))
+          const visible = filtered.slice(0, 6)
           return (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: "0.875rem" }}>
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={() => setSelectedIds(allSelected ? [] : filtered.map(c => c.id))}
-                    style={{ cursor: "pointer", accentColor: "#2f6f6a" }}
-                  />
-                  Select all
-                </label>
-                {selectedIds.length > 0 && (
-                  <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8125rem" }}>
-                    {selectedIds.length} selected
-                  </span>
-                )}
-              </div>
-              {filtered.map(({ id, full_name, status, licence_end_date }) => (
-                <div
-                  key={id}
-                  onClick={() => router.push(`/dashboard/cardholders/${id}`)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0.875rem 1rem",
-                    borderRadius: "0.5rem",
-                    border: `1px solid ${selectedIds.includes(id) ? "rgba(47,111,106,0.5)" : "rgba(255,255,255,0.07)"}`,
-                    background: selectedIds.includes(id) ? "rgba(47,111,106,0.1)" : "rgba(255,255,255,0.03)",
-                    cursor: "pointer",
-                    transition: "transform 0.15s ease, opacity 0.15s ease",
-                  }}
-                  onMouseEnter={e => {
-                    if (!selectedIds.includes(id)) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.07)"
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
-                    }
-                    e.currentTarget.style.transform = "translateX(2px)"
-                  }}
-                  onMouseLeave={e => {
-                    if (!selectedIds.includes(id)) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.03)"
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"
-                    }
-                    e.currentTarget.style.transform = "translateX(0)"
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(id)}
-                      onChange={e => {
-                        e.stopPropagation()
+            <>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
+              Recent Cardholders
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {visible.map(({ id, full_name, status, licence_end_date, photo_url }) => {
+                const isDisabled = status === "deleted"
+                const badge = getStatusBadge(status, licence_end_date)
+                const isSelected = selectedIds.includes(id)
+                return (
+                  <div
+                    key={id}
+                    onClick={() => {
+                      if (bulkMode && !isDisabled) {
                         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-                      }}
-                      onClick={e => e.stopPropagation()}
-                      style={{ cursor: "pointer", accentColor: "#2f6f6a", flexShrink: 0 }}
-                    />
-                    <div>
-                      <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.2rem", lineHeight: 1.3 }}>
-                        {full_name}
-                      </p>
-                      {(() => {
-                        const badge = getStatusBadge(status, licence_end_date)
-                        return (
-                          <span style={{
-                            display: "inline-block",
-                            marginTop: "0.25rem",
-                            padding: "0.125rem 0.5rem",
-                            borderRadius: "0.25rem",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            background: badge.bg,
-                            color: badge.color,
-                          }}>
+                      } else if (!isDisabled) {
+                        router.push(`/dashboard/cardholders/${id}`)
+                      }
+                    }}
+                    style={{
+                      position: "relative",
+                      padding: "1.25rem",
+                      borderRadius: "0.75rem",
+                      border: `1px solid ${isSelected ? "rgba(47,111,106,0.5)" : "rgba(255,255,255,0.07)"}`,
+                      background: isSelected ? "rgba(47,111,106,0.1)" : "rgba(255,255,255,0.03)",
+                      cursor: isDisabled ? "default" : "pointer",
+                      opacity: isDisabled ? 0.5 : 1,
+                      transition: "background 0.15s ease, opacity 0.15s ease",
+                    }}
+                    onMouseEnter={e => {
+                      if (!isSelected && !isDisabled) e.currentTarget.style.background = "rgba(255,255,255,0.07)"
+                    }}
+                    onMouseLeave={e => {
+                      if (!isSelected && !isDisabled) e.currentTarget.style.background = "rgba(255,255,255,0.03)"
+                    }}
+                  >
+                    {bulkMode && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={isDisabled}
+                        onChange={e => {
+                          e.stopPropagation()
+                          if (!isDisabled) setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+                        }}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          position: "absolute",
+                          top: "1rem",
+                          left: "1rem",
+                          cursor: isDisabled ? "not-allowed" : "pointer",
+                          accentColor: "#2f6f6a",
+                        }}
+                      />
+                    )}
+                    <div style={{ paddingLeft: bulkMode ? "1.5rem" : 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 700, margin: "0 0 0.25rem", lineHeight: 1.3 }}>
+                          {full_name}
+                        </p>
+                        <p style={{ margin: "0 0 0.375rem" }}>
+                          <span style={{ color: badge.color, fontSize: "0.8125rem", fontWeight: 500 }}>
                             {badge.label}
                           </span>
-                        )
-                      })()}
+                        </p>
+                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8125rem", margin: "0 0 0.75rem" }}>
+                          {licence_end_date
+                            ? `Expires ${new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}`
+                            : "No expiry"}
+                        </p>
+                        {(status === "pending_activation" || status === "active") && (
+                          <button
+                            onClick={async e => {
+                              e.stopPropagation()
+                              const msg = status === "pending_activation"
+                                ? "Activate this cardholder and start their 12-month licence?"
+                                : "Renew this cardholder for another 12 months?"
+                              if (!confirm(msg)) return
+                              await applyActivation(id)
+                              router.refresh()
+                            }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              height: "36px",
+                              minWidth: "100px",
+                              padding: "0 1rem",
+                              background: "#2f6f6a",
+                              border: "none",
+                              borderRadius: "0.375rem",
+                              color: "#fff",
+                              fontSize: "0.875rem",
+                              fontWeight: 600,
+                              fontFamily: "inherit",
+                              cursor: "pointer",
+                              transition: "opacity 0.15s ease",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                          >
+                            {status === "pending_activation" ? "Activate" : "Renew"}
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ flexShrink: 0, marginLeft: "1rem" }}>
+                        {photo_url ? (
+                          <img
+                            src={photo_url}
+                            alt={full_name}
+                            style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", display: "block" }}
+                            onError={e => {
+                              e.currentTarget.style.display = "none"
+                              e.currentTarget.nextSibling.style.display = "flex"
+                            }}
+                          />
+                        ) : null}
+                        <div style={{
+                          width: 56, height: 56, borderRadius: "50%",
+                          background: "rgba(255,255,255,0.05)",
+                          display: photo_url ? "none" : "flex",
+                          alignItems: "center", justifyContent: "center",
+                          color: "rgba(255,255,255,0.6)", fontSize: "1rem", fontWeight: 700,
+                        }}>
+                          {full_name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexShrink: 0, paddingLeft: "1rem" }}>
-                    {licence_end_date && (
-                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8125rem", margin: 0 }}>
-                        Expires {new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    )}
-                    {(status === "pending_activation" || status === "active") && (
-                      <button
-                        onClick={async e => {
-                          e.stopPropagation()
-                          const msg = status === "pending_activation"
-                            ? "Activate this cardholder and start their 12-month licence?"
-                            : "Renew this cardholder for another 12 months?"
-                          if (!confirm(msg)) return
-                          const today = new Date()
-                          const nextYear = new Date(today)
-                          nextYear.setFullYear(nextYear.getFullYear() + 1)
-                          const fmt = d => d.toISOString().split("T")[0]
-                          const { error } = await supabase
-                            .from("cardholders")
-                            .update({
-                              status: "active",
-                              licence_start_date: fmt(today),
-                              licence_end_date: fmt(nextYear),
-                            })
-                            .eq("id", id)
-                          if (error) { console.error(error); return }
-                          router.refresh()
-                        }}
-                        style={{
-                          padding: "0.375rem 0.875rem",
-                          background: "#2f6f6a",
-                          border: "none",
-                          borderRadius: "0.375rem",
-                          color: "#fff",
-                          fontSize: "0.8125rem",
-                          fontWeight: 600,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          transition: "opacity 0.15s ease",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                      >
-                        {status === "pending_activation" ? "Activate" : "Renew"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
+            {filtered.length > 6 && (
+              <div style={{ textAlign: "right", marginTop: "1rem" }}>
+                <a
+                  href="/dashboard/cardholders"
+                  onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }}
+                  style={{
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: "0.8125rem",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    transition: "color 0.15s ease",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "#2f6f6a"; e.currentTarget.style.textDecoration = "underline" }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; e.currentTarget.style.textDecoration = "none" }}
+                >
+                  View all
+                </a>
+              </div>
+            )}
+            </>
           )
         })()}
 

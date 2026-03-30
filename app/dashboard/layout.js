@@ -25,14 +25,14 @@ export default async function DashboardLayout({ children }) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session) redirect("/login")
+  if (!user) redirect("/login")
 
   const { data: userData } = await supabase
     .from("users")
     .select("role, account_status, full_name")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single()
 
   if (!userData) redirect("/login")

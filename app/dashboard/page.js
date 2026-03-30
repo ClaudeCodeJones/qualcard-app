@@ -19,30 +19,83 @@ export default function DashboardPage() {
   const [pendingCardholders, setPendingCardholders] = useState([])
   const [expiringCardholders, setExpiringCardholders] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [totalCardholders, setTotalCardholders] = useState(0)
+  const [activeCardholders, setActiveCardholders] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
-    supabase
-      .from("cardholders")
-      .select("id, full_name, status")
-      .eq("status", "pending_activation")
-      .limit(2)
-      .then(({ data }) => {
-        if (data) setPendingCardholders(data)
-      })
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+      const { data: userData } = await supabase
+        .from("users")
+        .select("company_id")
+        .eq("id", user.id)
+        .single()
 
-    supabase
-      .from("cardholders")
-      .select("id, full_name, licence_end_date, status")
-      .eq("status", "active")
-      .not("licence_end_date", "is", null)
-      .lte("licence_end_date", thirtyDaysFromNow.toISOString().split("T")[0])
-      .limit(2)
-      .then(({ data }) => {
-        if (data) setExpiringCardholders(data)
-      })
+      if (!userData?.company_id) return
+      const companyId = userData.company_id
+
+      // Pending activations for Payment Required
+      supabase
+        .from("cardholders")
+        .select("id, full_name, status")
+        .eq("status", "pending_activation")
+        .eq("company_id", companyId)
+        .limit(2)
+        .then(({ data }) => {
+          if (data) setPendingCardholders(data)
+        })
+
+      // Expiring soon
+      const thirtyDaysFromNow = new Date()
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+      supabase
+        .from("cardholders")
+        .select("id, full_name, licence_end_date, status")
+        .eq("status", "active")
+        .eq("company_id", companyId)
+        .not("licence_end_date", "is", null)
+        .lte("licence_end_date", thirtyDaysFromNow.toISOString().split("T")[0])
+        .limit(2)
+        .then(({ data }) => {
+          if (data) setExpiringCardholders(data)
+        })
+
+      // Overview counts - total non-deleted
+      supabase
+        .from("cardholders")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .neq("status", "deleted")
+        .then(({ count }) => {
+          if (count !== null) setTotalCardholders(count)
+        })
+
+      // Active count
+      supabase
+        .from("cardholders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+        .eq("company_id", companyId)
+        .then(({ count }) => {
+          if (count !== null) setActiveCardholders(count)
+        })
+
+      // Pending count
+      supabase
+        .from("cardholders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending_activation")
+        .eq("company_id", companyId)
+        .then(({ count }) => {
+          if (count !== null) setPendingCount(count)
+        })
+    }
+
+    fetchData()
   }, [])
 
   return (
@@ -175,7 +228,7 @@ export default function DashboardPage() {
 
             {pendingCardholders.length > 0 && (
               <div style={{ textAlign: "right" }}>
-                <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
+                <a href="/dashboard/cardholders?status=pending_activation" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?status=pending_activation") }} style={{
                   color: "rgba(255,255,255,0.55)",
                   fontSize: "0.8125rem",
                   textDecoration: "none",
@@ -258,7 +311,7 @@ export default function DashboardPage() {
             )}
             {expiringCardholders.length > 0 && (
               <div style={{ textAlign: "right" }}>
-                <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
+                <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
                   color: "rgba(255,255,255,0.55)",
                   fontSize: "0.8125rem",
                   textDecoration: "none",
@@ -304,7 +357,7 @@ export default function DashboardPage() {
               </p>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem" }}>Total</span>
-                <span style={{ color: "#fff", fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em" }}>-</span>
+                <span style={{ color: "#fff", fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em" }}>{totalCardholders}</span>
               </div>
             </div>
 
@@ -313,9 +366,8 @@ export default function DashboardPage() {
                 Status Breakdown
               </p>
               {[
-                { label: "Active", value: "-" },
-                { label: "Pending", value: "-" },
-                { label: "Archived", value: "-" },
+                { label: "Active", value: activeCardholders },
+                { label: "Pending", value: pendingCount },
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.625rem" }}>
                   <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem" }}>{label}</span>

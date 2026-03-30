@@ -18,8 +18,8 @@ export default function DashboardSidebar({ initials }) {
     <aside style={{
       width: "64px",
       flexShrink: 0,
-      background: "#2a5f5b",
-      borderRight: "1px solid rgba(255,255,255,0.1)",
+      background: "#183532",
+      borderRight: "1px solid rgba(255,255,255,0.05)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
