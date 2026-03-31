@@ -116,29 +116,31 @@ export default function DashboardPage() {
         .select("id, full_name, status, photo_url")
         .eq("status", "pending_activation")
         .eq("company_id", companyId)
+        .order("created_at", { ascending: false })
         .limit(2)
         .then(({ data }) => {
           if (data) setPendingCardholders(data)
         })
 
-      // Expiring soon
+      // Expiring soon - within 30 days but not yet expired
+      const today = new Date().toISOString().split("T")[0]
       const thirtyDaysFromNow = new Date()
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
 
       supabase
         .from("cardholders")
         .select("id, full_name, licence_end_date, status, photo_url")
-        .eq("status", "active")
         .eq("company_id", companyId)
         .not("licence_end_date", "is", null)
+        .gte("licence_end_date", today)
         .lte("licence_end_date", thirtyDaysFromNow.toISOString().split("T")[0])
+        .order("licence_end_date", { ascending: true })
         .limit(2)
         .then(({ data }) => {
           if (data) setExpiringCardholders(data)
         })
 
       // Expired licenses
-      const today = new Date().toISOString().split("T")[0]
       supabase
         .from("cardholders")
         .select("id", { count: "exact", head: true })
@@ -577,11 +579,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: "#0A9FB5",
+                        background: "#0A9FB5CC",
                         color: "#fff",
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 600,
+                        fontWeight: 400,
                         textAlign: "center",
                       }}>
                         Payment Pending
@@ -605,7 +607,7 @@ export default function DashboardPage() {
 
               {pendingCardholders.length > 0 && (
                 <div style={{ textAlign: "right" }}>
-                  <a href="/dashboard/cardholders?status=pending_activation" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?status=pending_activation") }} style={{
+                  <a href="/dashboard/cardholders?filter=payment" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=payment") }} style={{
                     color: "rgba(255,255,255,0.55)",
                     fontSize: "0.8125rem",
                     textDecoration: "none",
@@ -720,11 +722,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: "#D97706",
+                        background: "#D97706CC",
                         color: "#fff",
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 600,
+                        fontWeight: 400,
                         textAlign: "center",
                       }}>
                         Expires {new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
@@ -928,11 +930,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: getStatusBarColor(licenceStatus.status),
+                        background: `${getStatusBarColor(licenceStatus.status)}CC`,
                         color: "#fff",
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 600,
+                        fontWeight: 400,
                         textAlign: "center",
                       }}>
                         {licenceStatus.status}
@@ -1039,20 +1041,20 @@ export default function DashboardPage() {
             </p>
 
             <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", paddingBottom: "1rem", marginBottom: "1rem" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.625rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Total
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.625rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
+                Active
               </p>
               <p style={{ color: "#fff", fontSize: "2.25rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
-                {totalCardholders}
+                {activeCardholders}
               </p>
             </div>
 
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Status Breakdown
+              Action Items
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {[
-                { label: "Active", value: activeCardholders, color: "#10B981" },
                 { label: "Pending", value: pendingCount, color: "#0A9FB5" },
                 { label: "Expiring Soon", value: expiringCount, color: "#F59E0B" },
               ].map(({ label, value, color }) => (

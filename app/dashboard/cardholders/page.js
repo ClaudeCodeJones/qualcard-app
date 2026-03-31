@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
-import { GraduationCap, Award, ClipboardCheck, Shield, ChevronRight } from "lucide-react"
+import { GraduationCap, Award, ClipboardCheck, Shield, ChevronRight, ArrowRight } from "lucide-react"
 
 function getStatusColour(status) {
   switch (status) {
@@ -52,12 +52,22 @@ function getStatusBarBackground(status) {
 }
 
 
+function getStatusSortOrder(licenceStatus) {
+  switch (licenceStatus?.status) {
+    case "Expiring Soon": return 0
+    case "Payment Pending": return 1
+    case "Active": return 2
+    case "Expired": return 3
+    default: return 4
+  }
+}
+
 export default function CardholdersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [cardholders, setCardholders] = useState([])
   const [credentials, setCredentials] = useState({})
-  const [filter, setFilter] = useState("all")
+  const [filter, setFilter] = useState(searchParams.get("filter") || "all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [newPhoto, setNewPhoto] = useState(null)
@@ -68,6 +78,7 @@ export default function CardholdersPage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkMode, setBulkMode] = useState(searchParams.get("bulk") === "true")
   const [bulkType, setBulkType] = useState(null)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     supabase
@@ -102,11 +113,11 @@ export default function CardholdersPage() {
       if (!user) return
       supabase
         .from("users")
-        .select("company_id, companies(name)")
+        .select("company_id, companies(company_name)")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
-          if (data?.companies?.name) setCompanyName(data.companies.name)
+          if (data?.companies?.company_name) setCompanyName(data.companies.company_name)
         })
     })
   }, [])
@@ -417,6 +428,10 @@ export default function CardholdersPage() {
             if (filter === "expiring") return licenceStatus.status === "Expiring Soon"
             if (filter === "expired") return licenceStatus.status === "Expired"
             return true
+          }).sort((a, b) => {
+            const statusA = getLicenceStatus(a.licence_end_date).status
+            const statusB = getLicenceStatus(b.licence_end_date).status
+            return getStatusSortOrder({ status: statusA }) - getStatusSortOrder({ status: statusB })
           })
           if (filtered.length === 0) return (
             <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
@@ -425,7 +440,7 @@ export default function CardholdersPage() {
               </p>
             </div>
           )
-          const visible = filtered.slice(0, 8)
+          const visible = showAll ? filtered : filtered.slice(0, 8)
           return (
             <>
             <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
@@ -568,7 +583,7 @@ export default function CardholdersPage() {
                           borderRadius: "0.375rem",
                           background: `${getStatusBarColour(licenceStatus.status)}CC`,
                           fontSize: "0.75rem",
-                          fontWeight: 600,
+                          fontWeight: 400,
                           color: "#fff",
                           textAlign: "center",
                           fontFamily: "inherit",
@@ -583,23 +598,26 @@ export default function CardholdersPage() {
             </div>
             {filtered.length > 8 && (
               <div style={{ textAlign: "right", marginTop: "1rem" }}>
-                <a
-                  href="/dashboard/cardholders"
-                  onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }}
+                <button
+                  onClick={() => setShowAll(!showAll)}
                   style={{
+                    background: "none",
+                    border: "none",
                     color: "rgba(255,255,255,0.55)",
                     fontSize: "0.8125rem",
                     textDecoration: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    transition: "color 0.15s ease",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "0.25rem",
-                    transition: "color 0.15s ease",
                   }}
                   onMouseEnter={e => { e.currentTarget.style.color = "#2f6f6a"; e.currentTarget.style.textDecoration = "underline" }}
                   onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; e.currentTarget.style.textDecoration = "none" }}
                 >
-                  View all
-                </a>
+                  {showAll ? "Show less" : "View all"} <ArrowRight size={13} />
+                </button>
               </div>
             )}
             </>
@@ -793,21 +811,46 @@ export default function CardholdersPage() {
                     .from("cardholder-photos")
                     .getPublicUrl(filePath)
 
+                  // Generate slug
+                  const nameParts = newName.trim().toLowerCase().split(/\s+/)
+                  const randomDigits = Math.random().toString().slice(2, 14).padEnd(12, '0')
+                  const slug = `${nameParts.join('-')}-${randomDigits}`
+
+                  // Check for collision
+                  const { data: existingSlug, error: slugError } = await supabase
+                    .from("cardholders")
+                    .select("id")
+                    .eq("slug", slug)
+                    .limit(1)
+                  if (existingSlug && existingSlug.length > 0) return setFormError("Slug collision. Please try again.")
+
                   const { error: insertError } = await supabase
                     .from("cardholders")
                     .insert({
                       full_name: newName.trim(),
                       photo_url: publicUrl,
+                      slug: slug,
                       status: "pending_activation",
                       company_id: userData.company_id,
-                      created_by: user.id,
+                      created_by: "company_admin",
                       licence_start_date: null,
                       licence_end_date: null,
                     })
-                  if (insertError) { console.error(insertError); return setFormError("Failed to save cardholder.") }
+                  if (insertError) {
+                    console.error("Insert error:", insertError.message, insertError.details, insertError.code)
+                    return setFormError(`Failed to save: ${insertError.message}`)
+                  }
+
+                  // Refetch cardholders to show new entry
+                  supabase
+                    .from("cardholders")
+                    .select("id, full_name, status, licence_end_date, created_at, photo_url")
+                    .order("created_at", { ascending: false })
+                    .then(({ data }) => {
+                      if (data) setCardholders(data)
+                    })
 
                   setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); setNewPhotoPreview(null); setDragOver(false)
-                  router.refresh()
                 }}
                 style={{
                   padding: "0.625rem 1.125rem",

@@ -17,4 +17,6 @@
 
 ## IMPERSONATE MODE## FOR QC ADMIN?
 
+## QC Admin - when i add a person and select active it shows as payment pending on the cardhodlers page, it should go to active and show todays date in one year in the susbcription exipry field
+
 
