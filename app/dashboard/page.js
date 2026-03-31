@@ -86,6 +86,25 @@ export default function DashboardPage() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
+    // Check if banner was dismissed within last 7 days
+    const lastDismissed = localStorage.getItem("expiringBannerDismissed")
+    if (lastDismissed) {
+      const daysSinceDismissed = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24)
+      if (daysSinceDismissed < 7) {
+        setDismissed(true)
+      } else {
+        localStorage.removeItem("expiringBannerDismissed")
+        setDismissed(false)
+      }
+    }
+  }, [])
+
+  const handleBannerDismiss = () => {
+    localStorage.setItem("expiringBannerDismissed", Date.now().toString())
+    setDismissed(true)
+  }
+
+  useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -485,6 +504,62 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Expiring Soon Warning Banner (dismissible) */}
+          {expiringCount > 0 && !dismissed && (
+            <div style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "1rem",
+              padding: "1.25rem 1.5rem",
+              background: "rgba(217, 119, 6, 0.2)",
+              border: "1px solid rgba(217, 119, 6, 0.5)",
+              borderRadius: "0.75rem",
+            }}>
+              <AlertCircle size={20} style={{ color: "#D97706", flexShrink: 0, marginTop: "0.125rem" }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem" }}>
+                  {expiringCount} cardholder subscription{expiringCount === 1 ? "" : "s"} expiring soon
+                </p>
+                <p style={{ color: "#fff", fontSize: "0.8125rem", margin: "0" }}>
+                  Renewals needed within 30 days
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", flexShrink: 0 }}>
+                <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
+                  color: "#fff",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  transition: "opacity 0.15s ease",
+                  cursor: "pointer",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                >
+                  View All
+                </a>
+                <button
+                  onClick={handleBannerDismiss}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.5)",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "color 0.15s ease",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+                  onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Payment Required + Expiring Soon (side by side) */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
 
@@ -776,61 +851,22 @@ export default function DashboardPage() {
 
           </div>
 
-          {/* Expired Licences Banner (dismissible) */}
-          {expiredCount > 0 && !dismissed && (
-            <div style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "1rem",
-              padding: "1.25rem 1.5rem",
-              background: "rgba(184, 75, 69, 0.25)",
-              border: "1px solid rgba(184, 75, 69, 0.6)",
-              borderRadius: "0.75rem",
-            }}>
-              <AlertCircle size={20} style={{ color: "#B84B45", flexShrink: 0, marginTop: "0.125rem" }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem" }}>
-                  {expiredCount} cardholder licence{expiredCount === 1 ? "" : "s"} expired
-                </p>
-                <p style={{ color: "#fff", fontSize: "0.8125rem", margin: "0" }}>
-                  Review expired cardholders in the list
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", flexShrink: 0 }}>
-                <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
-                  color: "#fff",
-                  fontSize: "0.8125rem",
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  transition: "opacity 0.15s ease",
-                  cursor: "pointer",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                >
-                  View All
-                </a>
-                <button
-                  onClick={() => setDismissed(true)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "rgba(255,255,255,0.5)",
-                    cursor: "pointer",
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "color 0.15s ease",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
-                  onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Permanent Visual Divider — OPTION 1: Dark Solid Bar */}
+          <div style={{
+            height: "80px",
+            background: "rgba(0,0,0,0.25)",
+            backdropFilter: "blur(2px)",
+            borderRadius: "0.75rem",
+          }} />
+
+          {/* Permanent Visual Divider — OPTION 2: Dark Bar with Top Accent Line */}
+          <div style={{
+            height: "80px",
+            background: "rgba(0,0,0,0.2)",
+            backdropFilter: "blur(2px)",
+            borderRadius: "0.75rem",
+            borderTop: "2px solid rgba(47, 111, 106, 0.6)",
+          }} />
 
           {/* Recently Added */}
           <div style={CARD}>
