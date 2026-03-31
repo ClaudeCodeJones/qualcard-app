@@ -216,7 +216,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
       <div className="max-w-sm mx-auto flex flex-col min-h-screen">
 
         {/* Header */}
-        <div className="bg-[#2d4a5e] px-5 pt-6 pb-28 rounded-t-3xl mt-3">
+        <div className="px-5 pt-6 pb-28 rounded-t-3xl mt-3" style={{ background: "radial-gradient(circle, #2f6f6a 0%, #1a4f48 100%)" }}>
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/50 text-[9px] font-bold tracking-[0.18em] uppercase mb-1">Powered by</p>
