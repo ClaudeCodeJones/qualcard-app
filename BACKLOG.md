@@ -14,3 +14,7 @@
 
 ## Coming Soon action card on Company detail page
 - Candidates: Add company admin user, View Stripe billing info, Impersonate/login as company
+
+## IMPERSONATE MODE## FOR QC ADMIN?
+
+

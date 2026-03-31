@@ -1,8 +1,10 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Home, Users, Settings, CreditCard } from "lucide-react"
+import { Home, Users, Settings, CreditCard, LogOut } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: Home, label: "Home" },
@@ -13,10 +15,17 @@ const NAV_ITEMS = [
 
 export default function DashboardSidebar({ initials }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   return (
     <aside style={{
-      width: "64px",
+      width: "88px",
       flexShrink: 0,
       background: "#183532",
       borderRight: "1px solid rgba(255,255,255,0.05)",
@@ -29,25 +38,78 @@ export default function DashboardSidebar({ initials }) {
       top: 0,
       height: "100vh",
     }}>
-      {/* Logo mark */}
-      <div style={{
-        width: "36px",
-        height: "36px",
-        borderRadius: "10px",
-        background: "rgba(255,255,255,0.15)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: "2rem",
-        flexShrink: 0,
-      }}>
-        <span style={{
-          color: "#fff",
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          letterSpacing: "0.05em",
-          lineHeight: 1,
-        }}>QC</span>
+      {/* User avatar */}
+      <div style={{ position: "relative", marginBottom: "2rem" }}>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.2)",
+            border: "1.5px solid rgba(255,255,255,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            cursor: "pointer",
+            color: "#fff",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            letterSpacing: "0.03em",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.3)"
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)"
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.2)"
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"
+          }}
+        >
+          {initials}
+        </button>
+
+        {/* Logout menu */}
+        {menuOpen && (
+          <div style={{
+            position: "absolute",
+            top: "100%",
+            right: "-150px",
+            marginTop: "0.5rem",
+            background: "#1f4f4b",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            zIndex: 1000,
+            minWidth: "140px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                padding: "0.625rem 0.75rem",
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                borderRadius: "0.375rem",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Nav items */}
@@ -97,23 +159,6 @@ export default function DashboardSidebar({ initials }) {
         })}
       </nav>
 
-      {/* User avatar */}
-      <div style={{
-        width: "36px",
-        height: "36px",
-        borderRadius: "50%",
-        background: "rgba(255,255,255,0.2)",
-        border: "1.5px solid rgba(255,255,255,0.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        cursor: "default",
-      }}>
-        <span style={{ color: "#fff", fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.03em" }}>
-          {initials}
-        </span>
-      </div>
     </aside>
   )
 }

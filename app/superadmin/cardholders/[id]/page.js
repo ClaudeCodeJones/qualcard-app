@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { QRCodeSVG } from "qrcode.react"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
 import Header from "@/app/components/Header"
 import FileUploadArea from "@/app/components/FileUploadArea"
 import {
@@ -60,16 +61,6 @@ function formatDate(dateStr) {
     month: "short",
     year: "numeric",
   })
-}
-
-function getLicenceBadge(licenceEndDate) {
-  if (!licenceEndDate) return null
-  const now = new Date()
-  const end = new Date(licenceEndDate)
-  const daysLeft = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
-  if (daysLeft < 0) return { label: `EXPIRED: ${formatDate(licenceEndDate)}`, color: "#EF4444" }
-  if (daysLeft <= 30) return { label: `EXPIRING: ${formatDate(licenceEndDate)}`, color: "#F59E0B" }
-  return null
 }
 
 function getStatusBadgeColor(status) {
@@ -900,7 +891,7 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
                   style={{ marginTop: "0.15rem", flexShrink: 0, accentColor: "#2f6f6a", width: "15px", height: "15px" }}
                 />
                 <span style={{ fontSize: "0.875rem", color: "#374151", lineHeight: 1.5 }}>
-                  I confirm this credential has been sighted and verified
+                  I confirm the details entered above are true and correct
                 </span>
               </label>
             )}
@@ -1786,16 +1777,12 @@ export default function CardholderDetailPage() {
   if (error) return <ErrorScreen message={error} />
 
   const profileUrl = `${APP_URL}/card/${cardholder.slug}`
-  const licenceBadge = getLicenceBadge(cardholder.licence_end_date)
+  const licenceStatus = getLicenceStatus(cardholder.licence_end_date)
   const headerAction = (() => {
-    const { status, licence_end_date } = cardholder
+    const { status } = cardholder
     if (status === "pending_activation") return { label: "Activate Now", bg: "#F97316", onClick: () => setActionModal("change-status") }
     if (status === "archived") return { label: "Restore Cardholder", bg: "#2f6f6a", onClick: () => setActionModal("restore") }
-    if (status === "active" && licence_end_date) {
-      const daysLeft = Math.ceil((new Date(licence_end_date) - new Date()) / (1000 * 60 * 60 * 24))
-      if (daysLeft <= 30) return { label: "Renew Urgently", bg: "#EF4444", onClick: () => {} }
-      if (daysLeft <= 90) return { label: "Renew Now", bg: "#F59E0B", onClick: () => {} }
-    }
+    if (licenceStatus.showButton) return { label: licenceStatus.buttonLabel, bg: "#F97316", onClick: () => {} }
     return null
   })()
   const visibleActions = (userRole === "qc_admin" ? QC_ACTIONS : COMPANY_ACTIONS).filter(a => {
@@ -1904,26 +1891,14 @@ export default function CardholderDetailPage() {
                   </span>
                 )
               })()}
-              {cardholder.licence_end_date && (
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 400, color: "#FFFFFF",
-                  backgroundColor: "transparent",
-                  border: "1.5px solid rgba(255,255,255,0.8)", whiteSpace: "nowrap",
-                }}>
-                  EXPIRES: {new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                </span>
-              )}
-              {licenceBadge && (
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 600, color: "#FFFFFF",
-                  backgroundColor: licenceBadge.color,
-                  border: "1.5px solid rgba(255,255,255,0.6)", whiteSpace: "nowrap",
-                }}>
-                  {licenceBadge.label}
-                </span>
-              )}
+              <span style={{
+                display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
+                fontSize: "0.75rem", fontWeight: 400, color: "#FFFFFF",
+                backgroundColor: "transparent",
+                border: "1.5px solid rgba(255,255,255,0.8)", whiteSpace: "nowrap",
+              }}>
+                {licenceStatus.dateLabel ? `${licenceStatus.dateLabel}: ${new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}` : "No expiry"}
+              </span>
               {headerAction && (
                 <button
                   onClick={headerAction.onClick}

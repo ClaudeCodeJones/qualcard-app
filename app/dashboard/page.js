@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, AlertCircle, Plus, Users, ListChecks, GraduationCap, Award, ClipboardCheck, ShieldCheck, X, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
 
 const CARD = {
   background: "#1f3f3c",
@@ -14,14 +15,75 @@ const CARD = {
   boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
 }
 
+const CREDENTIAL_ICONS = {
+  qualification: GraduationCap,
+  competency: Award,
+  site_induction: ClipboardCheck,
+  permit: ShieldCheck,
+}
+
+const CREDENTIAL_COLORS = {
+  qualification: "#4A90D9",
+  competency: "#F97316",
+  site_induction: "#7C3AED",
+  permit: "#16A34A",
+}
+
+const CREDENTIAL_LABELS = {
+  qualification: "Qualifications",
+  competency: "Competencies",
+  site_induction: "Site Inductions",
+  permit: "Permits & Certificates",
+}
+
+function getStatusBarColor(status) {
+  switch (status) {
+    case "Active":
+      return "#10B981"
+    case "Expiring Soon":
+      return "#D97706"
+    case "Expired":
+      return "#B84B45"
+    case "Payment Pending":
+      return "#0A9FB5"
+    default:
+      return "rgba(255,255,255,0.4)"
+  }
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case "active":
+      return "Active"
+    case "pending_activation":
+      return "Payment Pending"
+    case "deleted":
+      return "Deleted"
+    default:
+      return status
+  }
+}
+
+function getInitials(name) {
+  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+}
+
 export default function DashboardPage() {
   const router = useRouter()
+  const [company, setCompany] = useState(null)
   const [pendingCardholders, setPendingCardholders] = useState([])
   const [expiringCardholders, setExpiringCardholders] = useState([])
+  const [recentCardholders, setRecentCardholders] = useState([])
+  const [allCardholders, setAllCardholders] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [totalCardholders, setTotalCardholders] = useState(0)
   const [activeCardholders, setActiveCardholders] = useState(0)
   const [pendingCount, setPendingCount] = useState(0)
+  const [expiringCount, setExpiringCount] = useState(0)
+  const [expiredCount, setExpiredCount] = useState(0)
+  const [credentialCounts, setCredentialCounts] = useState({ qualification: 0, competency: 0, site_induction: 0, permit: 0 })
+  const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,10 +99,21 @@ export default function DashboardPage() {
       if (!userData?.company_id) return
       const companyId = userData.company_id
 
-      // Pending activations for Payment Required
+      // Company info
+      supabase
+        .from("companies")
+        .select("id, company_name, status")
+        .eq("id", companyId)
+        .single()
+        .then(({ data, error }) => {
+          if (error) console.error("Company fetch error:", error)
+          if (data) setCompany(data)
+        })
+
+      // Pending activations
       supabase
         .from("cardholders")
-        .select("id, full_name, status")
+        .select("id, full_name, status, photo_url")
         .eq("status", "pending_activation")
         .eq("company_id", companyId)
         .limit(2)
@@ -54,7 +127,7 @@ export default function DashboardPage() {
 
       supabase
         .from("cardholders")
-        .select("id, full_name, licence_end_date, status")
+        .select("id, full_name, licence_end_date, status, photo_url")
         .eq("status", "active")
         .eq("company_id", companyId)
         .not("licence_end_date", "is", null)
@@ -64,7 +137,20 @@ export default function DashboardPage() {
           if (data) setExpiringCardholders(data)
         })
 
-      // Overview counts - total non-deleted
+      // Expired licenses
+      const today = new Date().toISOString().split("T")[0]
+      supabase
+        .from("cardholders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+        .eq("company_id", companyId)
+        .not("licence_end_date", "is", null)
+        .lt("licence_end_date", today)
+        .then(({ count }) => {
+          if (count !== null) setExpiredCount(count)
+        })
+
+      // Total count
       supabase
         .from("cardholders")
         .select("id", { count: "exact", head: true })
@@ -93,10 +179,62 @@ export default function DashboardPage() {
         .then(({ count }) => {
           if (count !== null) setPendingCount(count)
         })
+
+      // Expiring count
+      supabase
+        .from("cardholders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+        .eq("company_id", companyId)
+        .not("licence_end_date", "is", null)
+        .lte("licence_end_date", thirtyDaysFromNow.toISOString().split("T")[0])
+        .then(({ count }) => {
+          if (count !== null) setExpiringCount(count)
+        })
+
+      // Recent cardholders with photos (8)
+      supabase
+        .from("cardholders")
+        .select("id, full_name, created_at, status, photo_url, licence_end_date")
+        .eq("company_id", companyId)
+        .neq("status", "deleted")
+        .order("created_at", { ascending: false })
+        .limit(8)
+        .then(({ data }) => {
+          if (data) setRecentCardholders(data)
+        })
+
+      // Credential counts by type
+      supabase
+        .from("cardholder_credentials")
+        .select("qualifications_competencies(type), cardholders!inner(company_id)")
+        .eq("cardholders.company_id", companyId)
+        .then(({ data }) => {
+          if (data) {
+            const counts = { qualification: 0, competency: 0, site_induction: 0, permit: 0 }
+            data.forEach(cred => {
+              const type = cred.qualifications_competencies?.type || "qualification"
+              if (counts[type] !== undefined) counts[type]++
+            })
+            setCredentialCounts(counts)
+          }
+        })
+
+      // All cardholders for search dropdown
+      supabase
+        .from("cardholders")
+        .select("id, full_name, photo_url")
+        .eq("company_id", companyId)
+        .neq("status", "deleted")
+        .order("full_name")
+        .then(({ data }) => {
+          if (data) setAllCardholders(data)
+        })
     }
 
     fetchData()
   }, [])
+
 
   return (
     <div style={{
@@ -110,7 +248,7 @@ export default function DashboardPage() {
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
-          Overview
+          Dashboard
         </h1>
         <Image
           src="/images/qualcard_logo_white.png"
@@ -121,13 +259,13 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* 2-column body */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem", alignItems: "start" }}>
+      {/* 2-column grid: left 2fr, right 0.5fr */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 0.5fr", gap: "1.5rem", alignItems: "start" }}>
 
-        {/* Left col */}
-        <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        {/* LEFT COLUMN */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
-          {/* Search Cardholders */}
+          {/* Search + Actions */}
           <div style={CARD}>
             <p style={{
               color: "rgba(255,255,255,0.6)",
@@ -139,65 +277,258 @@ export default function DashboardPage() {
             }}>
               Search Cardholders
             </p>
-            <input
-              type="text"
-              placeholder="Search by name..."
-              style={{
-                width: "100%",
-                padding: "0.75rem 1rem",
-                background: "rgba(0,0,0,0.2)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "0.5rem",
-                color: "#fff",
-                fontSize: "0.9375rem",
-                outline: "none",
-                boxSizing: "border-box",
-                fontFamily: "inherit",
-              }}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onFocus={e => (e.target.style.borderColor = "rgba(255,255,255,0.3)")}
-              onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
-            />
+            <div style={{ position: "relative", marginBottom: "1rem" }}>
+              <input
+                type="text"
+                placeholder="Search by name..."
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  background: "rgba(0,0,0,0.2)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.5rem",
+                  color: "#fff",
+                  fontSize: "0.9375rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                }}
+                value={searchTerm}
+                onChange={e => {
+                  setSearchTerm(e.target.value)
+                  setShowSearchDropdown(e.target.value.length > 0)
+                }}
+                onFocus={() => setShowSearchDropdown(searchTerm.length > 0)}
+                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+              />
+
+              {/* Search Dropdown */}
+              {showSearchDropdown && searchTerm.trim() && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  marginTop: "0.5rem",
+                  background: "#1f3f3c",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.5rem",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  zIndex: 10,
+                }}>
+                  {(() => {
+                    const filtered = allCardholders.filter(c =>
+                      c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div style={{ padding: "1rem", textAlign: "center" }}>
+                          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", margin: 0 }}>
+                            No cardholders found
+                          </p>
+                        </div>
+                      )
+                    }
+
+                    return filtered.slice(0, 8).map(({ id, full_name, photo_url }) => (
+                      <div
+                        key={id}
+                        onClick={() => {
+                          router.push(`/dashboard/cardholders/${id}`)
+                          setSearchTerm("")
+                          setShowSearchDropdown(false)
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.75rem",
+                          padding: "0.75rem 1rem",
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          cursor: "pointer",
+                          transition: "background 0.15s ease",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        {photo_url ? (
+                          <img
+                            src={photo_url}
+                            alt={full_name}
+                            style={{ width: 36, height: 36, borderRadius: "0.375rem", objectFit: "cover", flexShrink: 0 }}
+                            onError={e => e.currentTarget.style.display = "none"}
+                          />
+                        ) : null}
+                        {!photo_url && (
+                          <div style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "0.375rem",
+                            background: "rgba(255,255,255,0.05)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "rgba(255,255,255,0.5)",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            flexShrink: 0,
+                          }}>
+                            {getInitials(full_name)}
+                          </div>
+                        )}
+                        <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 500, margin: 0, flex: 1 }}>
+                          {full_name}
+                        </p>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+              <button
+                onClick={() => router.push("/dashboard/cardholders")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1rem",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.5rem",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                }}
+              >
+                <Plus size={16} />
+                Add
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/cardholders")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1rem",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.5rem",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                }}
+              >
+                <Users size={16} />
+                All
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/cardholders?bulk=true")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem 1rem",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "0.5rem",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                }}
+              >
+                <ListChecks size={16} />
+                Bulk
+              </button>
+            </div>
           </div>
 
-          {/* Payment Required */}
-          <div style={CARD}>
-            <p style={{
-              color: "rgba(255,255,255,0.6)",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              margin: "0 0 0.25rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.07em",
-            }}>
-              Payment Required
-            </p>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
-              Cardholders awaiting activation
-            </p>
+          {/* Payment Required + Expiring Soon (side by side) */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
 
-            {(() => {
-              const filtered = searchTerm
-                ? pendingCardholders.filter(c => c.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
-                : pendingCardholders
-              if (filtered.length === 0) return (
-                <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
-                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.9375rem", margin: 0 }}>
-                    {searchTerm ? "No matching cardholders" : "No pending activations"}
-                  </p>
-                </div>
-              )
-              return (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-                  {filtered.map(({ id, full_name }) => (
+            {/* Payment Required */}
+            <div style={CARD}>
+              <p style={{
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                margin: "0 0 0.25rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.07em",
+              }}>
+                Payment Required
+              </p>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
+                Cardholders awaiting activation
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                {pendingCardholders.length === 0 ? (
+                  <>
+                    {[0, 1].map(i => (
+                      <div key={i} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "0.5rem",
+                        overflow: "hidden",
+                        height: "80px",
+                      }} />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {pendingCardholders.map(({ id, full_name, photo_url }) => (
                     <div key={id} style={{
+                      display: "flex",
+                      flexDirection: "column",
                       background: "rgba(255,255,255,0.05)",
                       border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: "0.5rem",
-                      padding: "0.875rem 1rem",
+                      overflow: "hidden",
                       cursor: "pointer",
-                      transition: "transform 0.15s ease, opacity 0.15s ease",
+                      transition: "all 0.15s ease",
                     }}
                       onClick={() => router.push(`/dashboard/cardholders/${id}`)}
                       onMouseEnter={e => {
@@ -211,48 +542,295 @@ export default function DashboardPage() {
                         e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
                       }}
                     >
-                      <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem", lineHeight: 1.3 }}>
-                        {full_name}
-                      </p>
-                      <p style={{ color: "#F97316", fontSize: "0.8125rem", fontWeight: 500, margin: "0 0 0.25rem" }}>
+                      <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                        {photo_url ? (
+                          <img
+                            src={photo_url}
+                            alt={full_name}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            onError={e => e.currentTarget.style.display = "none"}
+                          />
+                        ) : null}
+                        {!photo_url && (
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "0.375rem",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            background: "rgba(255,255,255,0.05)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "rgba(255,255,255,0.5)",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            flexShrink: 0,
+                          }}>
+                            {getInitials(full_name)}
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                            {full_name}
+                          </p>
+                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                        </div>
+                      </div>
+                      <div style={{
+                        background: "#0A9FB5",
+                        color: "#fff",
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }}>
                         Payment Pending
-                      </p>
-                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", margin: 0 }}>
-                        Awaiting activation
-                      </p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )
-            })()}
-
-            {pendingCardholders.length > 0 && (
-              <div style={{ textAlign: "right" }}>
-                <a href="/dashboard/cardholders?status=pending_activation" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?status=pending_activation") }} style={{
-                  color: "rgba(255,255,255,0.55)",
-                  fontSize: "0.8125rem",
-                  textDecoration: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                  transition: "color 0.15s ease",
-                }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.color = "#2f6f6a"
-                    e.currentTarget.style.textDecoration = "underline"
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.color = "rgba(255,255,255,0.55)"
-                    e.currentTarget.style.textDecoration = "none"
-                  }}
-                >
-                  View all <ArrowRight size={13} />
-                </a>
+                    ))}
+                    {pendingCardholders.length === 1 && (
+                      <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "0.5rem",
+                        overflow: "hidden",
+                        height: "80px",
+                      }} />
+                    )}
+                  </>
+                )}
               </div>
-            )}
+
+              {pendingCardholders.length > 0 && (
+                <div style={{ textAlign: "right" }}>
+                  <a href="/dashboard/cardholders?status=pending_activation" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?status=pending_activation") }} style={{
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: "0.8125rem",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    transition: "color 0.15s ease",
+                  }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = "#2f6f6a"
+                      e.currentTarget.style.textDecoration = "underline"
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                      e.currentTarget.style.textDecoration = "none"
+                    }}
+                  >
+                    View all <ArrowRight size={13} />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Expiring Soon */}
+            <div style={CARD}>
+              <p style={{
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                margin: "0 0 0.25rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.07em",
+              }}>
+                Expiring Soon
+              </p>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
+                Subscriptions expiring within 30 days
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                {expiringCardholders.length === 0 ? (
+                  <>
+                    {[0, 1].map(i => (
+                      <div key={i} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "0.5rem",
+                        overflow: "hidden",
+                        height: "80px",
+                      }} />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {expiringCardholders.map(({ id, full_name, licence_end_date, photo_url }) => (
+                    <div key={id} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "0.5rem",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                      onClick={() => router.push(`/dashboard/cardholders/${id}`)}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = "translateY(-2px)"
+                        e.currentTarget.style.background = "rgba(255,255,255,0.09)"
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = "translateY(0)"
+                        e.currentTarget.style.background = "rgba(255,255,255,0.05)"
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                      }}
+                    >
+                      <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                        {photo_url ? (
+                          <img
+                            src={photo_url}
+                            alt={full_name}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            onError={e => e.currentTarget.style.display = "none"}
+                          />
+                        ) : null}
+                        {!photo_url && (
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "0.375rem",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            background: "rgba(255,255,255,0.05)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "rgba(255,255,255,0.5)",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            flexShrink: 0,
+                          }}>
+                            {getInitials(full_name)}
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                            {full_name}
+                          </p>
+                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                        </div>
+                      </div>
+                      <div style={{
+                        background: "#D97706",
+                        color: "#fff",
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }}>
+                        Expires {new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
+                      </div>
+                    </div>
+                    ))}
+                    {expiringCardholders.length === 1 && (
+                      <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderRadius: "0.5rem",
+                        overflow: "hidden",
+                        height: "80px",
+                      }} />
+                    )}
+                  </>
+                )}
+              </div>
+
+              {expiringCardholders.length > 0 && (
+                <div style={{ textAlign: "right" }}>
+                  <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: "0.8125rem",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    transition: "color 0.15s ease",
+                  }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = "#2f6f6a"
+                      e.currentTarget.style.textDecoration = "underline"
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                      e.currentTarget.style.textDecoration = "none"
+                    }}
+                  >
+                    View all <ArrowRight size={13} />
+                  </a>
+                </div>
+              )}
+            </div>
+
           </div>
 
-          {/* Expiring Soon */}
+          {/* Expired Licences Banner (dismissible) */}
+          {expiredCount > 0 && !dismissed && (
+            <div style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "1rem",
+              padding: "1.25rem 1.5rem",
+              background: "rgba(184, 75, 69, 0.25)",
+              border: "1px solid rgba(184, 75, 69, 0.6)",
+              borderRadius: "0.75rem",
+            }}>
+              <AlertCircle size={20} style={{ color: "#B84B45", flexShrink: 0, marginTop: "0.125rem" }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem" }}>
+                  {expiredCount} cardholder licence{expiredCount === 1 ? "" : "s"} expired
+                </p>
+                <p style={{ color: "#fff", fontSize: "0.8125rem", margin: "0" }}>
+                  Review expired cardholders in the list
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", flexShrink: 0 }}>
+                <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
+                  color: "#fff",
+                  fontSize: "0.8125rem",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  transition: "opacity 0.15s ease",
+                  cursor: "pointer",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                >
+                  View All
+                </a>
+                <button
+                  onClick={() => setDismissed(true)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.5)",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "color 0.15s ease",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+                  onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Recently Added */}
           <div style={CARD}>
             <p style={{
               color: "rgba(255,255,255,0.6)",
@@ -262,56 +840,128 @@ export default function DashboardPage() {
               textTransform: "uppercase",
               letterSpacing: "0.07em",
             }}>
-              Expiring Soon
+              Recently Added
             </p>
             <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
-              Licences expiring within 30 days
+              Most recently added cardholders
             </p>
-            {expiringCardholders.length === 0 ? (
-              <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
-                <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.9375rem", margin: 0 }}>
-                  No upcoming expiries
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
-                {expiringCardholders.map(({ id, full_name, licence_end_date }) => (
-                  <div key={id} style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "0.5rem",
-                    padding: "0.875rem 1rem",
-                    cursor: "pointer",
-                    transition: "transform 0.15s ease, opacity 0.15s ease",
-                  }}
-                    onClick={() => router.push(`/dashboard/cardholders/${id}`)}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = "translateY(-2px)"
-                      e.currentTarget.style.background = "rgba(255,255,255,0.09)"
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.75rem" }}>
+              {recentCardholders.length === 0 ? (
+                <>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+                    <div key={i} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "transparent",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "0.5rem",
+                      overflow: "hidden",
+                      minHeight: "100px",
+                    }} />
+                  ))}
+                </>
+              ) : (
+                <>
+                  {recentCardholders.map(({ id, full_name, created_at, status, photo_url, licence_end_date }) => {
+                  const licenceStatus = getLicenceStatus(licence_end_date)
+                  return (
+                    <div key={id} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "0.5rem",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
                     }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = "translateY(0)"
-                      e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
-                    }}
-                  >
-                    <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem", lineHeight: 1.3 }}>
-                      {full_name}
-                    </p>
-                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8125rem", margin: "0 0 0.5rem" }}>
-                      Licence
-                    </p>
-                    <p style={{ color: "#F59E0B", fontSize: "0.75rem", fontWeight: 500, margin: 0 }}>
-                      Expires {new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {expiringCardholders.length > 0 && (
-              <div style={{ textAlign: "right" }}>
-                <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
+                      onClick={() => router.push(`/dashboard/cardholders/${id}`)}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = "translateY(-2px)"
+                        e.currentTarget.style.background = "rgba(255,255,255,0.09)"
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = "translateY(0)"
+                        e.currentTarget.style.background = "rgba(255,255,255,0.05)"
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                      }}
+                    >
+                      <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
+                        {photo_url ? (
+                          <img
+                            src={photo_url}
+                            alt={full_name}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            onError={e => e.currentTarget.style.display = "none"}
+                          />
+                        ) : null}
+                        {!photo_url && (
+                          <div style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "0.375rem",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            background: "rgba(255,255,255,0.05)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "rgba(255,255,255,0.5)",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            flexShrink: 0,
+                          }}>
+                            {getInitials(full_name)}
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                              {full_name}
+                            </p>
+                            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0.25rem 0 0" }}>
+                              {new Date(created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          </div>
+                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                        </div>
+                      </div>
+                      <div style={{
+                        background: getStatusBarColor(licenceStatus.status),
+                        color: "#fff",
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        textAlign: "center",
+                      }}>
+                        {licenceStatus.status}
+                      </div>
+                    </div>
+                  )
+                  })}
+                  {recentCardholders.length < 8 && (
+                    <>
+                      {[...Array(8 - recentCardholders.length)].map((_, i) => (
+                        <div key={`placeholder-${i}`} style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          background: "transparent",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: "0.5rem",
+                          overflow: "hidden",
+                          minHeight: "100px",
+                        }} />
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {recentCardholders.length > 0 && (
+              <div style={{ textAlign: "right", marginTop: "1rem" }}>
+                <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
                   color: "rgba(255,255,255,0.55)",
                   fontSize: "0.8125rem",
                   textDecoration: "none",
@@ -337,8 +987,10 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* Right col */}
-        <div style={{ gridColumn: "span 1" }}>
+        {/* RIGHT SIDEBAR */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+          {/* Company Info */}
           <div style={CARD}>
             <p style={{
               color: "rgba(255,255,255,0.6)",
@@ -348,34 +1000,122 @@ export default function DashboardPage() {
               textTransform: "uppercase",
               letterSpacing: "0.07em",
             }}>
-              Company Overview
+              Company Info
             </p>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "1rem", marginBottom: "1.25rem" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.375rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Cardholders
-              </p>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem" }}>Total</span>
-                <span style={{ color: "#fff", fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em" }}>{totalCardholders}</span>
+            {company && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
+                  {company.company_name}
+                </p>
+                <p style={{
+                  color: "#fff",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  padding: "0.375rem 0.625rem",
+                  background: company.status === "active" ? "#10B981" : "#4A5568",
+                  borderRadius: "0.25rem",
+                  width: "fit-content",
+                  margin: 0,
+                  flexShrink: 0,
+                }}>
+                  {company.status === "active" ? "Active" : "Inactive"}
+                </p>
               </div>
+            )}
+          </div>
+
+          {/* Cardholders Overview */}
+          <div style={CARD}>
+            <p style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              margin: "0 0 1rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+            }}>
+              Cardholders Overview
+            </p>
+
+            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", paddingBottom: "1rem", marginBottom: "1rem" }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.625rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Total
+              </p>
+              <p style={{ color: "#fff", fontSize: "2.25rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+                {totalCardholders}
+              </p>
             </div>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "1rem" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Status Breakdown
-              </p>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Status Breakdown
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {[
-                { label: "Active", value: activeCardholders },
-                { label: "Pending", value: pendingCount },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.625rem" }}>
-                  <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem" }}>{label}</span>
+                { label: "Active", value: activeCardholders, color: "#10B981" },
+                { label: "Pending", value: pendingCount, color: "#0A9FB5" },
+                { label: "Expiring Soon", value: expiringCount, color: "#F59E0B" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+                    {label}
+                  </span>
                   <span style={{ color: "#fff", fontSize: "1rem", fontWeight: 600 }}>{value}</span>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Credentials Overview */}
+          <div style={CARD}>
+            <p style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              margin: "0 0 1rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+            }}>
+              Credentials Overview
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              {Object.entries(credentialCounts).map(([type, count]) => {
+                const Icon = CREDENTIAL_ICONS[type]
+                const color = CREDENTIAL_COLORS[type]
+                const label = CREDENTIAL_LABELS[type]
+                return (
+                  <div key={type} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: "0.75rem",
+                    background: "rgba(255,255,255,0.04)",
+                    borderLeft: `3px solid ${color}`,
+                    borderRadius: "0.375rem",
+                  }}>
+                    <Icon size={18} style={{ color, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8125rem", margin: 0 }}>
+                        {label}
+                      </p>
+                    </div>
+                    <span style={{ color: "#fff", fontSize: "1rem", fontWeight: 700 }}>
+                      {count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
         </div>
 
       </div>

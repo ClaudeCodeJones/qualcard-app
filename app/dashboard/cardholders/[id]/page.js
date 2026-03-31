@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { QRCodeSVG } from "qrcode.react"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
 import {
   ArrowLeft, ExternalLink, Copy, Check,
   GraduationCap, Award, ClipboardCheck, ShieldCheck,
@@ -135,10 +136,11 @@ function PhotoCircle({ photoUrl, name, size = 80, borderColor = "rgba(255,255,25
       <div style={{
         width: size,
         height: size,
-        borderRadius: "50%",
+        borderRadius: "1rem",
         overflow: "hidden",
         flexShrink: 0,
         border: `2.5px solid ${borderColor}`,
+        boxShadow: "inset 0 0 6px rgba(255,255,255,0.1)",
       }}>
         <Image
           src={photoUrl}
@@ -890,7 +892,7 @@ function AddCredentialModal({ section, cardholderId, companyId, credentialsLibra
                 style={{ marginTop: "0.15rem", flexShrink: 0, accentColor: "#2f6f6a", width: "15px", height: "15px" }}
               />
               <span style={{ fontSize: "0.875rem", color: "#374151", lineHeight: 1.5 }}>
-                I confirm this credential has been sighted and verified
+                I confirm the details entered above are true and correct
               </span>
             </label>
 
@@ -1420,7 +1422,6 @@ export default function CardholderDetailPage() {
         .from("qualifications_competencies")
         .select("id, name, type")
         .eq("is_active", true)
-        .or(`scope_company_id.is.null,scope_company_id.eq.${companyId}`)
         .order("name")
 
       setCredentialsLibrary(credsLib ?? [])
@@ -1616,21 +1617,41 @@ export default function CardholderDetailPage() {
   }
 
   const profileUrl = `${APP_URL}/card/${cardholder.slug}`
-  const licenceBadge = getLicenceBadge(cardholder.licence_end_date)
+  const licenceStatus = getLicenceStatus(cardholder.licence_end_date)
 
-  const headerAction = (() => {
-    const { status, licence_end_date } = cardholder
-    if (status === "pending_activation") return { label: "Activate", bg: "#F97316", onClick: handleActivate }
-    if (status === "active" || status === "expired") {
-      if (licence_end_date) {
-        const daysLeft = Math.ceil((new Date(licence_end_date) - new Date()) / (1000 * 60 * 60 * 24))
-        if (daysLeft <= 30) return { label: "Renew Now", bg: "#EF4444", onClick: handleRenew }
-        if (daysLeft <= 90) return { label: "Renew", bg: "#F59E0B", onClick: handleRenew }
-      }
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case "Payment Pending":
+        return { bg: "#F97316", border: "#F97316", text: "#FFFFFF" }
+      case "Active":
+        return { bg: "transparent", border: "#16A34A", text: "#16A34A" }
+      case "Expiring Soon":
+        return { bg: "#F59E0B", border: "#F59E0B", text: "#FFFFFF" }
+      case "Expired":
+        return { bg: "transparent", border: "#EF4444", text: "#EF4444" }
+      default:
+        return { bg: "transparent", border: "#16A34A", text: "#16A34A" }
     }
-    if (status === "expired") return { label: "Renew", bg: "#EF4444", onClick: handleRenew }
-    return null
-  })()
+  }
+
+  const getFullDateLabel = (dateLabel) => {
+    if (!dateLabel || !cardholder.licence_end_date) return null
+    const dateStr = new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })
+    return `${dateLabel}: ${dateStr}`
+  }
+
+  const getButtonBg = (buttonLabel) => {
+    if (buttonLabel === "Activate") return "#F97316"
+    if (buttonLabel === "Renew") return "#F59E0B"
+    if (buttonLabel === "Renew Now") return "#EF4444"
+    return "#F97316"
+  }
+
+  const headerAction = licenceStatus.showButton ? {
+    label: licenceStatus.buttonLabel,
+    bg: getButtonBg(licenceStatus.buttonLabel),
+    onClick: licenceStatus.buttonLabel === "Activate" ? handleActivate : handleRenew,
+  } : null
 
   const visibleActions = DASHBOARD_ACTIONS.filter((a) => {
     if (a.key === "archive") return cardholder.status !== "archived"
@@ -1676,14 +1697,17 @@ export default function CardholderDetailPage() {
         padding: "1rem 1.5rem",
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: "1rem",
       }}>
-        <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={80} borderColor={getPhotoBorderColor(cardholder.status)} />
+        {/* Left: Photo + Profile Info */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={120} borderColor={getPhotoBorderColor(cardholder.status)} />
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{
             margin: "0 0 0.15rem",
-            fontSize: "clamp(1.125rem, 2vw, 1.5rem)",
+            fontSize: "clamp(1rem, 1.8vw, 1.375rem)",
             fontWeight: 800,
             color: "#FFFFFF",
             textTransform: "uppercase",
@@ -1712,46 +1736,46 @@ export default function CardholderDetailPage() {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
             >
-              Click here for Profile URL
+              View Public Profile
               <ExternalLink size={12} strokeWidth={2} />
             </a>
             <CopyButton textToCopy={profileUrl} />
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+            {/* Status badge - licence-based only */}
             {(() => {
-              const badgeStyle = getStatusBadgeColor(cardholder.status)
+              const style = getStatusBadgeStyle(licenceStatus.status)
               return (
                 <span style={{
                   display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 600, color: badgeStyle.text,
-                  backgroundColor: badgeStyle.bg,
-                  border: `1.5px solid ${badgeStyle.border}`, whiteSpace: "nowrap",
+                  fontSize: "0.75rem", fontWeight: 600, color: style.text,
+                  backgroundColor: style.bg,
+                  border: `1.5px solid ${style.border}`, whiteSpace: "nowrap",
                 }}>
-                  {getStatusLabel(cardholder.status)}
+                  {licenceStatus.status}
                 </span>
               )
             })()}
-            {cardholder.licence_end_date && (
-              <span style={{
-                display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                fontSize: "0.75rem", fontWeight: 400, color: "#FFFFFF",
-                backgroundColor: "transparent",
-                border: "1.5px solid rgba(255,255,255,0.8)", whiteSpace: "nowrap",
-              }}>
-                EXPIRES: {new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}
-              </span>
-            )}
-            {licenceBadge && (
-              <span style={{
-                display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                fontSize: "0.75rem", fontWeight: 600, color: "#FFFFFF",
-                backgroundColor: licenceBadge.color,
-                border: "1.5px solid rgba(255,255,255,0.6)", whiteSpace: "nowrap",
-              }}>
-                {licenceBadge.label}
-              </span>
-            )}
+
+            {/* Date badge - only if licence_end_date exists */}
+            {(() => {
+              const fullDateLabel = getFullDateLabel(licenceStatus.dateLabel)
+              return fullDateLabel ? (
+                <span style={{
+                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
+                  fontSize: "0.75rem", fontWeight: 600,
+                  color: "rgba(255,255,255,0.75)",
+                  backgroundColor: "transparent",
+                  border: "1.5px solid rgba(255,255,255,0.3)",
+                  whiteSpace: "nowrap",
+                }}>
+                  {fullDateLabel}
+                </span>
+              ) : null
+            })()}
+
+            {/* Action button */}
             {headerAction && (
               <button
                 onClick={headerAction.onClick}
@@ -1773,8 +1797,10 @@ export default function CardholderDetailPage() {
           {actionError && (
             <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", color: "#FCA5A5" }}>{actionError}</p>
           )}
+          </div>
         </div>
 
+        {/* Middle: Compliance Bar - Centered */}
         {(() => {
           const SECTION_COLORS = {
             qualification: "#4A90D9",
@@ -1796,66 +1822,90 @@ export default function CardholderDetailPage() {
           }
           const total = Object.values(counts).reduce((a, b) => a + b, 0)
           if (total === 0) return null
+          const entries = Object.entries(counts).filter(([, count]) => count > 0)
           return (
             <div style={{
               flex: 1,
               minWidth: 0,
               display: "flex",
               flexDirection: "column",
+              alignItems: "center",
               justifyContent: "center",
-              gap: "0.5rem",
-              padding: "0 0.5rem",
+              gap: "0.75rem",
+              padding: "0 1.5rem",
             }}>
+              {/* Bar */}
               <div style={{
+                width: "100%",
+                maxWidth: "500px",
+                height: "12px",
                 display: "flex",
-                height: "10px",
-                borderRadius: "999px",
+                borderRadius: "0.375rem",
                 overflow: "hidden",
-                gap: "2px",
               }}>
-                {Object.entries(counts).map(([key, count]) => {
-                  if (count === 0) return null
-                  const pct = (count / total) * 100
-                  return (
-                    <div
-                      key={key}
-                      title={`${SECTION_LABELS[key]}: ${count}`}
-                      style={{
-                        width: `${pct}%`,
-                        background: SECTION_COLORS[key],
-                        borderRadius: "999px",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )
-                })}
+                {entries.map(([key, count], idx) => (
+                  <div
+                    key={key}
+                    title={`${SECTION_LABELS[key]}: ${count}`}
+                    style={{
+                      flex: count,
+                      background: SECTION_COLORS[key],
+                      borderRight: idx < entries.length - 1 ? "2px solid rgba(0,0,0,0.15)" : "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                ))}
               </div>
+              {/* Legend - proportionally aligned to bar */}
               <div style={{
+                width: "100%",
+                maxWidth: "500px",
                 display: "flex",
-                flexWrap: "wrap",
-                gap: "0.375rem 0.75rem",
-                justifyContent: "center",
               }}>
-                {Object.entries(counts).map(([key, count]) => {
-                  if (count === 0) return null
-                  return (
-                    <span key={key} style={{
-                      fontSize: "0.6875rem",
+                {entries.map(([key, count]) => (
+                  <div
+                    key={key}
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.375rem",
+                      paddingTop: "0.25rem",
+                    }}
+                  >
+                    <div style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: SECTION_COLORS[key],
+                      flexShrink: 0,
+                    }} />
+                    <span style={{
+                      fontSize: "0.75rem",
                       fontWeight: 600,
-                      color: SECTION_COLORS[key],
+                      color: "#FFFFFF",
                       whiteSpace: "nowrap",
                     }}>
                       {count} {SECTION_LABELS[key]}
                     </span>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           )
         })()}
 
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ background: "#FFFFFF", borderRadius: "0.5rem", padding: "0.5rem", display: "inline-flex" }}>
+        {/* Right: QR Code - Right aligned */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+          <div style={{
+            background: "#CBD5E1",
+            borderRadius: "1rem",
+            padding: "1rem",
+            display: "inline-flex",
+            opacity: 0.9,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}>
             <QRCodeSVG value={profileUrl} size={80} />
           </div>
         </div>

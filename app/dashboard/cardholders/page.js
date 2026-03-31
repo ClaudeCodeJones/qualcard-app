@@ -1,26 +1,62 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
+import { GraduationCap, Award, ClipboardCheck, Shield, ChevronRight } from "lucide-react"
 
-function getStatusBadge(status, licence_end_date) {
-  if (licence_end_date && new Date(licence_end_date) < new Date()) {
-    return { label: "Expired", bg: "rgba(239,68,68,0.15)", color: "#FCA5A5" }
+function getStatusColour(status) {
+  switch (status) {
+    case "Active":
+      return "#6EE7B7"
+    case "Expiring Soon":
+      return "#FCD34D"
+    case "Expired":
+      return "#FCA5A5"
+    case "Payment Pending":
+      return "#FDBA74"
+    default:
+      return "rgba(255,255,255,0.7)"
   }
-  if (status === "active" && licence_end_date) {
-    const exp = new Date(licence_end_date)
-    const in30 = new Date(); in30.setDate(in30.getDate() + 30)
-    if (exp <= in30) return { label: "Expiring Soon", bg: "rgba(245,158,11,0.15)", color: "#FCD34D" }
-  }
-  if (status === "active") return { label: "Active", bg: "rgba(47,111,106,0.2)", color: "#6EE7B7" }
-  if (status === "pending_activation") return { label: "Payment Pending", bg: "rgba(249,115,22,0.15)", color: "#FDBA74" }
-  return { label: status?.replace(/_/g, " ") ?? "", bg: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)" }
 }
+
+function getStatusBarColour(status) {
+  switch (status) {
+    case "Active":
+      return "#10B981"
+    case "Expiring Soon":
+      return "#D97706"
+    case "Expired":
+      return "#B84B45"
+    case "Payment Pending":
+      return "#0A9FB5"
+    default:
+      return "rgba(255,255,255,0.7)"
+  }
+}
+
+function getStatusBarBackground(status) {
+  switch (status) {
+    case "Active":
+      return "rgba(16, 185, 129, 0.12)"
+    case "Expiring Soon":
+      return "rgba(217, 119, 6, 0.12)"
+    case "Expired":
+      return "rgba(184, 75, 69, 0.12)"
+    case "Payment Pending":
+      return "rgba(10, 159, 181, 0.12)"
+    default:
+      return "transparent"
+  }
+}
+
 
 export default function CardholdersPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [cardholders, setCardholders] = useState([])
+  const [credentials, setCredentials] = useState({})
   const [filter, setFilter] = useState("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newName, setNewName] = useState("")
@@ -30,7 +66,7 @@ export default function CardholdersPage() {
   const [companyName, setCompanyName] = useState("")
   const [formError, setFormError] = useState("")
   const [selectedIds, setSelectedIds] = useState([])
-  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkMode, setBulkMode] = useState(searchParams.get("bulk") === "true")
   const [bulkType, setBulkType] = useState(null)
 
   useEffect(() => {
@@ -40,6 +76,26 @@ export default function CardholdersPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setCardholders(data)
+      })
+
+    supabase
+      .from("cardholder_credentials")
+      .select("cardholder_id, qualifications_competencies(type)")
+      .then(({ data }) => {
+        if (data) {
+          const credCounts = {}
+          data.forEach(cred => {
+            const chId = cred.cardholder_id
+            if (!credCounts[chId]) {
+              credCounts[chId] = { qualification: 0, competency: 0, site_induction: 0, permit: 0 }
+            }
+            const type = cred.qualifications_competencies?.type || "qualification"
+            if (credCounts[chId][type] !== undefined) {
+              credCounts[chId][type]++
+            }
+          })
+          setCredentials(credCounts)
+        }
       })
 
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -147,30 +203,80 @@ export default function CardholdersPage() {
             </>
           )}
           {bulkMode && bulkType === "update" && (
-            <button
-              onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
-              style={{
-                padding: "0.625rem 1.125rem",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "0.5rem",
-                color: "rgba(255,255,255,0.5)",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                transition: "opacity 0.15s ease, transform 0.15s ease",
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-              onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
-            >
-              Cancel
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  const allCardholderIds = cardholders.filter(c => c.status !== "deleted").map(c => c.id)
+                  setSelectedIds(allCardholderIds)
+                }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Select All
+              </button>
+              <button
+                onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Cancel
+              </button>
+            </>
           )}
           {bulkMode && bulkType === "activate" && (
             <>
+              <button
+                onClick={() => {
+                  const allCardholderIds = cardholders.filter(c => c.status !== "deleted").map(c => c.id)
+                  setSelectedIds(allCardholderIds)
+                }}
+                style={{
+                  padding: "0.625rem 1.125rem",
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "0.5rem",
+                  color: "rgba(255,255,255,0.5)",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  transition: "opacity 0.15s ease, transform 0.15s ease",
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                Select All
+              </button>
               {selectedIds.length > 0 && (
                 <>
                   <button
@@ -292,21 +398,24 @@ export default function CardholdersPage() {
             <option value="active">Active</option>
             <option value="payment">Payment Pending</option>
             <option value="expiring">Expiring Soon</option>
+            <option value="expired">Expired</option>
           </select>
 
         </div>
 
         {(() => {
-          const today = new Date()
-          const in30 = new Date(); in30.setDate(today.getDate() + 30)
           const filtered = cardholders.filter(c => {
-            if (filter === "active") return c.status === "active"
-            if (filter === "payment") return c.status === "pending_activation"
-            if (filter === "expiring") {
-              if (!c.licence_end_date) return false
-              const exp = new Date(c.licence_end_date)
-              return exp >= today && exp <= in30
-            }
+            const licenceStatus = getLicenceStatus(c.licence_end_date)
+
+            // Bulk mode filtering
+            if (bulkMode && bulkType === "activate") return c.status === "pending_activation"
+            if (bulkMode && bulkType === "renew") return licenceStatus.status === "Expired" || licenceStatus.status === "Expiring Soon"
+
+            // Regular filter
+            if (filter === "active") return licenceStatus.status === "Active"
+            if (filter === "payment") return licenceStatus.status === "Payment Pending"
+            if (filter === "expiring") return licenceStatus.status === "Expiring Soon"
+            if (filter === "expired") return licenceStatus.status === "Expired"
             return true
           })
           if (filtered.length === 0) return (
@@ -316,16 +425,34 @@ export default function CardholdersPage() {
               </p>
             </div>
           )
-          const visible = filtered.slice(0, 6)
+          const visible = filtered.slice(0, 8)
           return (
             <>
             <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
               Recent Cardholders
             </p>
+            <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
+                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#4A90D9" }}></div>
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>Qualifications</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
+                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#F97316" }}></div>
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>Competencies</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
+                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#7C3AED" }}></div>
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>Site Inductions</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
+                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#16A34A" }}></div>
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>Permits</span>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {visible.map(({ id, full_name, status, licence_end_date, photo_url }) => {
                 const isDisabled = status === "deleted"
-                const badge = getStatusBadge(status, licence_end_date)
+                const licenceStatus = getLicenceStatus(licence_end_date)
                 const isSelected = selectedIds.includes(id)
                 return (
                   <div
@@ -346,6 +473,10 @@ export default function CardholdersPage() {
                       cursor: isDisabled ? "default" : "pointer",
                       opacity: isDisabled ? 0.5 : 1,
                       transition: "background 0.15s ease, opacity 0.15s ease",
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                      minHeight: "202px",
                     }}
                     onMouseEnter={e => {
                       if (!isSelected && !isDisabled) e.currentTarget.style.background = "rgba(255,255,255,0.07)"
@@ -373,54 +504,18 @@ export default function CardholdersPage() {
                         }}
                       />
                     )}
-                    <div style={{ paddingLeft: bulkMode ? "1.5rem" : 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ paddingLeft: bulkMode ? "1.5rem" : 0, display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 700, margin: "0 0 0.25rem", lineHeight: 1.3 }}>
-                          {full_name}
-                        </p>
-                        <p style={{ margin: "0 0 0.375rem" }}>
-                          <span style={{ color: badge.color, fontSize: "0.8125rem", fontWeight: 500 }}>
-                            {badge.label}
-                          </span>
-                        </p>
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8125rem", margin: "0 0 0.75rem" }}>
-                          {licence_end_date
-                            ? `Expires ${new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}`
-                            : "No expiry"}
-                        </p>
-                        {(status === "pending_activation" || status === "active") && (
-                          <button
-                            onClick={async e => {
-                              e.stopPropagation()
-                              const msg = status === "pending_activation"
-                                ? "Activate this cardholder and start their 12-month licence?"
-                                : "Renew this cardholder for another 12 months?"
-                              if (!confirm(msg)) return
-                              await applyActivation(id)
-                              router.refresh()
-                            }}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              height: "36px",
-                              minWidth: "100px",
-                              padding: "0 1rem",
-                              background: "#2f6f6a",
-                              border: "none",
-                              borderRadius: "0.375rem",
-                              color: "#fff",
-                              fontSize: "0.875rem",
-                              fontWeight: 600,
-                              fontFamily: "inherit",
-                              cursor: "pointer",
-                              transition: "opacity 0.15s ease",
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-                            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                          >
-                            {status === "pending_activation" ? "Activate" : "Renew"}
-                          </button>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+                            {full_name}
+                          </p>
+                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                        </div>
+                        {licenceStatus.dateLabel && (
+                          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8125rem", margin: 0 }}>
+                            {`${licenceStatus.dateLabel} ${new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}`}
+                          </p>
                         )}
                       </div>
                       <div style={{ flexShrink: 0, marginLeft: "1rem" }}>
@@ -428,7 +523,7 @@ export default function CardholdersPage() {
                           <img
                             src={photo_url}
                             alt={full_name}
-                            style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", display: "block" }}
+                            style={{ width: 56, height: 56, borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", display: "block" }}
                             onError={e => {
                               e.currentTarget.style.display = "none"
                               e.currentTarget.nextSibling.style.display = "flex"
@@ -436,7 +531,7 @@ export default function CardholdersPage() {
                           />
                         ) : null}
                         <div style={{
-                          width: 56, height: 56, borderRadius: "50%",
+                          width: 56, height: 56, borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.15)",
                           background: "rgba(255,255,255,0.05)",
                           display: photo_url ? "none" : "flex",
                           alignItems: "center", justifyContent: "center",
@@ -446,11 +541,47 @@ export default function CardholdersPage() {
                         </div>
                       </div>
                     </div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingLeft: bulkMode ? "1.5rem" : 0, paddingBottom: "0.75rem" }}>
+                      <div style={{ display: "flex", gap: "0.5rem", opacity: licenceStatus.status === "Expired" ? 0.4 : 1, transition: "opacity 0.15s ease" }}>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #4A90D9", background: "rgba(74, 144, 217, 0.12)", color: "#4A90D9", fontSize: "0.875rem", fontWeight: 600 }}>
+                          {credentials[id]?.qualification || "-"}
+                        </div>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #F97316", background: "rgba(249, 115, 22, 0.12)", color: "#F97316", fontSize: "0.875rem", fontWeight: 600 }}>
+                          {credentials[id]?.competency || "-"}
+                        </div>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #7C3AED", background: "rgba(124, 58, 237, 0.12)", color: "#7C3AED", fontSize: "0.875rem", fontWeight: 600 }}>
+                          {credentials[id]?.site_induction || "-"}
+                        </div>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #16A34A", background: "rgba(22, 163, 74, 0.12)", color: "#16A34A", fontSize: "0.875rem", fontWeight: 600 }}>
+                          {credentials[id]?.permit || "-"}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "auto" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "100%",
+                          padding: "0.5rem 1rem",
+                          borderRadius: "0.375rem",
+                          background: `${getStatusBarColour(licenceStatus.status)}CC`,
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          color: "#fff",
+                          textAlign: "center",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {licenceStatus.status}
+                      </div>
+                    </div>
                   </div>
                 )
               })}
             </div>
-            {filtered.length > 6 && (
+            {filtered.length > 8 && (
               <div style={{ textAlign: "right", marginTop: "1rem" }}>
                 <a
                   href="/dashboard/cardholders"

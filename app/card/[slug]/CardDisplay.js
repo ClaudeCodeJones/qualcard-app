@@ -11,7 +11,12 @@ function formatDate(iso) {
 
 function getStatus(expiryDate) {
   if (!expiryDate) return "Active"
-  return new Date(expiryDate) < new Date() ? "Expired" : "Active"
+  const now = new Date()
+  const expiry = new Date(expiryDate)
+  if (expiry < now) return "Expired"
+  const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24))
+  if (daysLeft <= 30) return "Expiring Soon"
+  return "Active"
 }
 
 function StatusBadge({ status, large, accentClass }) {
@@ -20,6 +25,9 @@ function StatusBadge({ status, large, accentClass }) {
     : "inline-flex items-center rounded-full border text-xs font-medium px-3 py-0.5 whitespace-nowrap"
   if (status === "Expired") {
     return <span className={`${base} bg-red-500 border-red-500 text-white`}>Expired</span>
+  }
+  if (status === "Expiring Soon") {
+    return <span className={`${base} bg-yellow-500 border-yellow-500 text-white`}>Expiring Soon</span>
   }
   return <span className={`${base} bg-white ${accentClass ?? "border-gray-400 text-gray-600"}`}>Active</span>
 }
@@ -30,7 +38,7 @@ function CredentialCard({ cred, onClick, accentClass }) {
   return (
     <button
       onClick={() => onClick(cred)}
-      className="w-full text-left bg-white rounded-2xl px-4 py-3.5 shadow-md border border-gray-100 flex items-center justify-between gap-3 active:bg-gray-50 transition-colors"
+      className="w-full text-left bg-white rounded-2xl px-3 py-2.5 md:px-4 md:py-3.5 shadow-md border border-gray-100 flex items-center justify-between gap-2.5 md:gap-3 active:bg-gray-50 transition-colors"
     >
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-gray-900 text-sm leading-snug">{cred.qualification?.name}</p>
@@ -55,7 +63,7 @@ function CredentialSection({ title, icon, credentials, defaultCount, borderClass
           {icon}
           <h2 className="font-bold text-xs tracking-widest text-gray-700">{title}</h2>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2">
           {displayed.map((cred) => (
             <CredentialCard key={cred.id} cred={cred} onClick={onCredentialClick} accentClass={badgeAccent} />
           ))}
@@ -63,7 +71,7 @@ function CredentialSection({ title, icon, credentials, defaultCount, borderClass
         {hasMore && !showAll && (
           <button
             onClick={() => setShowAll(true)}
-            className={`w-full text-center mt-3 text-sm font-semibold ${textClass}`}
+            className={`w-full text-center mt-3 text-xs font-medium text-gray-500`}
           >
             View all ({credentials.length})
           </button>
@@ -156,6 +164,21 @@ function getCode(cred) {
   const q = cred.qualification
   if (!q) return null
   return q.unit_standard_number || q.competency_code || q.induction_code || q.permit_number || null
+}
+
+function sortCredentials(creds, type) {
+  const manually = creds.filter(c => c.is_manually_ordered === true)
+  const notManually = creds.filter(c => c.is_manually_ordered !== true)
+
+  manually.sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+
+  if (type === "qualification") {
+    notManually.sort((a, b) => new Date(b.issue_date) - new Date(a.issue_date))
+  } else {
+    notManually.sort((a, b) => (a.qualification?.name || "").localeCompare(b.qualification?.name || ""))
+  }
+
+  return [...manually, ...notManually]
 }
 
 export default function CardDisplay({ cardholder, credentials = [], companyName, appUrl }) {
@@ -252,12 +275,12 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
           )}
 
           <div className="w-full mt-5">
-            <div className="w-full bg-green-500 rounded-2xl py-4 flex items-center justify-center shadow-lg">
+            <div className="w-full rounded-2xl py-3 flex items-center justify-center shadow-lg" style={{ background: "#3d7d4f" }}>
               <span className="text-white font-bold text-base tracking-widest">ACTIVE</span>
             </div>
             <button
               onClick={() => setShowQR(true)}
-              className="w-full mt-3 py-2.5 rounded-full border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 shadow-md"
+              className="w-full mt-3 py-2.5 rounded-full border border-gray-400 text-gray-800 text-sm font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 shadow-md"
             >
               <QrCode className="w-4 h-4" />
               Show QR Code
@@ -268,7 +291,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
         {/* Credential sections */}
         <div className="flex flex-col gap-3 mt-3 flex-1">
           {sections.map((section) => {
-            const creds = grouped[section.key] || []
+            const creds = sortCredentials(grouped[section.key] || [], section.key)
             if (creds.length === 0) return null
             return (
               <CredentialSection

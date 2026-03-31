@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
 import { ClipboardCheck, Building2, Users, LogOut, GraduationCap, Search, X, Pencil, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
 import FileUploadArea from "@/app/components/FileUploadArea"
@@ -2318,23 +2319,13 @@ function CardholdersTab() {
   const visible = cardholders.slice(0, visibleCount)
   const hasMore = cardholders.length > visibleCount
 
-  function formatExpiryDate(dateStr) {
-    if (!dateStr) return null
-    return new Date(dateStr).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
-  }
-
-  function isExpired(dateStr) {
-    if (!dateStr) return false
-    return new Date(dateStr) < new Date()
-  }
-
   function exportCSV() {
     const headers = ["Full Name", "Company", "Subscription Expiry", "Created", "Status"]
     const rows = cardholders.map((ch) => [
       ch.full_name ?? "",
       ch.company_name ?? "",
-      ch.licence_end_date ? formatExpiryDate(ch.licence_end_date) : "Not set",
-      ch.created_at ? formatExpiryDate(ch.created_at) : "",
+      ch.licence_end_date ? new Date(ch.licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "Not set",
+      ch.created_at ? new Date(ch.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" }) : "",
       ch.status ?? "",
     ])
     const csv = [headers, ...rows]
@@ -2530,11 +2521,30 @@ function CardholdersTab() {
                       </td>
                     </tr>
                   ) : visible.map((ch) => {
-                    const expiry = formatExpiryDate(ch.licence_end_date)
-                    const expired = isExpired(ch.licence_end_date)
+                    const licenceStatus = getLicenceStatus(ch.licence_end_date)
                     const created = ch.created_at
                       ? new Date(ch.created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
                       : "—"
+                    const expiryDisplay = ch.licence_end_date
+                      ? new Date(ch.licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+                      : "Not set"
+                    const expiryColor = ch.licence_end_date
+                      ? (licenceStatus.status === "Expired" ? "#EF4444" : "#34495E")
+                      : "#9CA3AF"
+                    const statusColor = (() => {
+                      switch (licenceStatus.status) {
+                        case "Active":
+                          return "#10B981"
+                        case "Expiring Soon":
+                          return "#F59E0B"
+                        case "Expired":
+                          return "#EF4444"
+                        case "Payment Pending":
+                          return "#0EA5E9"
+                        default:
+                          return "#4A5568"
+                      }
+                    })()
                     return (
                       <tr
                         key={ch.id}
@@ -2545,11 +2555,24 @@ function CardholdersTab() {
                       >
                         <td style={{ ...tdStyle, fontWeight: 700 }}>{ch.full_name || "—"}</td>
                         <td style={{ ...tdStyle, color: "#374151" }}>{ch.company_name ?? "—"}</td>
-                        <td style={{ ...tdStyle, color: expiry ? (expired ? "#EF4444" : "#34495E") : "#9CA3AF" }}>
-                          {expiry ?? "Not set"}
+                        <td style={{ ...tdStyle, color: expiryColor }}>
+                          {expiryDisplay}
                         </td>
                         <td style={{ ...tdStyle, color: "#374151" }}>{created}</td>
-                        <td style={tdStyle}><CardholderStatusBadge status={ch.status} /></td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "0.25rem 0.625rem",
+                            borderRadius: "1rem",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            color: statusColor,
+                            border: `1.5px solid ${statusColor}`,
+                            whiteSpace: "nowrap",
+                          }}>
+                            {licenceStatus.status}
+                          </span>
+                        </td>
                       </tr>
                     )
                   })}
