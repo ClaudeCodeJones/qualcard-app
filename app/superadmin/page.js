@@ -3164,87 +3164,109 @@ function CredentialsTab() {
             </p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-              {visibleCreds.map((cred) => (
+              {visibleCreds.map((cred) => {
+                const credCode = getCredCode(cred)
+                const scope = scopeLabel(cred.company_id, !cred.company_id)
+                const isInactive = cred.status === "inactive"
+                return (
                 <div
                   key={cred.id}
                   style={{
-                    backgroundColor: "rgba(47, 111, 106, 0.05)",
-                    borderRadius: "0.875rem",
-                    border: "1px solid rgba(47, 111, 106, 0.12)",
-                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
-                    padding: "1.125rem 1.25rem",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: "0.75rem",
+                    border: "1px solid #E5E7EB",
+                    boxShadow: "0 1px 3px rgba(44, 62, 80, 0.06), 0 4px 12px rgba(44, 62, 80, 0.06)",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.75rem",
+                    overflow: "hidden",
+                    opacity: isInactive ? 0.6 : 1,
+                    transition: "box-shadow 0.15s ease",
                   }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 2px 8px rgba(44, 62, 80, 0.1), 0 8px 20px rgba(44, 62, 80, 0.08)"}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 3px rgba(44, 62, 80, 0.06), 0 4px 12px rgba(44, 62, 80, 0.06)"}
                 >
-                  {/* Top: name left, type + status right */}
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
-                    <p style={{ margin: 0, fontWeight: 600, color: "#34495E", fontSize: "0.9375rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }} title={cred.name}>
+                  {/* Header band */}
+                  <div style={{ padding: "0.875rem 1.125rem 0.625rem", borderBottom: "1px solid #F3F4F6" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                      <TypeBadge type={cred.type} />
+                      {isInactive ? (
+                        <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Inactive</span>
+                      ) : (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.6875rem", fontWeight: 600, color: "#16A34A" }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#16A34A", flexShrink: 0 }} />
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p style={{
+                      margin: 0, fontWeight: 700, color: "#1F2937", fontSize: "0.9375rem",
+                      lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical", overflow: "hidden",
+                    }} title={cred.name}>
                       {cred.name}
                     </p>
-                    <div style={{ flexShrink: 0 }}>
-                      <TypeBadge type={cred.type} />
+                  </div>
+
+                  {/* Metadata */}
+                  <div style={{ padding: "0.5rem 1.125rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.2rem" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: "2.75rem" }}>Code</span>
+                      <span style={{ fontSize: "0.8125rem", color: credCode ? "#374151" : "#CBD5E1", fontWeight: credCode ? 500 : 400 }}>
+                        {credCode ?? "—"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: "2.75rem" }}>Scope</span>
+                      <span style={{ fontSize: "0.8125rem", color: "#374151", fontWeight: 500 }}>{scope}</span>
                     </div>
                   </div>
 
-                  {/* Middle: code then scope stacked */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Code</p>
-                      <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
-                        {getCredCode(cred) ?? <span style={{ color: "#D1D5DB" }}>—</span>}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Scope</p>
-                      <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                        {scopeLabel(cred.company_id, !cred.company_id)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bottom: status + actions */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.25rem", borderTop: "1px solid #EFF3F7" }}>
-                    <StatusBadge status={cred.status ?? "active"} />
-                    <div style={{ display: "flex", gap: "0.375rem", alignItems: "center" }}>
-                      <button
-                        onClick={() => setEditCred(cred)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
-                        title="Edit"
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
-                      >
-                        <Pencil size={15} strokeWidth={2} />
-                      </button>
-                      <button
-                        onClick={() => toggleCredStatus(cred)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
-                        title={cred.status === "active" || !cred.status ? "Deactivate" : "Activate"}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#F59E0B")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
-                      >
-                        <Archive size={15} strokeWidth={2} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteCred(cred)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
-                        title="Delete"
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
-                      >
-                        <Trash2 size={15} strokeWidth={2} />
-                      </button>
-                    </div>
+                  {/* Actions footer */}
+                  <div style={{
+                    padding: "0.5rem 1.125rem",
+                    borderTop: "1px solid #F3F4F6",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                  }}>
+                    <button
+                      onClick={() => setEditCred(cred)}
+                      title="Edit"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "0.375rem", borderRadius: "0.375rem", color: "#6B7280", display: "flex", transition: "background 0.1s ease, color 0.1s ease" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#1F2937" }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#6B7280" }}
+                    >
+                      <Pencil size={13} strokeWidth={2} />
+                    </button>
+                    <button
+                      onClick={() => toggleCredStatus(cred)}
+                      title={isInactive ? "Restore" : "Archive"}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "0.375rem", borderRadius: "0.375rem", color: "#D1A84B", display: "flex", transition: "background 0.1s ease, color 0.1s ease" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#FFFBEB"; e.currentTarget.style.color = "#B45309" }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#D1A84B" }}
+                    >
+                      <Archive size={13} strokeWidth={2} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteCred(cred)}
+                      title="Delete"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: "0.375rem", borderRadius: "0.375rem", color: "#F0A0A0", display: "flex", transition: "background 0.1s ease, color 0.1s ease" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#FEF2F2"; e.currentTarget.style.color = "#EF4444" }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#F0A0A0" }}
+                    >
+                      <Trash2 size={13} strokeWidth={2} />
+                    </button>
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {Array.from({ length: Math.max(0, CREDS_DEFAULT_VISIBLE - visibleCreds.length) }).map((_, i) => (
                 <div key={`ph-${i}`} style={{
-                  borderRadius: "0.875rem",
-                  border: "1.5px dashed #D1D5DB",
-                  backgroundColor: "transparent",
-                  minHeight: "130px",
+                  borderRadius: "0.75rem",
+                  border: "1.5px dashed #E5E7EB",
+                  backgroundColor: "#FAFAFA",
+                  minHeight: "140px",
                 }} />
               ))}
             </div>
@@ -3330,65 +3352,88 @@ function CredentialsTab() {
             </p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-              {visibleProviders.map((provider) => (
+              {visibleProviders.map((provider) => {
+                const isInactive = provider.status === "inactive"
+                return (
                 <div
                   key={provider.id}
                   style={{
-                    backgroundColor: "rgba(47, 111, 106, 0.05)",
-                    borderRadius: "0.875rem",
-                    border: "1px solid rgba(47, 111, 106, 0.12)",
-                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
-                    padding: "1.125rem 1.25rem",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: "0.75rem",
+                    border: "1px solid #E5E7EB",
+                    boxShadow: "0 1px 3px rgba(44, 62, 80, 0.06), 0 4px 12px rgba(44, 62, 80, 0.06)",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.75rem",
+                    overflow: "hidden",
+                    opacity: isInactive ? 0.6 : 1,
+                    transition: "box-shadow 0.15s ease",
                   }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 2px 8px rgba(44, 62, 80, 0.1), 0 8px 20px rgba(44, 62, 80, 0.08)"}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 3px rgba(44, 62, 80, 0.06), 0 4px 12px rgba(44, 62, 80, 0.06)"}
                 >
-                  {/* Top: name */}
-                  <p style={{ margin: 0, fontWeight: 600, color: "#34495E", fontSize: "0.9375rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={provider.provider_name}>
-                    {provider.provider_name}
-                  </p>
-
-                  {/* Middle: scope */}
-                  <div>
-                    <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Scope</p>
-                    <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                      {scopeLabel(provider.company_id, provider.is_global)}
+                  {/* Body — name + metadata all together, no dead space */}
+                  <div style={{ padding: "0.875rem 1.125rem 0.75rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                    <p style={{
+                      margin: 0, fontWeight: 700, color: "#1F2937", fontSize: "0.9375rem",
+                      lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical", overflow: "hidden",
+                    }} title={provider.provider_name}>
+                      {provider.provider_name}
                     </p>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0, minWidth: "2.75rem" }}>Scope</span>
+                      <span style={{ fontSize: "0.8125rem", color: "#374151", fontWeight: 500 }}>
+                        {scopeLabel(provider.company_id, provider.is_global)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Bottom: status + actions */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.25rem", borderTop: "1px solid #EFF3F7" }}>
-                    <StatusBadge status={provider.status ?? "active"} />
-                    <div style={{ display: "flex", gap: "0.375rem", alignItems: "center" }}>
+                  {/* Footer: status + actions in one row */}
+                  <div style={{
+                    padding: "0.5rem 1.125rem",
+                    borderTop: "1px solid #F3F4F6",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}>
+                    {isInactive ? (
+                      <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Inactive</span>
+                    ) : (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontSize: "0.6875rem", fontWeight: 600, color: "#16A34A" }}>
+                        <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#16A34A", flexShrink: 0 }} />
+                        Active
+                      </span>
+                    )}
+                    <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
                       <button
                         onClick={() => setEditProvider(provider)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
                         title="Edit"
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.375rem", borderRadius: "0.375rem", color: "#6B7280", display: "flex", transition: "background 0.1s ease, color 0.1s ease" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "#F3F4F6"; e.currentTarget.style.color = "#1F2937" }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#6B7280" }}
                       >
-                        <Pencil size={15} strokeWidth={2} />
+                        <Pencil size={13} strokeWidth={2} />
                       </button>
                       <button
                         onClick={() => toggleProviderStatus(provider)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
-                        title={provider.status === "active" ? "Deactivate" : "Activate"}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#F59E0B")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                        title={isInactive ? "Restore" : "Archive"}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.375rem", borderRadius: "0.375rem", color: "#D1A84B", display: "flex", transition: "background 0.1s ease, color 0.1s ease" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "#FFFBEB"; e.currentTarget.style.color = "#B45309" }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#D1A84B" }}
                       >
-                        <Archive size={15} strokeWidth={2} />
+                        <Archive size={13} strokeWidth={2} />
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {Array.from({ length: Math.max(0, PROVIDERS_DEFAULT_VISIBLE - visibleProviders.length) }).map((_, i) => (
                 <div key={`ph-${i}`} style={{
-                  borderRadius: "0.875rem",
-                  border: "1.5px dashed #D1D5DB",
-                  backgroundColor: "transparent",
-                  minHeight: "130px",
+                  borderRadius: "0.75rem",
+                  border: "1.5px dashed #E5E7EB",
+                  backgroundColor: "#FAFAFA",
+                  minHeight: "140px",
                 }} />
               ))}
             </div>
