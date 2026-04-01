@@ -7,6 +7,7 @@ import { getLicenceStatus } from "@/lib/licenceStatus"
 import { ClipboardCheck, Building2, Users, LogOut, GraduationCap, Search, X, Pencil, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
 import FileUploadArea from "@/app/components/FileUploadArea"
+import StatusBadge from "@/app/components/StatusBadge"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -70,31 +71,6 @@ function RoleBadge({ role }) {
       whiteSpace: "nowrap",
     }}>
       {isQcAdmin ? "QualCard Admin" : "Company Admin"}
-    </span>
-  )
-}
-
-function StatusBadge({ status }) {
-  const map = {
-    active:            { label: "Active",           color: "#2f6f6a" },
-    pending_approval:  { label: "Pending",          color: "#F97316" },
-    pending:           { label: "Pending",          color: "#F97316" },
-    declined:          { label: "Declined",         color: "#EF4444" },
-    inactive:          { label: "Inactive",         color: "#4A5568" },
-  }
-  const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
-  return (
-    <span style={{
-      display: "inline-block",
-      padding: "0.25rem 0.625rem",
-      borderRadius: "1rem",
-      fontSize: "0.75rem",
-      fontWeight: 600,
-      color,
-      border: `1.5px solid ${color}`,
-      whiteSpace: "nowrap",
-    }}>
-      {label}
     </span>
   )
 }
@@ -235,7 +211,7 @@ function Avatar({ fullName, email, role }) {
 function Header({ user }) {
   return (
     <header style={{
-      background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+      background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
       position: "sticky",
       top: 0,
       zIndex: 10,
@@ -1922,30 +1898,6 @@ function CompaniesTab() {
 
 // ─── Cardholders Tab ──────────────────────────────────────────────────────────
 
-function CardholderStatusBadge({ status }) {
-  const map = {
-    active:             { label: "Active",   color: "#2f6f6a" },
-    inactive:           { label: "Inactive", color: "#4A5568" },
-    pending:            { label: "Pending",  color: "#F97316" },
-    pending_activation: { label: "Payment Pending",  color: "#F97316" },
-  }
-  const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
-  return (
-    <span style={{
-      display: "inline-block",
-      padding: "0.25rem 0.625rem",
-      borderRadius: "1rem",
-      fontSize: "0.75rem",
-      fontWeight: 600,
-      color,
-      border: `1.5px solid ${color}`,
-      whiteSpace: "nowrap",
-    }}>
-      {label}
-    </span>
-  )
-}
-
 function AddCardholderModal({ token, companies, onCreated, onClose }) {
   const router = useRouter()
   const [form, setForm] = useState({
@@ -2531,18 +2483,13 @@ function CardholdersTab() {
                     const expiryColor = ch.licence_end_date
                       ? (licenceStatus.status === "Expired" ? "#EF4444" : "#34495E")
                       : "#9CA3AF"
-                    const statusColor = (() => {
+                    const licenceStatusKey = (() => {
                       switch (licenceStatus.status) {
-                        case "Active":
-                          return "#10B981"
-                        case "Expiring Soon":
-                          return "#F59E0B"
-                        case "Expired":
-                          return "#EF4444"
-                        case "Payment Pending":
-                          return "#0EA5E9"
-                        default:
-                          return "#4A5568"
+                        case "Active": return "active"
+                        case "Expiring Soon": return "expiring"
+                        case "Expired": return "expired"
+                        case "Payment Pending": return "payment_pending"
+                        default: return "inactive"
                       }
                     })()
                     return (
@@ -2560,18 +2507,7 @@ function CardholdersTab() {
                         </td>
                         <td style={{ ...tdStyle, color: "#374151" }}>{created}</td>
                         <td style={tdStyle}>
-                          <span style={{
-                            display: "inline-block",
-                            padding: "0.25rem 0.625rem",
-                            borderRadius: "1rem",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            color: statusColor,
-                            border: `1.5px solid ${statusColor}`,
-                            whiteSpace: "nowrap",
-                          }}>
-                            {licenceStatus.status}
-                          </span>
+                          <StatusBadge status={licenceStatusKey} />
                         </td>
                       </tr>
                     )
@@ -3026,20 +2962,6 @@ function CredentialsTab() {
     borderBottom: "1px solid #EFF3F7", verticalAlign: "middle",
   }
 
-  function StatusBadgePill({ status }) {
-    const isActive = status === "active" || !status
-    return (
-      <span style={{
-        display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
-        fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap",
-        color: isActive ? "#2f6f6a" : "#4A5568",
-        border: `1.5px solid ${isActive ? "#2f6f6a" : "#4A5568"}`,
-      }}>
-        {isActive ? "Active" : "Inactive"}
-      </span>
-    )
-  }
-
   function TypeBadge({ type }) {
     const config = CRED_TYPE_CONFIG[type]
     if (!config) return null
@@ -3175,7 +3097,7 @@ function CredentialsTab() {
                   <td style={tdStyle}><TypeBadge type={cred.type} /></td>
                   <td style={{ ...tdStyle, color: "#6B7280" }}>{getCredCode(cred) ?? <span style={{ color: "#D1D5DB" }}>—</span>}</td>
                   <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(cred.company_id, !cred.company_id)}</td>
-                  <td style={tdStyle}><StatusBadgePill status={cred.status} /></td>
+                  <td style={tdStyle}><StatusBadge status={cred.status ?? "active"} /></td>
                   <td style={{ ...tdStyle, textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
                       <button
@@ -3312,7 +3234,7 @@ function CredentialsTab() {
                 <tr key={provider.id} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
                   <td style={{ ...tdStyle, fontWeight: 500 }}>{provider.provider_name}</td>
                   <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(provider.company_id, provider.is_global)}</td>
-                  <td style={tdStyle}><StatusBadgePill status={provider.status} /></td>
+                  <td style={tdStyle}><StatusBadge status={provider.status ?? "active"} /></td>
                   <td style={{ ...tdStyle, textAlign: "right" }}>
                     <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
                       <button

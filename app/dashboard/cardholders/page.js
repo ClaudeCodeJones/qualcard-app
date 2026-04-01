@@ -123,19 +123,24 @@ export default function CardholdersPage() {
   }, [])
 
   async function applyActivation(id) {
-    const today = new Date()
-    const nextYear = new Date(today)
-    nextYear.setFullYear(nextYear.getFullYear() + 1)
-    const fmt = d => d.toISOString().split("T")[0]
-    const { error } = await supabase
-      .from("cardholders")
-      .update({
-        status: "active",
-        licence_start_date: fmt(today),
-        licence_end_date: fmt(nextYear),
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/dashboard/cardholders/${id}/activate`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       })
-      .eq("id", id)
-    if (error) console.error(error)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error(`Activation failed for ${id}:`, body.error || res.status)
+        return false
+      }
+      return true
+    } catch (err) {
+      console.error(`Activation error for ${id}:`, err)
+      return false
+    }
   }
 
   async function handleBulkActivate() {
@@ -431,7 +436,13 @@ export default function CardholdersPage() {
           }).sort((a, b) => {
             const statusA = getLicenceStatus(a.licence_end_date).status
             const statusB = getLicenceStatus(b.licence_end_date).status
-            return getStatusSortOrder({ status: statusA }) - getStatusSortOrder({ status: statusB })
+            const orderDiff = getStatusSortOrder({ status: statusA }) - getStatusSortOrder({ status: statusB })
+            if (orderDiff !== 0) return orderDiff
+            // Within same group, sort by earliest expiry first (null dates go last)
+            if (!a.licence_end_date && !b.licence_end_date) return 0
+            if (!a.licence_end_date) return 1
+            if (!b.licence_end_date) return -1
+            return new Date(a.licence_end_date) - new Date(b.licence_end_date)
           })
           if (filtered.length === 0) return (
             <div style={{ padding: "2rem 1rem", textAlign: "center" }}>

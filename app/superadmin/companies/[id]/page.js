@@ -5,13 +5,15 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase"
+import { getLicenceStatus } from "@/lib/licenceStatus"
 import Header from "@/app/components/Header"
+import StatusBadge from "@/app/components/StatusBadge"
 import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, FileText, Image as ImageIcon } from "lucide-react"
 import FileUploadArea from "@/app/components/FileUploadArea"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GRADIENT = "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
+const GRADIENT = "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -128,30 +130,6 @@ function ModalActions({ onCancel, onConfirm, confirmLabel, confirmBg, confirmCol
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function StatusBadge({ status }) {
-  const map = {
-    active:   { label: "Active",   bg: "#2f6f6a" },
-    inactive: { label: "Inactive", bg: "#4A5568" },
-    pending:  { label: "Pending",  bg: "#F97316" },
-  }
-  const { label, bg } = map[status] ?? { label: status, bg: "#4A5568" }
-  return (
-    <span style={{
-      display: "inline-block",
-      padding: "0.25rem 0.875rem",
-      borderRadius: "1rem",
-      border: "1.5px solid #FFFFFF",
-      background: bg,
-      color: "#FFFFFF",
-      fontSize: "0.8125rem",
-      fontWeight: 600,
-      letterSpacing: "0.01em",
-    }}>
-      {label}
-    </span>
-  )
-}
-
 function ContactField({ label, value }) {
   return (
     <div>
@@ -174,29 +152,6 @@ function ContactField({ label, value }) {
         {value || "\u2014"}
       </p>
     </div>
-  )
-}
-
-function CardholderStatusBadge({ status }) {
-  const map = {
-    active:             { label: "Active",   color: "#2f6f6a" },
-    inactive:           { label: "Inactive", color: "#4A5568" },
-    pending:            { label: "Pending",  color: "#F97316" },
-    pending_activation: { label: "Payment Pending",  color: "#F97316" },
-  }
-  const { label, color } = map[status] ?? { label: status, color: "#4A5568" }
-  return (
-    <span style={{
-      padding: "0.2rem 0.625rem",
-      borderRadius: "1rem",
-      border: `1.5px solid ${color}`,
-      color,
-      fontSize: "0.75rem",
-      fontWeight: 600,
-      whiteSpace: "nowrap",
-    }}>
-      {label}
-    </span>
   )
 }
 
@@ -1249,7 +1204,16 @@ export default function CompanyDetailPage() {
                   <span style={{ flex: 1, fontSize: "0.9375rem", fontWeight: 500, color: "#333333" }}>
                     {ch.full_name}
                   </span>
-                  <CardholderStatusBadge status={ch.status} />
+                  {(() => {
+                    const ls = getLicenceStatus(ch.licence_end_date)
+                    const keyMap = {
+                      "Active": "active",
+                      "Expiring Soon": "expiring",
+                      "Expired": "expired",
+                      "Payment Pending": "payment_pending",
+                    }
+                    return <StatusBadge status={keyMap[ls.status] ?? "inactive"} />
+                  })()}
                 </div>
               ))}
 

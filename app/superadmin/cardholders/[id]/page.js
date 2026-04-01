@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 import Header from "@/app/components/Header"
 import FileUploadArea from "@/app/components/FileUploadArea"
+import StatusBadge from "@/app/components/StatusBadge"
 import {
   ArrowLeft, ExternalLink, Copy, Check,
   GraduationCap, Award, ClipboardCheck, ShieldCheck,
@@ -18,7 +19,7 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GRADIENT = "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
+const GRADIENT = "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
 const SECTIONS = [
@@ -61,26 +62,6 @@ function formatDate(dateStr) {
     month: "short",
     year: "numeric",
   })
-}
-
-function getStatusBadgeColor(status) {
-  const map = {
-    active:             { bg: "transparent", border: "#16A34A", text: "#16A34A" },
-    archived:           { bg: "#9CA3AF", border: "#9CA3AF", text: "#FFFFFF" },
-    pending:            { bg: "#F97316", border: "#F97316", text: "#FFFFFF" },
-    pending_activation: { bg: "#F97316", border: "#F97316", text: "#FFFFFF" },
-  }
-  return map[status] ?? { bg: "#9CA3AF", border: "#9CA3AF", text: "#FFFFFF" }
-}
-
-function getStatusLabel(status) {
-  const map = {
-    active:             "Active",
-    archived:           "Archived",
-    pending:            "Pending",
-    pending_activation: "Payment Pending",
-  }
-  return map[status] ?? status
 }
 
 function getPhotoBorderColor(status) {
@@ -1403,7 +1384,7 @@ function ChangeStatusModal({ currentStatus, onConfirm, onClose, loading, error }
     <ModalOverlay onClose={onClose}>
       <ModalHeader title="Change Status" onClose={onClose} />
       <p style={{ margin: "0 0 0.25rem", fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
-        This cardholder is currently <strong>{getStatusLabel(currentStatus)}</strong>.
+        This cardholder is currently <strong>{currentStatus === "active" ? "Active" : currentStatus === "archived" ? "Archived" : currentStatus}</strong>.
       </p>
       <p style={{ margin: 0, fontSize: "0.9375rem", color: "#374151", lineHeight: 1.6 }}>
         Set their status to <strong>{nextLabel}</strong>?
@@ -1879,17 +1860,13 @@ export default function CardholderDetailPage() {
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
               {(() => {
-                const badgeStyle = getStatusBadgeColor(cardholder.status)
-                return (
-                  <span style={{
-                    display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                    fontSize: "0.75rem", fontWeight: 600, color: badgeStyle.text,
-                    backgroundColor: badgeStyle.bg,
-                    border: `1.5px solid ${badgeStyle.border}`, whiteSpace: "nowrap",
-                  }}>
-                    {getStatusLabel(cardholder.status)}
-                  </span>
-                )
+                const keyMap = {
+                  "Active": "active",
+                  "Expiring Soon": "expiring",
+                  "Expired": "expired",
+                  "Payment Pending": "payment_pending",
+                }
+                return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
               })()}
               <span style={{
                 display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",

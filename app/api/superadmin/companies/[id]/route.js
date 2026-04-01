@@ -35,7 +35,7 @@ export async function GET(request, ctx) {
       supabaseAdmin.from("companies").select("*").eq("id", id).single(),
       supabaseAdmin
         .from("cardholders")
-        .select("id, full_name, photo_url, status")
+        .select("id, full_name, photo_url, status, licence_end_date")
         .eq("company_id", id)
         .neq("status", "deleted")
         .order("full_name"),

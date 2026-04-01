@@ -86,21 +86,14 @@ export default function DashboardPage() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    // Check if banner was dismissed within last 7 days
-    const lastDismissed = localStorage.getItem("expiringBannerDismissed")
-    if (lastDismissed) {
-      const daysSinceDismissed = (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24)
-      if (daysSinceDismissed < 7) {
-        setDismissed(true)
-      } else {
-        localStorage.removeItem("expiringBannerDismissed")
-        setDismissed(false)
-      }
-    }
+    const today = new Date().toISOString().split("T")[0]
+    const storedDate = localStorage.getItem("expiringBannerDismissedDate")
+    setDismissed(storedDate === today)
   }, [])
 
   const handleBannerDismiss = () => {
-    localStorage.setItem("expiringBannerDismissed", Date.now().toString())
+    const today = new Date().toISOString().split("T")[0]
+    localStorage.setItem("expiringBannerDismissedDate", today)
     setDismissed(true)
   }
 
@@ -208,6 +201,7 @@ export default function DashboardPage() {
         .eq("status", "active")
         .eq("company_id", companyId)
         .not("licence_end_date", "is", null)
+        .gte("licence_end_date", today)
         .lte("licence_end_date", thirtyDaysFromNow.toISOString().split("T")[0])
         .then(({ count }) => {
           if (count !== null) setExpiringCount(count)
@@ -850,23 +844,6 @@ export default function DashboardPage() {
             </div>
 
           </div>
-
-          {/* Permanent Visual Divider — OPTION 1: Dark Solid Bar */}
-          <div style={{
-            height: "80px",
-            background: "rgba(0,0,0,0.25)",
-            backdropFilter: "blur(2px)",
-            borderRadius: "0.75rem",
-          }} />
-
-          {/* Permanent Visual Divider — OPTION 2: Dark Bar with Top Accent Line */}
-          <div style={{
-            height: "80px",
-            background: "rgba(0,0,0,0.2)",
-            backdropFilter: "blur(2px)",
-            borderRadius: "0.75rem",
-            borderTop: "2px solid rgba(47, 111, 106, 0.6)",
-          }} />
 
           {/* Recently Added */}
           <div style={CARD}>

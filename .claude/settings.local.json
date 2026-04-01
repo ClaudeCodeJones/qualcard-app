@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r --include=*.js --include=*.jsx --include=*.ts --include=*.tsx \"#[0-9a-fA-F]\\\\{6\\\\}\\\\|#[0-9a-fA-F]\\\\{3\\\\}\" c:Devqualcard-appapp)",
+      "Bash(grep -r --include=*.js --include=*.jsx --include=*.ts --include=*.tsx \"bg-\\\\|text-\\\\|border-\\\\|from-\\\\|to-\\\\|via-\\\\|ring-\\\\|fill-\\\\|stroke-\" c:Devqualcard-appapp)",
+      "Bash(grep -r --include=*.js --include=*.jsx --include=*.ts --include=*.tsx -h \"#[0-9a-fA-F]\\\\{6\\\\}\\\\|#[0-9a-fA-F]\\\\{3\\\\}\" c:Devqualcard-appapp)",
+      "Bash(grep -r --include=*.js --include=*.jsx --include=*.ts --include=*.tsx -h \"bg-\\\\|text-\\\\|border-\\\\|from-\\\\|to-\\\\|via-\\\\|ring-\\\\|fill-\\\\|stroke-\" c:Devqualcard-appapp)"
+    ]
+  }
+}

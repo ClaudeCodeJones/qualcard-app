@@ -13,6 +13,7 @@ import {
   Pencil, Trash2, Search, X, ChevronDown, ChevronUp,
   Archive, Users,
 } from "lucide-react"
+import StatusBadge from "@/app/components/StatusBadge"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,16 +58,6 @@ function getLicenceBadge(licenceEndDate) {
   if (daysLeft < 0) return { label: `EXPIRED: ${formatDate(licenceEndDate)}`, color: "#EF4444" }
   if (daysLeft <= 30) return { label: `EXPIRING: ${formatDate(licenceEndDate)}`, color: "#F59E0B" }
   return null
-}
-
-function getStatusBadgeColor(status) {
-  const map = {
-    active:             { bg: "transparent", border: "#16A34A", text: "#16A34A" },
-    archived:           { bg: "#9CA3AF",     border: "#9CA3AF", text: "#FFFFFF" },
-    pending:            { bg: "#F97316",     border: "#F97316", text: "#FFFFFF" },
-    pending_activation: { bg: "#F97316",     border: "#F97316", text: "#FFFFFF" },
-  }
-  return map[status] ?? { bg: "#9CA3AF", border: "#9CA3AF", text: "#FFFFFF" }
 }
 
 function getStatusLabel(status) {
@@ -1619,21 +1610,6 @@ export default function CardholderDetailPage() {
   const profileUrl = `${APP_URL}/card/${cardholder.slug}`
   const licenceStatus = getLicenceStatus(cardholder.licence_end_date)
 
-  const getStatusBadgeStyle = (status) => {
-    switch (status) {
-      case "Payment Pending":
-        return { bg: "#F97316", border: "#F97316", text: "#FFFFFF" }
-      case "Active":
-        return { bg: "transparent", border: "#16A34A", text: "#16A34A" }
-      case "Expiring Soon":
-        return { bg: "#F59E0B", border: "#F59E0B", text: "#FFFFFF" }
-      case "Expired":
-        return { bg: "transparent", border: "#EF4444", text: "#EF4444" }
-      default:
-        return { bg: "transparent", border: "#16A34A", text: "#16A34A" }
-    }
-  }
-
   const getFullDateLabel = (dateLabel) => {
     if (!dateLabel || !cardholder.licence_end_date) return null
     const dateStr = new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -1745,17 +1721,13 @@ export default function CardholderDetailPage() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
             {/* Status badge - licence-based only */}
             {(() => {
-              const style = getStatusBadgeStyle(licenceStatus.status)
-              return (
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 600, color: style.text,
-                  backgroundColor: style.bg,
-                  border: `1.5px solid ${style.border}`, whiteSpace: "nowrap",
-                }}>
-                  {licenceStatus.status}
-                </span>
-              )
+              const keyMap = {
+                "Active": "active",
+                "Expiring Soon": "expiring",
+                "Expired": "expired",
+                "Payment Pending": "payment_pending",
+              }
+              return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
             })()}
 
             {/* Date badge - only if licence_end_date exists */}
