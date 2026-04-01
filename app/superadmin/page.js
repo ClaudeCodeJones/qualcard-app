@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
-import { ClipboardCheck, Building2, Users, LogOut, GraduationCap, Search, X, Pencil, Plus, Trash2 } from "lucide-react"
+import { ClipboardCheck, Building2, Users, LogOut, GraduationCap, Search, X, Pencil, Plus, Trash2, Globe, Archive } from "lucide-react"
 import Image from "next/image"
 import FileUploadArea from "@/app/components/FileUploadArea"
 import StatusBadge from "@/app/components/StatusBadge"
@@ -14,7 +14,6 @@ import StatusBadge from "@/app/components/StatusBadge"
 const TABS = ["Overview", "Pending Approvals", "Users", "Companies", "Cardholders", "Credentials"]
 
 const CRED_TYPE_FILTERS = [
-  { key: "all", label: "All" },
   { key: "qualification", label: "Qualifications" },
   { key: "competency", label: "Competencies" },
   { key: "site_induction", label: "Site Inductions" },
@@ -84,7 +83,7 @@ function LoadingScreen() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#D9DEE5",
+      backgroundColor: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
       <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Loading...</p>
@@ -132,7 +131,7 @@ function Avatar({ fullName, email, role }) {
           height: "38px",
           borderRadius: "50%",
           background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
-          border: isQcAdmin ? "2px solid rgba(47, 111, 106, 0.4)" : "2px solid rgba(255,255,255,0.3)",
+          border: isQcAdmin ? "2px solid #16A34A" : "2px solid rgba(255,255,255,0.3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -147,7 +146,7 @@ function Avatar({ fullName, email, role }) {
           <span style={{
             fontSize: "0.625rem",
             fontWeight: 700,
-            color: "#2f6f6a",
+            color: "#16A34A",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}>
@@ -241,8 +240,9 @@ function Header({ user }) {
 function TabBar({ activeTab, onTabChange }) {
   return (
     <div style={{
-      backgroundColor: "#FFFFFF",
-      borderBottom: "1px solid #E5E7EB",
+      backgroundColor: "rgba(255,255,255,0.96)",
+      borderBottom: "1px solid rgba(229,231,235,0.8)",
+      backdropFilter: "blur(4px)",
     }}>
       <div style={{
         maxWidth: "1280px",
@@ -268,7 +268,7 @@ function TabBar({ activeTab, onTabChange }) {
               whiteSpace: "nowrap",
               fontFamily: "inherit",
               transition: "background-color 0.15s ease, color 0.15s ease",
-              backgroundColor: isActive ? "#34495E" : "transparent",
+              backgroundColor: isActive ? "#2f6f6a" : "transparent",
               color: isActive ? "#FFFFFF" : "#374151",
             }}
             onMouseEnter={(e) => {
@@ -308,7 +308,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
       display: "flex",
       flexDirection: "column",
       gap: "1.25rem",
-      boxShadow: "0 2px 8px rgba(44, 62, 80, 0.08), 0 1px 3px rgba(44, 62, 80, 0.05)",
+      boxShadow: "0 8px 20px rgba(44, 62, 80, 0.12), 0 2px 6px rgba(44, 62, 80, 0.06)",
       position: "relative",
       overflow: "hidden",
     }}>
@@ -391,8 +391,7 @@ function OverviewCard({ icon, title, stats, buttonLabel, onButtonClick, loading,
           fontFamily: "inherit",
           letterSpacing: "0.01em",
           opacity: hovered ? 0.88 : 1,
-          transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          transition: "opacity 0.15s ease, transform 0.15s ease",
+          transition: "opacity 0.15s ease",
         }}
       >
         {buttonLabel}
@@ -591,6 +590,7 @@ function PendingApprovalsTab() {
   const [modal, setModal] = useState(null)
   const [modalLoading, setModalLoading] = useState(false)
   const [toast, setToast] = useState(null)
+  const [visibleCount, setVisibleCount] = useState(3)
 
   useEffect(() => {
     async function fetchPending() {
@@ -635,6 +635,8 @@ function PendingApprovalsTab() {
     }
   }
 
+  const visible = users.slice(0, visibleCount)
+
   return (
     <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
@@ -671,7 +673,7 @@ function PendingApprovalsTab() {
           </div>
         ) : (
           <div>
-            {users.map((user, index) => (
+            {visible.map((user, index) => (
               <div
                 key={user.id}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
@@ -740,6 +742,24 @@ function PendingApprovalsTab() {
                 </div>
               </div>
             ))}
+
+            {users.length > visibleCount && (
+              <div style={{ padding: "1rem 0 0.5rem", textAlign: "center" }}>
+                <button
+                  onClick={() => setVisibleCount(users.length)}
+                  style={{
+                    padding: 0, border: "none", background: "none",
+                    color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
+                >
+                  Show all ({users.length})
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1166,6 +1186,7 @@ function UsersTab() {
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [visibleCount, setVisibleCount] = useState(3)
 
   useEffect(() => {
     async function fetchUsers() {
@@ -1189,6 +1210,8 @@ function UsersTab() {
     const matchStatus = statusFilter === "all" || u.account_status === statusFilter
     return matchSearch && matchRole && matchStatus
   })
+
+  const visible = filtered.slice(0, visibleCount)
 
   const controlStyle = {
     padding: "0.5625rem 0.875rem",
@@ -1266,48 +1289,68 @@ function UsersTab() {
             ))}
           </div>
         ) : (
-          <div style={{ overflowX: "auto", padding: "0 1.5rem" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Full Name</th>
-                  <th style={thStyle}>Email</th>
-                  <th style={thStyle}>Role</th>
-                  <th style={thStyle}>Company</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Last Login</th>
-                  <th style={thStyle}>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
+          <>
+            <div style={{ overflowX: "auto", padding: "0 1.5rem" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
                   <tr>
-                    <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "#6B7280", padding: "3rem" }}>
-                      No users found
-                    </td>
+                    <th style={thStyle}>Full Name</th>
+                    <th style={thStyle}>Email</th>
+                    <th style={thStyle}>Role</th>
+                    <th style={thStyle}>Company</th>
+                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Last Login</th>
+                    <th style={thStyle}>Created</th>
                   </tr>
-                ) : filtered.map((u) => (
-                  <tr
-                    key={u.id}
-                    onClick={() => setSelectedUser(u)}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    style={{ cursor: "pointer", transition: "background 0.15s ease" }}
-                  >
-                    <td style={{ ...tdStyle, fontWeight: 700 }}>{u.full_name || "—"}</td>
-                    <td style={{ ...tdStyle, color: "#374151" }}>{u.email}</td>
-                    <td style={tdStyle}><RoleBadge role={u.role} /></td>
-                    <td style={{ ...tdStyle, color: "#374151" }}>{u.companies?.company_name ?? "System"}</td>
-                    <td style={tdStyle}><StatusBadge status={u.account_status} /></td>
-                    <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>{formatDateTime(u.last_login)}</td>
-                    <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>
-                      {u.created_at ? formatDate(u.created_at) : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {visible.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ ...tdStyle, textAlign: "center", color: "#6B7280", padding: "3rem" }}>
+                        No users found
+                      </td>
+                    </tr>
+                  ) : visible.map((u) => (
+                    <tr
+                      key={u.id}
+                      onClick={() => setSelectedUser(u)}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F3F4F6")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                    >
+                      <td style={{ ...tdStyle, fontWeight: 700 }}>{u.full_name || "—"}</td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{u.email}</td>
+                      <td style={tdStyle}><RoleBadge role={u.role} /></td>
+                      <td style={{ ...tdStyle, color: "#374151" }}>{u.companies?.company_name ?? "System"}</td>
+                      <td style={tdStyle}><StatusBadge status={u.account_status} /></td>
+                      <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>{formatDateTime(u.last_login)}</td>
+                      <td style={{ ...tdStyle, color: "#374151", whiteSpace: "nowrap" }}>
+                        {u.created_at ? formatDate(u.created_at) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {filtered.length > visibleCount && (
+              <div style={{ padding: "1rem 0 0.5rem", textAlign: "center" }}>
+                <button
+                  onClick={() => setVisibleCount(filtered.length)}
+                  style={{
+                    padding: 0, border: "none", background: "none",
+                    color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
+                >
+                  Show all ({filtered.length})
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -1687,7 +1730,7 @@ function CompaniesTab() {
   const [search, setSearch] = useState("")
   const [cityFilter, setCityFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [visibleCount, setVisibleCount] = useState(10)
+  const [visibleCount, setVisibleCount] = useState(3)
   const [toast, setToast] = useState(null)
 
   useEffect(() => {
@@ -1778,13 +1821,13 @@ function CompaniesTab() {
             type="text"
             placeholder="Search by company name..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setVisibleCount(10) }}
+            onChange={(e) => { setSearch(e.target.value); setVisibleCount(3) }}
             style={{ ...controlStyle, minWidth: "200px", flex: 1 }}
           />
           <select
             style={controlStyle}
             value={cityFilter}
-            onChange={(e) => { setCityFilter(e.target.value); setVisibleCount(10) }}
+            onChange={(e) => { setCityFilter(e.target.value); setVisibleCount(3) }}
           >
             {cities.map((c) => (
               <option key={c} value={c}>{c === "all" ? "All Cities" : c}</option>
@@ -1793,7 +1836,7 @@ function CompaniesTab() {
           <select
             style={controlStyle}
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setVisibleCount(10) }}
+            onChange={(e) => { setStatusFilter(e.target.value); setVisibleCount(3) }}
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
@@ -1852,18 +1895,19 @@ function CompaniesTab() {
             </div>
 
             {filtered.length > visibleCount && (
-              <div style={{ padding: "1.25rem 1.5rem", borderTop: "1px solid #EFF3F7", textAlign: "center" }}>
+              <div style={{ padding: "1rem 0 0.5rem", textAlign: "center" }}>
                 <button
-                  onClick={() => setVisibleCount((v) => v + 10)}
+                  onClick={() => setVisibleCount(filtered.length)}
                   style={{
-                    padding: "0.625rem 2rem", borderRadius: "1rem", border: "1.5px solid #E5E7EB",
-                    backgroundColor: "#FFFFFF", color: "#374151", fontSize: "0.875rem",
-                    fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    padding: 0, border: "none", background: "none",
+                    color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "color 0.15s ease",
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#EFF3F7"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#FFFFFF"}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
                 >
-                  Load More ({filtered.length - visibleCount} remaining)
+                  Show all ({filtered.length})
                 </button>
               </div>
             )}
@@ -2233,10 +2277,33 @@ function CardholdersTab() {
   const [search, setSearch] = useState("")
   const [companyFilter, setCompanyFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
-  const [visibleCount, setVisibleCount] = useState(10)
+  const [licenceStatusFilter, setLicenceStatusFilter] = useState("")
+  const [visibleCount, setVisibleCount] = useState(3)
   const [showAdd, setShowAdd] = useState(false)
   const [toast, setToast] = useState(null)
   const [token, setToken] = useState(null)
+
+  function sortCardholders(list) {
+    const priority = (ch) => {
+      const s = getLicenceStatus(ch.licence_end_date).status
+      if (s === "Expiring Soon") return 0
+      if (s === "Payment Pending") return 1
+      if (s === "Active") return 2
+      if (s === "Expired") return 3
+      return 4
+    }
+    return [...list].sort((a, b) => {
+      const pa = priority(a), pb = priority(b)
+      if (pa !== pb) return pa - pb
+      // within Active: closest expiry first
+      if (pa === 2) {
+        const da = a.licence_end_date ? new Date(a.licence_end_date) : Infinity
+        const db = b.licence_end_date ? new Date(b.licence_end_date) : Infinity
+        return da - db
+      }
+      return 0
+    })
+  }
 
   async function fetchCardholders(tok, s, c, st) {
     const params = new URLSearchParams()
@@ -2247,7 +2314,7 @@ function CardholdersTab() {
       headers: { Authorization: `Bearer ${tok}` },
     })
     const data = await res.json()
-    setCardholders(data.cardholders ?? [])
+    setCardholders(sortCardholders(data.cardholders ?? []))
     if (data.companies) setCompanies(data.companies)
   }
 
@@ -2264,12 +2331,19 @@ function CardholdersTab() {
 
   useEffect(() => {
     if (!token) return
-    setVisibleCount(10)
+    setVisibleCount(3)
     fetchCardholders(token, search, companyFilter, statusFilter)
   }, [search, companyFilter, statusFilter])
 
-  const visible = cardholders.slice(0, visibleCount)
-  const hasMore = cardholders.length > visibleCount
+  useEffect(() => {
+    setVisibleCount(3)
+  }, [licenceStatusFilter])
+
+  const filteredByLicence = licenceStatusFilter
+    ? cardholders.filter((ch) => getLicenceStatus(ch.licence_end_date).status === licenceStatusFilter)
+    : cardholders
+  const visible = filteredByLicence.slice(0, visibleCount)
+  const hasMore = filteredByLicence.length > visibleCount
 
   function exportCSV() {
     const headers = ["Full Name", "Company", "Subscription Expiry", "Created", "Status"]
@@ -2313,7 +2387,7 @@ function CardholdersTab() {
     letterSpacing: "0.05em",
     whiteSpace: "nowrap",
     borderBottom: "1px solid #E5E7EB",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F3F4F6",
   }
 
   const tdStyle = {
@@ -2330,7 +2404,7 @@ function CardholdersTab() {
         backgroundColor: "#FFFFFF",
         borderRadius: "1rem",
         border: "1px solid #E5E7EB",
-        boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+        boxShadow: "0 8px 20px rgba(44, 62, 80, 0.12), 0 2px 6px rgba(44, 62, 80, 0.06)",
         overflow: "hidden",
         paddingBottom: "2.5rem",
       }}>
@@ -2362,7 +2436,7 @@ function CardholdersTab() {
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#E5E7EB")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
               >
                 {label}
@@ -2381,7 +2455,7 @@ function CardholdersTab() {
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#E5E7EB")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
             >
               &#8615; Export CSV
@@ -2410,7 +2484,7 @@ function CardholdersTab() {
         {/* Filters */}
         <div style={{
           padding: "1rem 1.5rem",
-          borderBottom: "1px solid #EFF3F7",
+          borderBottom: "1px solid #E5E7EB",
           display: "flex",
           gap: "0.75rem",
           flexWrap: "wrap",
@@ -2440,8 +2514,19 @@ function CardholdersTab() {
             <option value="">All Statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="pending">Pending</option>
-            <option value="pending_activation">Pending Activation</option>
+            <option value="pending_activation">Payment Pending</option>
+            <option value="deleted">Deleted</option>
+          </select>
+          <select
+            style={controlStyle}
+            value={licenceStatusFilter}
+            onChange={(e) => setLicenceStatusFilter(e.target.value)}
+          >
+            <option value="">All Licences</option>
+            <option value="Active">Active</option>
+            <option value="Expiring Soon">Expiring Soon</option>
+            <option value="Expired">Expired</option>
+            <option value="Payment Pending">Payment Pending</option>
           </select>
         </div>
 
@@ -2517,25 +2602,19 @@ function CardholdersTab() {
             </div>
 
             {hasMore && (
-              <div style={{ padding: "1.25rem 1.5rem", borderTop: "1px solid #EFF3F7", textAlign: "center" }}>
+              <div style={{ padding: "1rem 0 0.5rem", textAlign: "center" }}>
                 <button
-                  onClick={() => setVisibleCount((v) => v + 10)}
+                  onClick={() => setVisibleCount(cardholders.length)}
                   style={{
-                    width: "100%",
-                    padding: "0.625rem 2rem",
-                    borderRadius: "1rem",
-                    border: "1.5px solid #E5E7EB",
-                    backgroundColor: "#FFFFFF",
-                    color: "#374151",
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
+                    padding: 0, border: "none", background: "none",
+                    color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
+                    cursor: "pointer", fontFamily: "inherit",
+                    transition: "color 0.15s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#EFF3F7")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
                 >
-                  Load More ({cardholders.length - visibleCount} remaining)
+                  Show all ({cardholders.length})
                 </button>
               </div>
             )}
@@ -2937,24 +3016,30 @@ function CredentialsTab() {
     }
   }
 
+  const CRED_TYPE_ORDER = { qualification: 0, competency: 1, induction: 2, permit: 3 }
+
   const filteredCreds = credentials
     .filter((c) => typeFilter === "all" || c.type === typeFilter)
     .filter((c) => !credSearch || c.name.toLowerCase().includes(credSearch.toLowerCase()))
+    .sort((a, b) => {
+      const diff = (CRED_TYPE_ORDER[a.type] ?? 99) - (CRED_TYPE_ORDER[b.type] ?? 99)
+      return diff !== 0 ? diff : a.name.localeCompare(b.name)
+    })
 
-  const CREDS_DEFAULT_VISIBLE = 3
+  const CREDS_DEFAULT_VISIBLE = 6
   const visibleCreds = credExpanded ? filteredCreds : filteredCreds.slice(0, CREDS_DEFAULT_VISIBLE)
   const showCredsToggle = filteredCreds.length > CREDS_DEFAULT_VISIBLE
 
   const filteredProviders = providers
     .filter((p) => !providerSearch || p.provider_name.toLowerCase().includes(providerSearch.toLowerCase()))
 
-  const PROVIDERS_DEFAULT_VISIBLE = 3
+  const PROVIDERS_DEFAULT_VISIBLE = 6
   const visibleProviders = providerExpanded ? filteredProviders : filteredProviders.slice(0, PROVIDERS_DEFAULT_VISIBLE)
   const showProvidersToggle = filteredProviders.length > PROVIDERS_DEFAULT_VISIBLE
 
   const thStyle = {
     padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.75rem", fontWeight: 700,
-    color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.05em",
+    color: "#34495E", textTransform: "uppercase", letterSpacing: "0.05em",
     whiteSpace: "nowrap", borderBottom: "1px solid #E5E7EB",
   }
   const tdStyle = {
@@ -3031,14 +3116,14 @@ function CredentialsTab() {
         </div>
 
         {/* Type filter + search */}
-        <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #EFF3F7", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #EFF3F7", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center", backgroundColor: "#FAFAFA" }}>
           <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap" }}>
             {CRED_TYPE_FILTERS.map((f) => (
               <button
                 key={f.key}
-                onClick={() => { setTypeFilter(f.key); setCredExpanded(false) }}
+                onClick={() => { setTypeFilter(typeFilter === f.key ? "all" : f.key); setCredExpanded(false) }}
                 style={{
-                  padding: "0.375rem 0.875rem", borderRadius: "1rem", border: "none",
+                  padding: "0.375rem 0.875rem", borderRadius: "1rem", border: typeFilter === f.key ? "none" : "1px solid #D1D5DB",
                   cursor: "pointer", fontSize: "0.8125rem", fontFamily: "inherit",
                   fontWeight: typeFilter === f.key ? 600 : 400,
                   backgroundColor: typeFilter === f.key ? "#34495E" : "transparent",
@@ -3071,35 +3156,58 @@ function CredentialsTab() {
           </div>
         </div>
 
-        {/* Table */}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#FAFAFA" }}>
-                <th style={thStyle}>Name</th>
-                <th style={thStyle}>Type</th>
-                <th style={thStyle}>Code / Number</th>
-                <th style={thStyle}>Scope</th>
-                <th style={thStyle}>Status</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCreds.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "2rem" }}>
-                    {credSearch || typeFilter !== "all" ? "No credentials match your filters" : "No credentials yet"}
-                  </td>
-                </tr>
-              ) : visibleCreds.map((cred) => (
-                <tr key={cred.id} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                  <td style={{ ...tdStyle, fontWeight: 500 }}>{cred.name}</td>
-                  <td style={tdStyle}><TypeBadge type={cred.type} /></td>
-                  <td style={{ ...tdStyle, color: "#6B7280" }}>{getCredCode(cred) ?? <span style={{ color: "#D1D5DB" }}>—</span>}</td>
-                  <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(cred.company_id, !cred.company_id)}</td>
-                  <td style={tdStyle}><StatusBadge status={cred.status ?? "active"} /></td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>
-                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
+        {/* Cards Grid */}
+        <div style={{ padding: "1.25rem 1.5rem" }}>
+          {filteredCreds.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#9CA3AF", padding: "2rem 0", margin: 0, fontSize: "0.875rem" }}>
+              {credSearch || typeFilter !== "all" ? "No credentials match your filters" : "No credentials yet"}
+            </p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+              {visibleCreds.map((cred) => (
+                <div
+                  key={cred.id}
+                  style={{
+                    backgroundColor: "rgba(47, 111, 106, 0.05)",
+                    borderRadius: "0.875rem",
+                    border: "1px solid rgba(47, 111, 106, 0.12)",
+                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+                    padding: "1.125rem 1.25rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  {/* Top: name left, type + status right */}
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+                    <p style={{ margin: 0, fontWeight: 600, color: "#34495E", fontSize: "0.9375rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }} title={cred.name}>
+                      {cred.name}
+                    </p>
+                    <div style={{ flexShrink: 0 }}>
+                      <TypeBadge type={cred.type} />
+                    </div>
+                  </div>
+
+                  {/* Middle: code then scope stacked */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Code</p>
+                      <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
+                        {getCredCode(cred) ?? <span style={{ color: "#D1D5DB" }}>—</span>}
+                      </p>
+                    </div>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Scope</p>
+                      <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        {scopeLabel(cred.company_id, !cred.company_id)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Bottom: status + actions */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.25rem", borderTop: "1px solid #EFF3F7" }}>
+                    <StatusBadge status={cred.status ?? "active"} />
+                    <div style={{ display: "flex", gap: "0.375rem", alignItems: "center" }}>
                       <button
                         onClick={() => setEditCred(cred)}
                         style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
@@ -3110,6 +3218,15 @@ function CredentialsTab() {
                         <Pencil size={15} strokeWidth={2} />
                       </button>
                       <button
+                        onClick={() => toggleCredStatus(cred)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
+                        title={cred.status === "active" || !cred.status ? "Deactivate" : "Activate"}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#F59E0B")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                      >
+                        <Archive size={15} strokeWidth={2} />
+                      </button>
+                      <button
                         onClick={() => setDeleteCred(cred)}
                         style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
                         title="Delete"
@@ -3118,40 +3235,33 @@ function CredentialsTab() {
                       >
                         <Trash2 size={15} strokeWidth={2} />
                       </button>
-                      <button
-                        onClick={() => toggleCredStatus(cred)}
-                        style={{
-                          padding: "0.25rem 0.75rem", borderRadius: "1rem", cursor: "pointer",
-                          fontSize: "0.75rem", fontWeight: 600, fontFamily: "inherit",
-                          border: `1.5px solid ${cred.status === "active" || !cred.status ? "#E5E7EB" : "#2f6f6a"}`,
-                          background: "none",
-                          color: cred.status === "active" || !cred.status ? "#6B7280" : "#2f6f6a",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      >
-                        {cred.status === "active" || !cred.status ? "Deactivate" : "Activate"}
-                      </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+              {Array.from({ length: Math.max(0, CREDS_DEFAULT_VISIBLE - visibleCreds.length) }).map((_, i) => (
+                <div key={`ph-${i}`} style={{
+                  borderRadius: "0.875rem",
+                  border: "1.5px dashed #D1D5DB",
+                  backgroundColor: "transparent",
+                  minHeight: "130px",
+                }} />
+              ))}
+            </div>
+          )}
         </div>
         {showCredsToggle && (
           <div style={{ textAlign: "center", padding: "1rem 0 0.5rem" }}>
             <button
               onClick={() => setCredExpanded((v) => !v)}
               style={{
-                padding: "0.4rem 1.2rem", borderRadius: "1rem",
-                border: "1.5px solid #2f6f6a", background: "none",
-                color: "#2f6f6a", fontSize: "0.8125rem", fontWeight: 500,
+                padding: 0, border: "none", background: "none",
+                color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
                 cursor: "pointer", fontFamily: "inherit",
-                transition: "background 0.15s ease, color 0.15s ease",
+                transition: "color 0.15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#2f6f6a"; e.currentTarget.style.color = "#FFFFFF" }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#2f6f6a" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
             >
               {credExpanded ? "Show less" : `Show all (${filteredCreds.length})`}
             </button>
@@ -3212,31 +3322,45 @@ function CredentialsTab() {
           </div>
         </div>
 
-        {/* Table */}
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#FAFAFA" }}>
-                <th style={thStyle}>Provider Name</th>
-                <th style={thStyle}>Scope</th>
-                <th style={thStyle}>Status</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProviders.length === 0 ? (
-                <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: "center", color: "#9CA3AF", padding: "2rem" }}>
-                    {providerSearch ? "No providers match your search" : "No providers yet"}
-                  </td>
-                </tr>
-              ) : visibleProviders.map((provider) => (
-                <tr key={provider.id} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#FAFAFA")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}>
-                  <td style={{ ...tdStyle, fontWeight: 500 }}>{provider.provider_name}</td>
-                  <td style={{ ...tdStyle, color: "#6B7280" }}>{scopeLabel(provider.company_id, provider.is_global)}</td>
-                  <td style={tdStyle}><StatusBadge status={provider.status ?? "active"} /></td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>
-                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", alignItems: "center" }}>
+        {/* Cards Grid */}
+        <div style={{ padding: "1.25rem 1.5rem" }}>
+          {filteredProviders.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#9CA3AF", padding: "2rem 0", margin: 0, fontSize: "0.875rem" }}>
+              {providerSearch ? "No providers match your search" : "No providers yet"}
+            </p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+              {visibleProviders.map((provider) => (
+                <div
+                  key={provider.id}
+                  style={{
+                    backgroundColor: "rgba(47, 111, 106, 0.05)",
+                    borderRadius: "0.875rem",
+                    border: "1px solid rgba(47, 111, 106, 0.12)",
+                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+                    padding: "1.125rem 1.25rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  {/* Top: name */}
+                  <p style={{ margin: 0, fontWeight: 600, color: "#34495E", fontSize: "0.9375rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={provider.provider_name}>
+                    {provider.provider_name}
+                  </p>
+
+                  {/* Middle: scope */}
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.6875rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.05em" }}>Scope</p>
+                    <p style={{ margin: "0.125rem 0 0", fontSize: "0.8125rem", color: "#6B7280", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                      {scopeLabel(provider.company_id, provider.is_global)}
+                    </p>
+                  </div>
+
+                  {/* Bottom: status + actions */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.25rem", borderTop: "1px solid #EFF3F7" }}>
+                    <StatusBadge status={provider.status ?? "active"} />
+                    <div style={{ display: "flex", gap: "0.375rem", alignItems: "center" }}>
                       <button
                         onClick={() => setEditProvider(provider)}
                         style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
@@ -3248,38 +3372,40 @@ function CredentialsTab() {
                       </button>
                       <button
                         onClick={() => toggleProviderStatus(provider)}
-                        style={{
-                          padding: "0.25rem 0.75rem", borderRadius: "1rem", cursor: "pointer",
-                          fontSize: "0.75rem", fontWeight: 600, fontFamily: "inherit",
-                          border: `1.5px solid ${provider.status === "active" ? "#E5E7EB" : "#2f6f6a"}`,
-                          background: "none",
-                          color: provider.status === "active" ? "#6B7280" : "#2f6f6a",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F9FAFB")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", color: "#9CA3AF", display: "flex" }}
+                        title={provider.status === "active" ? "Deactivate" : "Activate"}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#F59E0B")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
                       >
-                        {provider.status === "active" ? "Deactivate" : "Activate"}
+                        <Archive size={15} strokeWidth={2} />
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+              {Array.from({ length: Math.max(0, PROVIDERS_DEFAULT_VISIBLE - visibleProviders.length) }).map((_, i) => (
+                <div key={`ph-${i}`} style={{
+                  borderRadius: "0.875rem",
+                  border: "1.5px dashed #D1D5DB",
+                  backgroundColor: "transparent",
+                  minHeight: "130px",
+                }} />
+              ))}
+            </div>
+          )}
         </div>
         {showProvidersToggle && (
           <div style={{ textAlign: "center", padding: "1rem 0 0.5rem" }}>
             <button
               onClick={() => setProviderExpanded((v) => !v)}
               style={{
-                padding: "0.4rem 1.2rem", borderRadius: "1rem",
-                border: "1.5px solid #2f6f6a", background: "none",
-                color: "#2f6f6a", fontSize: "0.8125rem", fontWeight: 500,
+                padding: 0, border: "none", background: "none",
+                color: "#6B7280", fontSize: "0.8125rem", fontWeight: 500,
                 cursor: "pointer", fontFamily: "inherit",
-                transition: "background 0.15s ease, color 0.15s ease",
+                transition: "color 0.15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#2f6f6a"; e.currentTarget.style.color = "#FFFFFF" }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#2f6f6a" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#374151" }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "#6B7280" }}
             >
               {providerExpanded ? "Show less" : `Show all (${filteredProviders.length})`}
             </button>
@@ -3416,11 +3542,13 @@ function SuperAdminPageInner() {
       minHeight: "100vh",
       display: "flex",
       flexDirection: "column",
-      backgroundColor: "#D9DEE5",
+      backgroundColor: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
-      <Header user={user} />
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div style={{ position: "sticky", top: 0, zIndex: 10 }}>
+        <Header user={user} />
+        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
       <main style={{ flex: 1 }}>
         <TabContent activeTab={activeTab} setActiveTab={setActiveTab} />
       </main>

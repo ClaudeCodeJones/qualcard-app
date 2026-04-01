@@ -108,10 +108,11 @@ export async function PATCH(request, { params }) {
         const licenceEndDate = currentCardholder.licence_end_date ? new Date(currentCardholder.licence_end_date) : null
 
         if (!licenceEndDate || licenceEndDate < now) {
-          const startDate = now.toISOString().split("T")[0]
-          const endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split("T")[0]
-          updates.licence_start_date = startDate
-          updates.licence_end_date = endDate
+          updates.licence_start_date = now.toISOString().split("T")[0]
+          updates.licence_end_date = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString().split("T")[0]
+        } else {
+          updates.licence_start_date = licenceEndDate.toISOString().split("T")[0]
+          updates.licence_end_date = new Date(licenceEndDate.getFullYear() + 1, licenceEndDate.getMonth(), licenceEndDate.getDate()).toISOString().split("T")[0]
         }
       }
     }

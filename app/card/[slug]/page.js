@@ -13,7 +13,7 @@ export default async function Page({ params }) {
 
   const { data, error } = await supabase
     .from("cardholders")
-    .select("*")
+    .select("*, companies(id, company_name)")
     .eq("slug", slug.trim())
 
   const cardholder = data?.[0]
@@ -48,17 +48,11 @@ export default async function Page({ params }) {
     provider: providers?.find(p => p.id === c.training_provider_id)?.provider_name ?? null
   }))
 
-  const { data: companyData } = await supabase
-    .from("companies")
-    .select("company_name")
-    .eq("id", cardholder.company_id)
-    .single()
-
   return (
     <CardDisplay
       cardholder={cardholder}
       credentials={credentials}
-      companyName={companyData?.company_name ?? null}
+      companyName={cardholder?.companies?.company_name ?? null}
       appUrl={APP_URL}
     />
   )

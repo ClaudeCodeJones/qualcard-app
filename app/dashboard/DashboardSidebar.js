@@ -47,7 +47,7 @@ export default function DashboardSidebar({ initials }) {
             height: "36px",
             borderRadius: "50%",
             background: "rgba(255,255,255,0.2)",
-            border: "1.5px solid rgba(255,255,255,0.35)",
+            border: "2px solid #16A34A",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -59,14 +59,8 @@ export default function DashboardSidebar({ initials }) {
             letterSpacing: "0.03em",
             transition: "all 0.15s ease",
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.3)"
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)"
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.2)"
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)"
-          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.3)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
         >
           {initials}
         </button>

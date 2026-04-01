@@ -1373,7 +1373,7 @@ export default function CardholderDetailPage() {
 
       const { data: ch, error: chErr } = await supabase
         .from("cardholders")
-        .select("id, full_name, status, licence_start_date, licence_end_date, photo_url, slug, company_id")
+        .select("id, full_name, status, licence_start_date, licence_end_date, photo_url, slug, company_id, companies(id, company_name)")
         .eq("id", id)
         .single()
 
@@ -1384,15 +1384,7 @@ export default function CardholderDetailPage() {
       }
 
       setCardholder(ch)
-
-      if (ch.company_id) {
-        const { data: co } = await supabase
-          .from("companies")
-          .select("id, company_name")
-          .eq("id", ch.company_id)
-          .single()
-        if (co) setCompany(co)
-      }
+      if (ch.companies) setCompany(ch.companies)
 
       const { data: creds } = await supabase
         .from("cardholder_credentials")
@@ -1544,7 +1536,7 @@ export default function CardholderDetailPage() {
     setActionError("")
     const { data, error: err } = await supabase
       .from("cardholders")
-      .update({ status: "archived" })
+      .update({ status: "inactive" })
       .eq("id", id)
       .select("id, full_name, status, licence_start_date, licence_end_date, photo_url, slug, company_id")
       .single()
@@ -1771,102 +1763,6 @@ export default function CardholderDetailPage() {
           )}
           </div>
         </div>
-
-        {/* Middle: Compliance Bar - Centered */}
-        {(() => {
-          const SECTION_COLORS = {
-            qualification: "#4A90D9",
-            competency: "#F97316",
-            site_induction: "#7C3AED",
-            permit: "#16A34A",
-          }
-          const SECTION_LABELS = {
-            qualification: "Quals",
-            competency: "Comp",
-            site_induction: "Induct",
-            permit: "Permit",
-          }
-          const counts = {
-            qualification: credentials.filter(c => c.qualifications_competencies?.type === "qualification").length,
-            competency: credentials.filter(c => c.qualifications_competencies?.type === "competency").length,
-            site_induction: credentials.filter(c => c.qualifications_competencies?.type === "site_induction").length,
-            permit: credentials.filter(c => c.qualifications_competencies?.type === "permit").length,
-          }
-          const total = Object.values(counts).reduce((a, b) => a + b, 0)
-          if (total === 0) return null
-          const entries = Object.entries(counts).filter(([, count]) => count > 0)
-          return (
-            <div style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.75rem",
-              padding: "0 1.5rem",
-            }}>
-              {/* Bar */}
-              <div style={{
-                width: "100%",
-                maxWidth: "500px",
-                height: "12px",
-                display: "flex",
-                borderRadius: "0.375rem",
-                overflow: "hidden",
-              }}>
-                {entries.map(([key, count], idx) => (
-                  <div
-                    key={key}
-                    title={`${SECTION_LABELS[key]}: ${count}`}
-                    style={{
-                      flex: count,
-                      background: SECTION_COLORS[key],
-                      borderRight: idx < entries.length - 1 ? "2px solid rgba(0,0,0,0.15)" : "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                ))}
-              </div>
-              {/* Legend - proportionally aligned to bar */}
-              <div style={{
-                width: "100%",
-                maxWidth: "500px",
-                display: "flex",
-              }}>
-                {entries.map(([key, count]) => (
-                  <div
-                    key={key}
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "0.375rem",
-                      paddingTop: "0.25rem",
-                    }}
-                  >
-                    <div style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: SECTION_COLORS[key],
-                      flexShrink: 0,
-                    }} />
-                    <span style={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#FFFFFF",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {count} {SECTION_LABELS[key]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })()}
 
         {/* Right: QR Code - Right aligned */}
         <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>

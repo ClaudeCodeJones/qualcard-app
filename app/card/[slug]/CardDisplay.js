@@ -46,7 +46,7 @@ function CredentialCard({ cred, onClick, accentClass }) {
           <p className="text-gray-400 text-xs mt-0.5">{code}</p>
         )}
       </div>
-      <StatusBadge status={status} accentClass={accentClass} />
+      {status !== "Active" && <StatusBadge status={status} accentClass={accentClass} />}
     </button>
   )
 }
@@ -267,14 +267,14 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
             )}
           </div>
 
-          <h1 className="mt-4 text-2xl font-extrabold text-gray-900 tracking-tight text-center leading-tight">
+          <h1 className="mt-3 text-2xl font-extrabold text-gray-900 tracking-tight text-center leading-tight">
             {cardholder.full_name}
           </h1>
           {companyName && (
             <p className="text-base text-gray-700 font-medium mt-1">{companyName}</p>
           )}
 
-          <div className="w-full mt-5">
+          <div className="w-full mt-3">
             <div className="w-full rounded-2xl py-3 flex items-center justify-center shadow-lg" style={{ background: "#3d7d4f" }}>
               <span className="text-white font-bold text-base tracking-widest">ACTIVE</span>
             </div>

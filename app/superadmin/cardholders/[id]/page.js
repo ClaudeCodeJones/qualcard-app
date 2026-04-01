@@ -122,7 +122,7 @@ function LoadingScreen() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#D9DEE5",
+      backgroundColor: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
       <p style={{ color: "#374151", fontSize: "0.9375rem" }}>Loading...</p>
@@ -137,7 +137,7 @@ function ErrorScreen({ message }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#D9DEE5",
+      backgroundColor: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
       flexDirection: "column",
       gap: "0.75rem",
@@ -1775,10 +1775,10 @@ export default function CardholderDetailPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#D9DEE5",
+      background: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
-      <Header user={user} />
+      <Header user={user} variant="superadmin" />
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",
@@ -1907,7 +1907,7 @@ export default function CardholderDetailPage() {
           borderRadius: "1rem",
           padding: "1.75rem",
           marginBottom: "1.5rem",
-          boxShadow: "0 2px 12px rgba(44,62,80,0.07), 0 1px 3px rgba(44,62,80,0.05)",
+          boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         }}>
           {/* Search */}
           <div style={{ position: "relative", marginBottom: "1.75rem" }}>
@@ -1958,7 +1958,7 @@ export default function CardholderDetailPage() {
                     background: "#FFFFFF",
                     borderRadius: "1rem",
                     border: "1px solid #E5E7EB",
-                    boxShadow: "0 2px 8px rgba(44,62,80,0.06), 0 1px 2px rgba(44,62,80,0.04)",
+                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
                     padding: "1.5rem",
                     height: "100%",
                   }}
@@ -1984,7 +1984,7 @@ export default function CardholderDetailPage() {
           backgroundColor: "#FFFFFF",
           borderRadius: "1rem",
           padding: "1.75rem",
-          boxShadow: "0 2px 12px rgba(44,62,80,0.07), 0 1px 3px rgba(44,62,80,0.05)",
+          boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
         }}>
           {/* Section heading */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.5rem" }}>

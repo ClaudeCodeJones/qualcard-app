@@ -198,7 +198,6 @@ export default function DashboardPage() {
       supabase
         .from("cardholders")
         .select("id", { count: "exact", head: true })
-        .eq("status", "active")
         .eq("company_id", companyId)
         .not("licence_end_date", "is", null)
         .gte("licence_end_date", today)
@@ -413,26 +412,21 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   gap: "0.5rem",
                   padding: "0.75rem 1rem",
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#2f6f6a",
+                  border: "1px solid rgba(255,255,255,0.15)",
                   borderRadius: "0.5rem",
                   color: "#fff",
-                  fontSize: "0.875rem",
-                  fontWeight: 500,
+                  fontSize: "0.9375rem",
+                  fontWeight: 700,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  transition: "all 0.15s ease",
+                  transition: "background 0.15s ease",
+                  boxShadow: "0 2px 8px rgba(47, 111, 106, 0.4)",
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
-                }}
+                onMouseEnter={e => e.currentTarget.style.background = "#265f5a"}
+                onMouseLeave={e => e.currentTarget.style.background = "#2f6f6a"}
               >
-                <Plus size={16} />
+                <Plus size={18} strokeWidth={2.5} />
                 Add
               </button>
               <button
@@ -558,17 +552,27 @@ export default function DashboardPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
 
             {/* Payment Required */}
-            <div style={CARD}>
-              <p style={{
-                color: "rgba(255,255,255,0.6)",
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                margin: "0 0 0.25rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.07em",
-              }}>
-                Payment Required
-              </p>
+            <div style={{ ...CARD, borderTop: "3px solid #0EA5E9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                <p style={{
+                  color: "rgba(255,255,255,0.6)",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                }}>
+                  Payment Required
+                </p>
+                {pendingCount > 0 && (
+                  <div style={{
+                    width: "7px", height: "7px", borderRadius: "50%",
+                    backgroundColor: "#0EA5E9",
+                    boxShadow: "0 0 0 2px rgba(14,165,233,0.3)",
+                    animation: "pulse 2s infinite",
+                  }} />
+                )}
+              </div>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
                 Cardholders awaiting activation
               </p>
@@ -584,7 +588,7 @@ export default function DashboardPage() {
                         border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
-                        height: "80px",
+                        height: "112px",
                       }} />
                     ))}
                   </>
@@ -648,11 +652,14 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: "#0A9FB5CC",
-                        color: "#fff",
+                        background: "transparent",
+                        border: "1px solid #0A9FB5",
+                        borderRadius: "0.375rem",
+                        margin: "0 0.75rem 0.75rem",
+                        color: "#0A9FB5",
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 400,
+                        fontWeight: 600,
                         textAlign: "center",
                       }}>
                         Payment Pending
@@ -667,7 +674,7 @@ export default function DashboardPage() {
                         border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
-                        height: "80px",
+                        height: "112px",
                       }} />
                     )}
                   </>
@@ -701,17 +708,27 @@ export default function DashboardPage() {
             </div>
 
             {/* Expiring Soon */}
-            <div style={CARD}>
-              <p style={{
-                color: "rgba(255,255,255,0.6)",
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                margin: "0 0 0.25rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.07em",
-              }}>
-                Expiring Soon
-              </p>
+            <div style={{ ...CARD, borderTop: "3px solid #F59E0B" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                <p style={{
+                  color: "rgba(255,255,255,0.6)",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                }}>
+                  Expiring Soon
+                </p>
+                {expiringCount > 0 && (
+                  <div style={{
+                    width: "7px", height: "7px", borderRadius: "50%",
+                    backgroundColor: "#F59E0B",
+                    boxShadow: "0 0 0 2px rgba(245,158,11,0.3)",
+                    animation: "pulse 2s infinite",
+                  }} />
+                )}
+              </div>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
                 Subscriptions expiring within 30 days
               </p>
@@ -727,7 +744,7 @@ export default function DashboardPage() {
                         border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
-                        height: "80px",
+                        height: "112px",
                       }} />
                     ))}
                   </>
@@ -791,11 +808,14 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: "#D97706CC",
-                        color: "#fff",
+                        background: "transparent",
+                        border: "1px solid #D97706",
+                        borderRadius: "0.375rem",
+                        margin: "0 0.75rem 0.75rem",
+                        color: "#D97706",
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 400,
+                        fontWeight: 600,
                         textAlign: "center",
                       }}>
                         Expires {new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
@@ -810,7 +830,7 @@ export default function DashboardPage() {
                         border: "1px solid rgba(255,255,255,0.08)",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
-                        height: "80px",
+                        height: "112px",
                       }} />
                     )}
                   </>
@@ -943,11 +963,14 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div style={{
-                        background: `${getStatusBarColor(licenceStatus.status)}CC`,
-                        color: "#fff",
+                        background: "transparent",
+                        border: `1px solid ${getStatusBarColor(licenceStatus.status)}`,
+                        borderRadius: "0.375rem",
+                        margin: "0 0.75rem 0.75rem",
+                        color: getStatusBarColor(licenceStatus.status),
                         padding: "0.5rem 1rem",
                         fontSize: "0.75rem",
-                        fontWeight: 400,
+                        fontWeight: 600,
                         textAlign: "center",
                       }}>
                         {licenceStatus.status}

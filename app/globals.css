@@ -47,6 +47,11 @@ body {
   50% { opacity: 0.4; }
 }
 
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,255,255,0.2); }
+  50% { box-shadow: 0 0 0 5px rgba(255,255,255,0); }
+}
+
 .skeleton-pulse {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }

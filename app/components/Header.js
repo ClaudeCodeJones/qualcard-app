@@ -56,7 +56,7 @@ function Avatar({ fullName, email, role }) {
           height: "38px",
           borderRadius: "50%",
           background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
-          border: isQcAdmin ? "2px solid rgba(47, 111, 106, 0.4)" : "2px solid rgba(255,255,255,0.3)",
+          border: isQcAdmin ? "2px solid #16A34A" : "2px solid rgba(255,255,255,0.3)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -71,7 +71,7 @@ function Avatar({ fullName, email, role }) {
           <span style={{
             fontSize: "0.625rem",
             fontWeight: 700,
-            color: "#2f6f6a",
+            color: "#16A34A",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}>
@@ -132,10 +132,14 @@ function Avatar({ fullName, email, role }) {
   )
 }
 
-export default function Header({ user }) {
+export default function Header({ user, variant = "default" }) {
+  const backgroundGradient = variant === "superadmin"
+    ? "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)"
+    : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
+
   return (
     <header style={{
-      background: "radial-gradient(circle, #34495E 0%, #2C3E50 100%)",
+      background: backgroundGradient,
       position: "sticky",
       top: 0,
       zIndex: 10,

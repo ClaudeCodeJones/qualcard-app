@@ -34,7 +34,6 @@ export async function GET(request) {
     let query = supabaseAdmin
       .from("cardholders")
       .select("id, full_name, photo_url, status, company_id, licence_end_date, created_at, companies(company_name)")
-      .neq("status", "deleted")
       .order("full_name", { ascending: true })
 
     if (search) {
@@ -104,7 +103,7 @@ export async function POST(request) {
         slug,
         created_by: created_by ?? "qc_admin",
       })
-      .select("id, full_name, photo_url, status, company_id, created_at, licence_end_date")
+      .select("id, full_name, photo_url, status, company_id, created_at, licence_end_date, companies(id, company_name)")
       .single()
 
     if (insertError) {
@@ -112,16 +111,11 @@ export async function POST(request) {
       return Response.json({ error: insertError.message }, { status: 500 })
     }
 
-    const { data: companyData } = await supabaseAdmin
-      .from("companies")
-      .select("company_name")
-      .eq("id", company_id)
-      .single()
-
     return Response.json({
       cardholder: {
         ...inserted,
-        company_name: companyData?.company_name ?? null,
+        company_name: inserted.companies?.company_name ?? null,
+        companies: undefined,
       },
     })
   } catch (error) {

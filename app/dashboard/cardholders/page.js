@@ -84,6 +84,7 @@ export default function CardholdersPage() {
     supabase
       .from("cardholders")
       .select("id, full_name, status, licence_end_date, created_at, photo_url")
+      .neq("status", "deleted")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setCardholders(data)
@@ -567,22 +568,6 @@ export default function CardholdersPage() {
                         </div>
                       </div>
                     </div>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingLeft: bulkMode ? "1.5rem" : 0, paddingBottom: "0.75rem" }}>
-                      <div style={{ display: "flex", gap: "0.5rem", opacity: licenceStatus.status === "Expired" ? 0.4 : 1, transition: "opacity 0.15s ease" }}>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #4A90D9", background: "rgba(74, 144, 217, 0.12)", color: "#4A90D9", fontSize: "0.875rem", fontWeight: 600 }}>
-                          {credentials[id]?.qualification || "-"}
-                        </div>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #F97316", background: "rgba(249, 115, 22, 0.12)", color: "#F97316", fontSize: "0.875rem", fontWeight: 600 }}>
-                          {credentials[id]?.competency || "-"}
-                        </div>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #7C3AED", background: "rgba(124, 58, 237, 0.12)", color: "#7C3AED", fontSize: "0.875rem", fontWeight: 600 }}>
-                          {credentials[id]?.site_induction || "-"}
-                        </div>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", height: "32px", borderRadius: "0.375rem", border: "1.5px solid #16A34A", background: "rgba(22, 163, 74, 0.12)", color: "#16A34A", fontSize: "0.875rem", fontWeight: 600 }}>
-                          {credentials[id]?.permit || "-"}
-                        </div>
-                      </div>
-                    </div>
                     <div style={{ marginTop: "auto" }}>
                       <div
                         style={{
@@ -592,10 +577,11 @@ export default function CardholdersPage() {
                           width: "100%",
                           padding: "0.5rem 1rem",
                           borderRadius: "0.375rem",
-                          background: `${getStatusBarColour(licenceStatus.status)}CC`,
+                          background: "transparent",
+                          border: `1px solid ${getStatusBarColour(licenceStatus.status)}`,
                           fontSize: "0.75rem",
-                          fontWeight: 400,
-                          color: "#fff",
+                          fontWeight: 600,
+                          color: getStatusBarColour(licenceStatus.status),
                           textAlign: "center",
                           fontFamily: "inherit",
                         }}
