@@ -9,8 +9,6 @@ function adminClient() {
 }
 
 export async function GET(request) {
-  console.log("superadmin/users route hit")
-
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -18,7 +16,6 @@ export async function GET(request) {
     const supabaseAdmin = adminClient()
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    console.log("auth result:", user?.id ?? null, authError?.message ?? null)
     if (authError || !user) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const { data: caller } = await supabaseAdmin
@@ -43,13 +40,11 @@ export async function GET(request) {
     ])
 
     if (usersError) {
-      console.log("users query error:", JSON.stringify(usersError))
       return Response.json({ error: usersError.message }, { status: 500 })
     }
 
     return Response.json({ users: users ?? [], companies: companies ?? [] })
   } catch (error) {
-    console.error("superadmin/users route error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

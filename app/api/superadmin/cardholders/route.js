@@ -16,7 +16,6 @@ async function verifyQcAdmin(token, supabaseAdmin) {
 }
 
 export async function GET(request) {
-  console.log("superadmin/cardholders GET hit")
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -53,12 +52,10 @@ export async function GET(request) {
       ])
 
     if (cardholdersError) {
-      console.log("cardholders fetch error:", JSON.stringify(cardholdersError))
       return Response.json({ error: cardholdersError.message }, { status: 500 })
     }
 
     if (companiesError) {
-      console.log("companies fetch error:", JSON.stringify(companiesError))
       return Response.json({ error: companiesError.message }, { status: 500 })
     }
 
@@ -70,13 +67,11 @@ export async function GET(request) {
 
     return Response.json({ cardholders: mapped, companies: companies ?? [] })
   } catch (error) {
-    console.error("superadmin/cardholders GET error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request) {
-  console.log("superadmin/cardholders POST hit")
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -107,7 +102,6 @@ export async function POST(request) {
       .single()
 
     if (insertError) {
-      console.log("cardholder insert error:", JSON.stringify(insertError))
       return Response.json({ error: insertError.message }, { status: 500 })
     }
 
@@ -119,7 +113,6 @@ export async function POST(request) {
       },
     })
   } catch (error) {
-    console.error("superadmin/cardholders POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

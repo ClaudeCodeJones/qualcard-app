@@ -138,7 +138,7 @@ export default function LoginPage() {
       backgroundColor: "#D9DEE5",
     }}>
 
-      <Header user={null} />
+      <Header user={null} hasSidebar={false} variant="superadmin" />
 
       {/* Main */}
       <main style={{

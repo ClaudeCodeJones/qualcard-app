@@ -198,7 +198,6 @@ export default function CompanyRegistrationPage() {
         }))
         return
       }
-      console.error("Supabase insert error:", insertError)
       setGeneralError("Something went wrong submitting your registration. Please try again.")
       return
     }

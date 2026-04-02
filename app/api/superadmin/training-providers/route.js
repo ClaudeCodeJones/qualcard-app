@@ -45,13 +45,11 @@ export async function GET(request) {
     const { data, error } = await query
 
     if (error) {
-      console.error("training-providers GET error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ providers: data ?? [] })
   } catch (error) {
-    console.error("training-providers GET error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -83,13 +81,11 @@ export async function POST(request) {
       .single()
 
     if (error) {
-      console.error("training-providers POST error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ provider: data })
   } catch (error) {
-    console.error("training-providers POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

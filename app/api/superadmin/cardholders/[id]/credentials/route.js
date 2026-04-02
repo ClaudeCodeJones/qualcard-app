@@ -19,8 +19,10 @@ async function resolveProvider(supabaseAdmin, custom_provider) {
   const { provider_name, is_global, company_id } = custom_provider
   if (!provider_name?.trim()) return { error: "Provider name is required" }
 
-  const orClause = company_id
-    ? `is_global.eq.true,company_id.eq.${company_id}`
+  const parsedCompanyId = company_id ? parseInt(company_id, 10) : null
+  if (company_id && !Number.isInteger(parsedCompanyId)) return { error: "Invalid company_id" }
+  const orClause = parsedCompanyId
+    ? `is_global.eq.true,company_id.eq.${parsedCompanyId}`
     : `is_global.eq.true`
 
   const { data: existingList } = await supabaseAdmin
@@ -90,8 +92,10 @@ export async function POST(request, { params }) {
       if (!type) return Response.json({ error: "Credential type is required" }, { status: 400 })
 
       // Deduplication: match by name (case-insensitive) + type within global and scoped company
-      const orClause = scope_company_id
-        ? `company_id.is.null,company_id.eq.${scope_company_id}`
+      const parsedScopeId = scope_company_id ? parseInt(scope_company_id, 10) : null
+      if (scope_company_id && !Number.isInteger(parsedScopeId)) return Response.json({ error: "Invalid scope_company_id" }, { status: 400 })
+      const orClause = parsedScopeId
+        ? `company_id.is.null,company_id.eq.${parsedScopeId}`
         : `company_id.is.null`
       const { data: existingList } = await supabaseAdmin
         .from("qualifications_competencies")
@@ -118,7 +122,6 @@ export async function POST(request, { params }) {
           .single()
 
         if (createError) {
-          console.error("qual_comp create error:", JSON.stringify(createError))
           return Response.json({ error: createError.message }, { status: 500 })
         }
         resolvedQualCompId = created.id
@@ -149,13 +152,11 @@ export async function POST(request, { params }) {
       .single()
 
     if (error) {
-      console.error("credential insert error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ credential: data })
   } catch (error) {
-    console.error("credentials POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

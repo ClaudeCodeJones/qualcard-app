@@ -21,10 +21,10 @@ const LIGHT_CARD = { background: "#FFFFFF", border: "1px solid #E5E7EB", boxShad
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
 const SECTIONS = [
-  { key: "qualification",  label: "Qualifications",         color: "#4A90D9", Icon: GraduationCap },
-  { key: "competency",     label: "Competencies",           color: "#F97316", Icon: Award         },
-  { key: "site_induction", label: "Site Inductions",        color: "#7C3AED", Icon: ClipboardCheck },
-  { key: "permit",         label: "Permits & Certificates", color: "#16A34A", Icon: ShieldCheck    },
+  { key: "qualification",  label: "Qualifications",         color: "#4A90D9", mutedColor: "#93B8D9", Icon: GraduationCap },
+  { key: "competency",     label: "Competencies",           color: "#F97316", mutedColor: "#F4B88A", Icon: Award         },
+  { key: "site_induction", label: "Site Inductions",        color: "#7C3AED", mutedColor: "#A78BD6", Icon: ClipboardCheck },
+  { key: "permit",         label: "Permits & Certificates", color: "#16A34A", mutedColor: "#6DBF8A", Icon: ShieldCheck    },
 ]
 
 const DASHBOARD_ACTIONS = [
@@ -1175,7 +1175,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                 onMoveDown={() => onReorder(cred, filtered[i + 1], filtered, i, i + 1)}
                 isFirst={i === 0}
                 isLast={i === visible.length - 1}
-                sectionColor={section.color}
+                sectionColor={section.mutedColor}
               />
             ))}
           </div>

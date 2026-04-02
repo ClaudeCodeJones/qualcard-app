@@ -38,13 +38,17 @@ const CREDENTIAL_LABELS = {
 function getStatusBarColor(status) {
   switch (status) {
     case "Active":
-      return "#10B981"
+      return "#16A34A"
     case "Expiring Soon":
-      return "#D97706"
+      return "#F59E0B"
     case "Expired":
-      return "#B84B45"
+      return "#EF4444"
     case "Payment Pending":
-      return "#0A9FB5"
+      return "#0EA5E9"
+    case "Pending":
+      return "#F97316"
+    case "Inactive":
+      return "#4A5568"
     default:
       return "#D1D5DB"
   }
@@ -132,7 +136,6 @@ export default function DashboardPage() {
         .eq("id", companyId)
         .single()
         .then(({ data, error }) => {
-          if (error) console.error("Company fetch error:", error)
           if (data) setCompany(data)
         })
 
@@ -404,7 +407,7 @@ export default function DashboardPage() {
             {/* Action Buttons */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
               <button
-                onClick={() => router.push("/dashboard/cardholders")}
+                onClick={() => router.push("/dashboard/cardholders?add=true")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -491,7 +494,7 @@ export default function DashboardPage() {
                 }}
               >
                 <ListChecks size={16} />
-                Bulk
+                Bulk Actions
               </button>
             </div>
           </div>

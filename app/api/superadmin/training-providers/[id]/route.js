@@ -46,13 +46,11 @@ export async function PATCH(request, { params }) {
       .single()
 
     if (error) {
-      console.error("training-providers PATCH error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ provider: data })
   } catch (error) {
-    console.error("training-providers/[id] PATCH error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

@@ -33,13 +33,11 @@ export async function DELETE(request, { params }) {
       .eq("id", id)
 
     if (error) {
-      console.error("qualifications DELETE error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("qualifications/[id] DELETE error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -75,13 +73,11 @@ export async function PATCH(request, { params }) {
       .single()
 
     if (error) {
-      console.error("qualifications PATCH error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ qualification: data })
   } catch (error) {
-    console.error("qualifications/[id] PATCH error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

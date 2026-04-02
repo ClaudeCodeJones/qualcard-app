@@ -1,5 +1,5 @@
 const STATUS_MAP = {
-  active:           { label: "Active",            color: "#10B981" },
+  active:           { label: "Active",            color: "#16A34A" },
   expiring:         { label: "Expiring Soon",     color: "#F59E0B" },
   expired:          { label: "Expired",           color: "#EF4444" },
   payment_pending:  { label: "Payment Pending",   color: "#0EA5E9" },

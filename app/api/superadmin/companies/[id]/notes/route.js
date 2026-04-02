@@ -16,7 +16,6 @@ async function verifyQcAdmin(token, supabaseAdmin) {
 }
 
 export async function POST(request, ctx) {
-  console.log("companies/[id]/notes POST hit")
   try {
     const { id } = await ctx.params
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
@@ -45,7 +44,6 @@ export async function POST(request, ctx) {
       .single()
 
     if (insertError) {
-      console.log("company_notes insert error:", JSON.stringify(insertError))
       return Response.json({ error: insertError.message }, { status: 500 })
     }
 
@@ -62,7 +60,6 @@ export async function POST(request, ctx) {
       },
     })
   } catch (error) {
-    console.error("companies/[id]/notes POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

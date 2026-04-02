@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
-import { GraduationCap, Award, ClipboardCheck, Shield, ChevronRight, ArrowRight } from "lucide-react"
+import { GraduationCap, Award, ClipboardCheck, ChevronRight, ArrowRight } from "lucide-react"
 
 const CARD = {
   background: "#FFFFFF",
@@ -51,7 +51,7 @@ export default function CardholdersPage() {
   const [cardholders, setCardholders] = useState([])
   const [credentials, setCredentials] = useState({})
   const [filter, setFilter] = useState(searchParams.get("filter") || "all")
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(searchParams.get("add") === "true")
   const [newName, setNewName] = useState("")
   const [newPhoto, setNewPhoto] = useState(null)
   const [newPhotoPreview, setNewPhotoPreview] = useState(null)
@@ -117,12 +117,10 @@ export default function CardholdersPage() {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        console.error(`Activation failed for ${id}:`, body.error || res.status)
         return false
       }
       return true
     } catch (err) {
-      console.error(`Activation error for ${id}:`, err)
       return false
     }
   }
@@ -541,6 +539,7 @@ export default function CardholdersPage() {
                     const file = e.dataTransfer.files[0]
                     if (!file) return
                     setNewPhoto(file)
+                    if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
                     setNewPhotoPreview(URL.createObjectURL(file))
                     setFormError("")
                   }}
@@ -567,6 +566,7 @@ export default function CardholdersPage() {
                       const file = e.target.files[0]
                       if (!file) return
                       setNewPhoto(file)
+                      if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
                       setNewPhotoPreview(URL.createObjectURL(file))
                       setFormError("")
                     }}
@@ -617,7 +617,7 @@ export default function CardholdersPage() {
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button
-                onClick={() => { setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); setNewPhotoPreview(null); setDragOver(false) }}
+                onClick={() => { setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview); setNewPhotoPreview(null); setDragOver(false) }}
                 style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontFamily: "inherit", cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
                 onMouseLeave={e => e.currentTarget.style.background = "#fff"}
@@ -630,20 +630,20 @@ export default function CardholdersPage() {
                   if (!newName.trim()) return setFormError("Full name is required.")
 
                   const { data: { user }, error: authError } = await supabase.auth.getUser()
-                  if (authError || !user) { console.error(authError); return setFormError("Not authenticated.") }
+                  if (authError || !user) { return setFormError("Not authenticated.") }
 
                   const { data: userData, error: userError } = await supabase
                     .from("users")
                     .select("company_id")
                     .eq("id", user.id)
                     .single()
-                  if (userError || !userData?.company_id) { console.error(userError); return setFormError("Could not fetch company.") }
+                  if (userError || !userData?.company_id) { return setFormError("Could not fetch company.") }
 
                   const filePath = `${Date.now()}-${newPhoto.name}`
                   const { error: uploadError } = await supabase.storage
                     .from("cardholder-photos")
                     .upload(filePath, newPhoto)
-                  if (uploadError) { console.error(uploadError); return setFormError("Photo upload failed.") }
+                  if (uploadError) { return setFormError("Photo upload failed.") }
 
                   const { data: { publicUrl } } = supabase.storage
                     .from("cardholder-photos")
@@ -675,7 +675,6 @@ export default function CardholdersPage() {
                       licence_end_date: null,
                     })
                   if (insertError) {
-                    console.error("Insert error:", insertError.message, insertError.details, insertError.code)
                     return setFormError(`Failed to save: ${insertError.message}`)
                   }
 
@@ -688,7 +687,7 @@ export default function CardholdersPage() {
                       if (data) setCardholders(data)
                     })
 
-                  setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); setNewPhotoPreview(null); setDragOver(false)
+                  setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview); setNewPhotoPreview(null); setDragOver(false)
                 }}
                 style={{
                   padding: "0.625rem 1.125rem",

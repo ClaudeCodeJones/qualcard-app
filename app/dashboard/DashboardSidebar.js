@@ -36,7 +36,7 @@ export default function DashboardSidebar({ initials }) {
     <aside style={{
       width: "88px",
       flexShrink: 0,
-      background: "#183532",
+      background: "#344e4b",
       borderRight: "1px solid rgba(255,255,255,0.05)",
       display: "flex",
       flexDirection: "column",
@@ -44,8 +44,8 @@ export default function DashboardSidebar({ initials }) {
       paddingTop: "1.25rem",
       paddingBottom: "1.25rem",
       position: "sticky",
-      top: "136px",
-      height: "calc(100vh - 136px)",
+      top: "88px",
+      height: "calc(100vh - 88px)",
     }}>
 
       {/* Nav items */}

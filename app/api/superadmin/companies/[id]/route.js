@@ -16,7 +16,6 @@ async function verifyQcAdmin(token, supabaseAdmin) {
 }
 
 export async function GET(request, ctx) {
-  console.log("companies/[id] GET hit")
   try {
     const { id } = await ctx.params
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
@@ -47,7 +46,6 @@ export async function GET(request, ctx) {
     ])
 
     if (companyError) {
-      console.log("company fetch error:", JSON.stringify(companyError))
       return Response.json({ error: companyError.message }, { status: 404 })
     }
 
@@ -63,13 +61,11 @@ export async function GET(request, ctx) {
       notes: notesWithAuthor,
     })
   } catch (error) {
-    console.error("companies/[id] GET error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function PATCH(request, ctx) {
-  console.log("companies/[id] PATCH hit")
   try {
     const { id } = await ctx.params
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
@@ -114,19 +110,16 @@ export async function PATCH(request, ctx) {
       .single()
 
     if (updateError) {
-      console.log("company update error:", JSON.stringify(updateError))
       return Response.json({ error: updateError.message }, { status: 500 })
     }
 
     return Response.json({ company })
   } catch (error) {
-    console.error("companies/[id] PATCH error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function DELETE(request, ctx) {
-  console.log("companies/[id] DELETE hit")
   try {
     const { id } = await ctx.params
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
@@ -148,13 +141,11 @@ export async function DELETE(request, ctx) {
       .eq("id", id)
 
     if (deleteError) {
-      console.log("company delete error:", JSON.stringify(deleteError))
       return Response.json({ error: deleteError.message }, { status: 500 })
     }
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("companies/[id] DELETE error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

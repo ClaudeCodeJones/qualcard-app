@@ -104,7 +104,6 @@ export async function PATCH(request, { params }) {
       .eq("id", id)
 
     if (updateError) {
-      console.error("activate route update error:", updateError.message)
       return Response.json({ error: updateError.message }, { status: 500 })
     }
 
@@ -114,7 +113,6 @@ export async function PATCH(request, { params }) {
       licence_end_date: licenceEndDate,
     })
   } catch (err) {
-    console.error("dashboard/cardholders/[id]/activate PATCH error:", err.message)
     return Response.json({ error: err.message }, { status: 500 })
   }
 }

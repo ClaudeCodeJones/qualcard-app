@@ -1778,7 +1778,7 @@ export default function CardholderDetailPage() {
       background: "#F5F7F9",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
-      <Header user={user} variant="superadmin" />
+      <Header user={user} variant="superadmin" hasSidebar={false} />
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",

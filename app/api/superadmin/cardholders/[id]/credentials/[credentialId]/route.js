@@ -66,13 +66,11 @@ export async function DELETE(request, { params }) {
       .eq("cardholder_id", cardholder_id)
 
     if (error) {
-      console.error("credential delete error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("credentials/[credentialId] DELETE error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -121,13 +119,11 @@ export async function PATCH(request, { params }) {
       .single()
 
     if (error) {
-      console.error("credential PATCH error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ credential: data })
   } catch (error) {
-    console.error("credentials/[credentialId] PATCH error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

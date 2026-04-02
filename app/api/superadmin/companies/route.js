@@ -17,7 +17,6 @@ async function verifyQcAdmin(token, supabaseAdmin) {
 }
 
 export async function GET(request) {
-  console.log("superadmin/companies GET hit")
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -33,7 +32,6 @@ export async function GET(request) {
     ])
 
     if (companiesError) {
-      console.log("companies query error:", JSON.stringify(companiesError))
       return Response.json({ error: companiesError.message }, { status: 500 })
     }
 
@@ -45,13 +43,11 @@ export async function GET(request) {
     const result = (companies ?? []).map((c) => ({ ...c, cardholder_count: countMap[c.id] ?? 0 }))
     return Response.json({ companies: result })
   } catch (error) {
-    console.error("superadmin/companies GET error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request) {
-  console.log("superadmin/companies POST hit")
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -82,9 +78,7 @@ export async function POST(request) {
       const { error: uploadError } = await supabaseAdmin.storage
         .from("logos")
         .upload(filePath, buffer, { contentType: logoFile.type })
-      if (uploadError) {
-        console.log("logo upload error:", uploadError.message)
-      } else {
+      if (!uploadError) {
         const { data: { publicUrl } } = supabaseAdmin.storage.from("logos").getPublicUrl(filePath)
         logo_url = publicUrl
       }
@@ -110,13 +104,11 @@ export async function POST(request) {
       .single()
 
     if (insertError) {
-      console.log("company insert error:", JSON.stringify(insertError))
       return Response.json({ error: insertError.message }, { status: 500 })
     }
 
     return Response.json({ company: { ...company, cardholder_count: 0 } })
   } catch (error) {
-    console.error("superadmin/companies POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

@@ -52,15 +52,15 @@ function Avatar({ fullName, email, role }) {
         }}
       >
         <div style={{
-          width: "38px",
-          height: "38px",
+          width: "32px",
+          height: "32px",
           borderRadius: "50%",
           background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
           border: "2px solid #16A34A",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "0.875rem",
+          fontSize: "0.75rem",
           fontWeight: 700,
           color: isQcAdmin ? "#FFFFFF" : "#34495E",
           letterSpacing: "0.02em",
@@ -132,11 +132,9 @@ function Avatar({ fullName, email, role }) {
   )
 }
 
-export default function Header({ user, variant = "default", logoHref = "/superadmin" }) {
-  const backgroundGradient = variant === "superadmin"
-    ? "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)"
-    : variant === "dashboard"
-    ? "#183532"
+export default function Header({ user, variant = "default", logoHref = "/superadmin", hasSidebar = true }) {
+  const backgroundGradient = (variant === "superadmin" || variant === "dashboard")
+    ? "#344e4b"
     : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
 
   return (
@@ -147,13 +145,14 @@ export default function Header({ user, variant = "default", logoHref = "/superad
       zIndex: 10,
     }}>
       <div style={{
-        height: "136px",
-        paddingLeft: "88px",
+        height: "88px",
+        paddingLeft: hasSidebar ? "88px" : "1.5rem",
         paddingRight: "1.5rem",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         boxSizing: "border-box",
+        ...(hasSidebar ? {} : { maxWidth: "1280px", margin: "0 auto", width: "100%" }),
       }}>
         <Link href={logoHref} style={{ display: "flex", alignItems: "center" }}>
           <Image
@@ -162,18 +161,22 @@ export default function Header({ user, variant = "default", logoHref = "/superad
             width={958}
             height={413}
             priority
-            style={{ objectFit: "contain", width: "auto", height: "72px", cursor: "pointer" }}
+            style={{ objectFit: "contain", width: "auto", height: "48px", cursor: "pointer" }}
           />
         </Link>
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: "0.25rem",
-        }}>
-          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
-          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
-        </div>
+        {user ? (
+          <Avatar fullName={user.full_name} email={user.email} role={user.role} />
+        ) : (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "0.25rem",
+          }}>
+            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
+            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
+          </div>
+        )}
       </div>
     </header>
   )

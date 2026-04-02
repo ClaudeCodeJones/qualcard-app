@@ -838,7 +838,7 @@ export default function CompanyDetailPage() {
       background: "#D9DEE5",
       fontFamily: "Inter, system-ui, sans-serif",
     }}>
-      <Header user={currentUser} variant="superadmin" />
+      <Header user={currentUser} variant="superadmin" hasSidebar={false} />
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",

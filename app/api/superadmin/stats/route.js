@@ -9,8 +9,6 @@ function adminClient() {
 }
 
 export async function GET(request) {
-  console.log("stats route hit")
-
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -18,7 +16,6 @@ export async function GET(request) {
     const supabaseAdmin = adminClient()
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    console.log("auth result:", user?.id ?? null, authError?.message ?? null)
 
     if (authError || !user) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -63,7 +60,6 @@ export async function GET(request) {
       totalProviders: totalProviders ?? 0,
     })
   } catch (error) {
-    console.error("stats route error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

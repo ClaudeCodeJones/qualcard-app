@@ -39,7 +39,9 @@ export async function GET(request) {
 
     if (!admin_view) {
       if (company_id) {
-        query = query.or(`company_id.is.null,company_id.eq.${company_id}`)
+        const parsed = parseInt(company_id, 10)
+        if (!Number.isInteger(parsed)) return Response.json({ error: "Invalid company_id" }, { status: 400 })
+        query = query.or(`company_id.is.null,company_id.eq.${parsed}`)
       } else {
         query = query.is("company_id", null)
       }
@@ -48,13 +50,11 @@ export async function GET(request) {
     const { data, error } = await query
 
     if (error) {
-      console.error("qualifications GET error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ qualifications: data ?? [] })
   } catch (error) {
-    console.error("qualifications GET error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -91,13 +91,11 @@ export async function POST(request) {
       .single()
 
     if (error) {
-      console.error("qualifications POST error:", JSON.stringify(error))
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ qualification: data })
   } catch (error) {
-    console.error("qualifications POST error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

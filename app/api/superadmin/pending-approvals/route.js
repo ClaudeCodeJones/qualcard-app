@@ -9,8 +9,6 @@ function adminClient() {
 }
 
 export async function GET(request) {
-  console.log("pending-approvals route hit")
-
   try {
     const token = request.headers.get("Authorization")?.replace("Bearer ", "")
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -18,7 +16,6 @@ export async function GET(request) {
     const supabaseAdmin = adminClient()
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    console.log("auth result:", user?.id ?? null, authError?.message ?? null)
 
     if (authError || !user) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -38,14 +35,10 @@ export async function GET(request) {
       .eq("account_status", "pending_approval")
       .order("created_at", { ascending: false })
 
-    console.log("query error:", JSON.stringify(error))
-    console.log("query data:", JSON.stringify(data))
-
     if (error) return Response.json({ error: error.message }, { status: 500 })
 
     return Response.json(data ?? [])
   } catch (error) {
-    console.error("pending-approvals route error:", error.message)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

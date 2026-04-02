@@ -181,6 +181,34 @@ function sortCredentials(creds, type) {
   return [...manually, ...notManually]
 }
 
+function ProfilePhoto({ name, url }) {
+  const [loaded, setLoaded] = useState(false)
+  const initials = name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
+
+  return (
+    <div className="w-44 h-44 rounded-full border-4 border-white shadow-xl -mt-32 z-10 overflow-hidden shrink-0" style={{ position: "relative" }}>
+      <div className="w-full h-full flex items-center justify-center text-3xl font-bold" style={{ backgroundColor: "#D1D5DB", color: "#6B7280" }}>
+        {initials}
+      </div>
+      {url && (
+        <img
+          src={url}
+          alt={name}
+          onLoad={() => setLoaded(true)}
+          className="w-full h-full object-cover"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            opacity: loaded ? 1 : 0,
+            transition: "opacity 0.3s ease",
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function CardDisplay({ cardholder, credentials = [], companyName, appUrl }) {
   const [selectedCred, setSelectedCred] = useState(null)
   const [showQR, setShowQR] = useState(false)
@@ -243,7 +271,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/50 text-[9px] font-bold tracking-[0.18em] uppercase mb-1">Powered by</p>
-              <img src="/images/qualcard_logo_white.png?v=2" alt="QualCard" className="h-10 w-auto" />
+              <img src="/images/qualcard_logo_wide_white.png" alt="QualCard" className="h-10 w-auto" />
             </div>
             <button
               onClick={() => setShowInfo(true)}
@@ -257,15 +285,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
 
         {/* Identity card */}
         <div className="bg-white flex flex-col items-center pb-5 px-5 rounded-b-3xl shadow-lg">
-          <div className="w-44 h-44 rounded-full border-4 border-white shadow-xl -mt-32 z-10 overflow-hidden shrink-0">
-            {cardholder.photo_url ? (
-              <img src={cardholder.photo_url} alt={cardholder.full_name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-3xl font-bold">
-                {cardholder.full_name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
-              </div>
-            )}
-          </div>
+          <ProfilePhoto name={cardholder.full_name} url={cardholder.photo_url} />
 
           <h1 className="mt-3 text-2xl font-extrabold text-gray-900 tracking-tight text-center leading-tight">
             {cardholder.full_name}
@@ -312,7 +332,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
         {/* Footer */}
         <footer className="mt-6 pt-5 pb-8 px-5 flex flex-col items-center gap-2.5">
           <div className="flex items-center gap-2 text-gray-500 flex-wrap justify-center">
-            <img src="/images/qualcard_logo_colour.png?v=2" alt="QualCard" className="h-8 w-auto" />
+            <img src="/images/qualcard_logo_wide_teal.png" alt="QualCard" className="h-8 w-auto" />
             <span className="text-gray-300">|</span>
             <span className="text-xs text-gray-400">qualcard.co.nz</span>
             <span className="text-gray-300">|</span>
