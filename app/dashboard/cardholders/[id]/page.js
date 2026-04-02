@@ -1659,151 +1659,137 @@ export default function CardholderDetailPage() {
       <div style={{
         background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
         borderRadius: "1rem",
-        padding: "1rem 1.5rem",
+        padding: "1.5rem 2rem",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
+        flexDirection: "column",
         gap: "1rem",
       }}>
-        {/* Left: Photo + Profile Info */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1.5rem" }}>
-          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={120} borderColor={getPhotoBorderColor(cardholder.status)} />
+        {/* Row 1: Photo + Name + QR */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={80} borderColor={getPhotoBorderColor(cardholder.status)} />
 
           <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{
-            margin: "0 0 0.15rem",
-            fontSize: "clamp(1rem, 1.8vw, 1.375rem)",
-            fontWeight: 800,
-            color: "#FFFFFF",
-            textTransform: "uppercase",
-            letterSpacing: "0.03em",
-            lineHeight: 1.1,
-          }}>
-            {cardholder.full_name}
-          </h1>
+            <h1 style={{
+              margin: 0,
+              fontSize: "1.75rem",
+              fontWeight: 800,
+              color: "#FFFFFF",
+              textTransform: "uppercase",
+              letterSpacing: "0.03em",
+              lineHeight: 1.1,
+            }}>
+              {cardholder.full_name}
+            </h1>
+            {company && (
+              <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", fontWeight: 400 }}>
+                {company.company_name}
+              </p>
+            )}
+          </div>
 
-          {company && (
-            <p style={{ margin: "0 0 0.375rem", fontSize: "0.9375rem", color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>
-              {company.company_name}
-            </p>
+          <div style={{
+            background: "#FFFFFF",
+            borderRadius: "0.75rem",
+            padding: "0.75rem",
+            display: "inline-flex",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            flexShrink: 0,
+          }}>
+            <QRCodeSVG value={profileUrl} size={56} />
+          </div>
+        </div>
+
+        {/* Row 2: Company, status, creds, actions */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "0.625rem",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          paddingTop: "1rem",
+        }}>
+          {(() => {
+            const keyMap = {
+              "Active": "active",
+              "Expiring Soon": "expiring",
+              "Expired": "expired",
+              "Payment Pending": "payment_pending",
+            }
+            return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
+          })()}
+
+          {(() => {
+            const fullDateLabel = getFullDateLabel(licenceStatus.dateLabel)
+            return fullDateLabel ? (
+              <span style={{
+                display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+                fontSize: "0.6875rem", fontWeight: 600,
+                color: "rgba(255,255,255,0.65)",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(255,255,255,0.25)",
+                whiteSpace: "nowrap",
+              }}>
+                {fullDateLabel}
+              </span>
+            ) : null
+          })()}
+
+          {headerAction && (
+            <button
+              onClick={headerAction.onClick}
+              disabled={actionLoading}
+              style={{
+                padding: "0.2rem 0.75rem", borderRadius: "1rem", border: "none",
+                background: headerAction.bg, color: "#FFFFFF", fontSize: "0.6875rem", fontWeight: 600,
+                cursor: actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
+                whiteSpace: "nowrap", opacity: actionLoading ? 0.7 : 1,
+                transition: "opacity 0.15s ease",
+              }}
+              onMouseEnter={(e) => { if (!actionLoading) e.currentTarget.style.opacity = "0.88" }}
+              onMouseLeave={(e) => { if (!actionLoading) e.currentTarget.style.opacity = "1" }}
+            >
+              {actionLoading ? "Saving..." : headerAction.label}
+            </button>
           )}
 
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
+          <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+
+          {SECTIONS.map((s) => {
+            const count = credentials.filter(c => c.qualifications_competencies?.type === s.key).length
+            return (
+              <div key={s.key} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                <s.Icon size={13} color={s.mutedColor} strokeWidth={2} />
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: count === 0 ? "rgba(255,255,255,0.3)" : "#FFFFFF" }}>
+                  {count}
+                </span>
+              </div>
+            )
+          })}
+
+          <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem" }}>
             <a
               href={profileUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: "inline-flex", alignItems: "center", gap: "0.3rem",
-                fontSize: "0.8125rem", color: "rgba(255,255,255,0.7)",
+                display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                fontSize: "0.6875rem", color: "rgba(255,255,255,0.5)",
                 textDecoration: "none", transition: "color 0.15s ease",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
             >
-              View Public Profile
-              <ExternalLink size={12} strokeWidth={2} />
+              View Profile
+              <ExternalLink size={10} strokeWidth={2} />
             </a>
             <CopyButton textToCopy={profileUrl} />
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-            {/* Status badge - licence-based only */}
-            {(() => {
-              const keyMap = {
-                "Active": "active",
-                "Expiring Soon": "expiring",
-                "Expired": "expired",
-                "Payment Pending": "payment_pending",
-              }
-              return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
-            })()}
-
-            {/* Date badge - only if licence_end_date exists */}
-            {(() => {
-              const fullDateLabel = getFullDateLabel(licenceStatus.dateLabel)
-              return fullDateLabel ? (
-                <span style={{
-                  display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                  fontSize: "0.75rem", fontWeight: 600,
-                  color: "rgba(255,255,255,0.75)",
-                  backgroundColor: "transparent",
-                  border: "1.5px solid rgba(255,255,255,0.3)",
-                  whiteSpace: "nowrap",
-                }}>
-                  {fullDateLabel}
-                </span>
-              ) : null
-            })()}
-
-            {/* Action button */}
-            {headerAction && (
-              <button
-                onClick={headerAction.onClick}
-                disabled={actionLoading}
-                style={{
-                  padding: "0.25rem 0.875rem", borderRadius: "1rem", border: "none",
-                  background: headerAction.bg, color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 600,
-                  cursor: actionLoading ? "not-allowed" : "pointer", fontFamily: "inherit",
-                  whiteSpace: "nowrap", opacity: actionLoading ? 0.7 : 1,
-                  transition: "opacity 0.15s ease",
-                }}
-                onMouseEnter={(e) => { if (!actionLoading) e.currentTarget.style.opacity = "0.88" }}
-                onMouseLeave={(e) => { if (!actionLoading) e.currentTarget.style.opacity = "1" }}
-              >
-                {actionLoading ? "Saving..." : headerAction.label}
-              </button>
-            )}
-          </div>
           {actionError && (
-            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8125rem", color: "#FCA5A5" }}>{actionError}</p>
+            <p style={{ margin: 0, fontSize: "0.8125rem", color: "#FCA5A5" }}>{actionError}</p>
           )}
-          </div>
-        </div>
-
-        {/* Centre: Compliance DNA */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", padding: "0 1.5rem" }}>
-          <span style={{ fontSize: "0.625rem", fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-            Compliance DNA
-          </span>
-          <div style={{ display: "flex", gap: "0.625rem" }}>
-            {SECTIONS.map((s) => {
-              const count = credentials.filter(c => c.qualifications_competencies?.type === s.key).length
-              return (
-                <div key={s.key} style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "0.375rem",
-                  padding: "0.625rem 0.875rem",
-                  borderRadius: "0.625rem",
-                  background: "rgba(255,255,255,0.08)",
-                  border: `1px solid ${s.color}40`,
-                  width: "110px",
-                }}>
-                  <s.Icon size={16} color={s.color} strokeWidth={2} />
-                  <span style={{ fontSize: "1.25rem", fontWeight: 800, color: count === 0 ? "rgba(255,255,255,0.3)" : "#FFFFFF", lineHeight: 1 }}>{count === 0 ? "—" : count}</span>
-                  <span style={{ fontSize: "0.625rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>
-                    {s.key === "site_induction" ? "Inductions" : s.label.split(" ")[0]}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Right: QR Code - Right aligned */}
-        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-          <div style={{
-            background: "#CBD5E1",
-            borderRadius: "1rem",
-            padding: "1rem",
-            display: "inline-flex",
-            opacity: 0.9,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          }}>
-            <QRCodeSVG value={profileUrl} size={80} />
-          </div>
         </div>
       </div>
 

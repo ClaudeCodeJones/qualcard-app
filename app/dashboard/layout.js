@@ -52,7 +52,7 @@ export default async function DashboardLayout({ children }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#D9DEE5", display: "flex", flexDirection: "column" }}>
-      <Header user={userForHeader} variant="dashboard" logoHref="/dashboard" />
+      <Header variant="dashboard" logoHref="/dashboard" />
       <div style={{ display: "flex", flex: 1 }}>
         <DashboardSidebar initials={initials} />
         <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
