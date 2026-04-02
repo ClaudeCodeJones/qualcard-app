@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Home, Users, Settings, CreditCard, LogOut } from "lucide-react"
@@ -17,6 +17,21 @@ export default function DashboardSidebar({ initials }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const closeMenu = () => setMenuOpen(false)
+    document.addEventListener("scroll", closeMenu, true)
+    document.addEventListener("wheel", closeMenu, true)
+    document.addEventListener("touchmove", closeMenu, true)
+
+    return () => {
+      document.removeEventListener("scroll", closeMenu, true)
+      document.removeEventListener("wheel", closeMenu, true)
+      document.removeEventListener("touchmove", closeMenu, true)
+    }
+  }, [menuOpen])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
