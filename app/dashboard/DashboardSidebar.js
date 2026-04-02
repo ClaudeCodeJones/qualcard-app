@@ -20,22 +20,12 @@ export default function DashboardSidebar({ initials }) {
 
   useEffect(() => {
     if (!menuOpen) return
-
-    const closeMenu = () => setMenuOpen(false)
-    document.addEventListener("scroll", closeMenu, true)
-    document.addEventListener("wheel", closeMenu, true)
-    document.addEventListener("touchmove", closeMenu, true)
-
-    return () => {
-      document.removeEventListener("scroll", closeMenu, true)
-      document.removeEventListener("wheel", closeMenu, true)
-      document.removeEventListener("touchmove", closeMenu, true)
-    }
+    const close = () => setMenuOpen(false)
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
   }, [menuOpen])
 
-  useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -54,76 +44,9 @@ export default function DashboardSidebar({ initials }) {
       paddingTop: "1.25rem",
       paddingBottom: "1.25rem",
       position: "sticky",
-      top: 0,
-      height: "100vh",
+      top: "136px",
+      height: "calc(100vh - 136px)",
     }}>
-      {/* User avatar */}
-      <div style={{ position: "relative", marginBottom: "2rem" }}>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.2)",
-            border: "2px solid #16A34A",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            cursor: "pointer",
-            color: "#fff",
-            fontSize: "0.7rem",
-            fontWeight: 600,
-            letterSpacing: "0.03em",
-            transition: "all 0.15s ease",
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.3)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-        >
-          {initials}
-        </button>
-
-        {/* Logout menu */}
-        {menuOpen && (
-          <div style={{
-            position: "absolute",
-            top: "100%",
-            right: "-150px",
-            marginTop: "0.5rem",
-            background: "#1f4f4b",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "0.5rem",
-            padding: "0.5rem",
-            zIndex: 1000,
-            minWidth: "140px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
-          }}>
-            <button
-              onClick={handleLogout}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                padding: "0.625rem 0.75rem",
-                background: "transparent",
-                border: "none",
-                color: "#fff",
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                borderRadius: "0.375rem",
-                transition: "background 0.15s ease",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Nav items */}
       <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1, width: "100%", paddingLeft: "0.5rem", paddingRight: "0.5rem" }}>
@@ -171,6 +94,71 @@ export default function DashboardSidebar({ initials }) {
           )
         })}
       </nav>
+
+      {/* Divider + avatar */}
+      <div style={{ width: "50%", height: "1px", background: "rgba(255,255,255,0.1)", margin: "0.75rem 0" }} />
+      <div style={{ position: "relative" }}>
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.1)",
+            border: "2px solid #16A34A",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            color: "#fff",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            letterSpacing: "0.03em",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+        >
+          {initials}
+        </button>
+
+        {menuOpen && (
+          <div style={{
+            position: "absolute",
+            bottom: "calc(100% + 0.5rem)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#1f3f3c",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "0.5rem",
+            padding: "0.5rem",
+            zIndex: 1000,
+            minWidth: "130px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.625rem",
+                padding: "0.625rem 0.75rem",
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                borderRadius: "0.375rem",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <LogOut size={15} />
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
 
     </aside>
   )

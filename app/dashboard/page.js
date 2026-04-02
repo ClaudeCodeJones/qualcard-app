@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowRight, AlertCircle, Plus, Users, ListChecks, GraduationCap, Award, ClipboardCheck, ShieldCheck, X, ChevronRight } from "lucide-react"
-import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 
@@ -272,18 +271,6 @@ export default function DashboardPage() {
       gap: "2rem",
     }}>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ color: "#2C3E50", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
-          Dashboard
-        </h1>
-        <Image
-          src="/images/qualcard_logo_colour.png?v=2"
-          alt="QualCard"
-          width={120}
-          height={32}
-          style={{ objectFit: "contain", opacity: 0.9 }}
-        />
-      </div>
 
       {/* 2-column grid: left 2fr, right 0.5fr */}
       <div style={{ display: "grid", gridTemplateColumns: "2fr 0.5fr", gap: "1.5rem", alignItems: "start" }}>

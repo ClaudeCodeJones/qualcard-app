@@ -17,7 +17,7 @@ import StatusBadge from "@/app/components/StatusBadge"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DARK_CARD = { background: "#1f3f3c", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 10px 25px rgba(0,0,0,0.25)" }
+const LIGHT_CARD = { background: "#FFFFFF", border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(44,62,80,0.06), 0 4px 12px rgba(44,62,80,0.08)" }
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
 const SECTIONS = [
@@ -955,11 +955,11 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
         background: "none", border: "none", padding: "0.1rem",
         display: "flex", alignItems: "center", justifyContent: "center",
         cursor: disabled ? "default" : "pointer",
-        color: disabled ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.35)",
+        color: disabled ? "#D1D5DB" : "#9CA3AF",
         transition: "color 0.15s ease",
       }}
-      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.color = "rgba(255,255,255,0.9)" }}
-      onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.color = "rgba(255,255,255,0.35)" }}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.color = "#374151" }}
+      onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.color = "#9CA3AF" }}
     >
       <Icon size={14} strokeWidth={2.5} />
     </button>
@@ -971,9 +971,9 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
       alignItems: "center",
       gap: "0.75rem",
       padding: "0.75rem 1.25rem 0.75rem 0.75rem",
-      background: "rgba(255,255,255,0.04)",
+      background: "#FFFFFF",
       borderRadius: "0.75rem",
-      border: "0.5px solid rgba(255,255,255,0.06)",
+      border: "1px solid #E5E7EB",
       borderLeft: `4px solid ${sectionColor}`,
     }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "0", flexShrink: 0 }}>
@@ -982,20 +982,20 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#FFFFFF", lineHeight: 1.3 }}>
+        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#1F2937", lineHeight: 1.3 }}>
           {name}
         </p>
         {cred.issue_date && (
-          <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.5)" }}>
+          <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "#6B7280" }}>
             Issue date: {formatDate(cred.issue_date)}
           </p>
         )}
         {cred.expiry_date && (
-          <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.4)" }}>
+          <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", color: "#9CA3AF" }}>
             Expires {formatDate(cred.expiry_date)}
           </p>
         )}
-        <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "rgba(255,255,255,0.5)" }}>
+        <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
           {code || "\u00A0"}
         </p>
       </div>
@@ -1022,10 +1022,10 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
           title="Edit credential"
           style={{
             background: "none", border: "none", cursor: "pointer", padding: "0.2rem",
-            color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s ease",
+            color: "#9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s ease",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.9)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
         >
           <Pencil size={16} strokeWidth={2} />
         </button>
@@ -1035,10 +1035,10 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
           title="Delete credential"
           style={{
             background: "none", border: "none", cursor: "pointer", padding: "0.2rem",
-            color: "rgba(255,255,255,0.35)", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s ease",
+            color: "#9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", transition: "color 0.15s ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
         >
           <Trash2 size={16} strokeWidth={2} />
         </button>
@@ -1080,7 +1080,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
         gap: "0.875rem",
         marginBottom: filtered.length > 0 ? "0.25rem" : "0",
         paddingBottom: "0.75rem",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        borderBottom: "1px solid #E5E7EB",
       }}>
         <div style={{
           width: 40,
@@ -1100,12 +1100,12 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           flex: 1,
           fontSize: "0.75rem",
           fontWeight: 700,
-          color: "rgba(255,255,255,0.85)",
+          color: "#374151",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}>
           {section.label}
-          <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.4)", marginLeft: "0.375rem" }}>
+          <span style={{ fontWeight: 400, color: "#9CA3AF", marginLeft: "0.375rem" }}>
             ({credentials.length})
           </span>
         </span>
@@ -1115,16 +1115,16 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
             onClick={() => onResetOrder(section.key)}
             style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: "0.75rem", fontWeight: 500, color: "rgba(255,255,255,0.45)",
+              fontSize: "0.75rem", fontWeight: 500, color: "#9CA3AF",
               fontFamily: "inherit", padding: "0.25rem 0.25rem",
               textDecoration: "none", transition: "color 0.15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "rgba(255,255,255,0.85)"
+              e.currentTarget.style.color = "#374151"
               e.currentTarget.style.textDecoration = "underline"
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(255,255,255,0.45)"
+              e.currentTarget.style.color = "#9CA3AF"
               e.currentTarget.style.textDecoration = "none"
             }}
           >
@@ -1136,12 +1136,12 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           onClick={onAdd}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            fontSize: "0.8125rem", fontWeight: 600, color: "rgba(255,255,255,0.45)",
+            fontSize: "0.8125rem", fontWeight: 600, color: "#9CA3AF",
             fontFamily: "inherit", padding: "0.25rem 0.5rem",
             transition: "color 0.15s ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = section.color)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
           onMouseDown={(e) => (e.currentTarget.style.color = section.color)}
         >
           + Add
@@ -1156,7 +1156,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           alignItems: "center",
           justifyContent: "center",
         }}>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "rgba(255,255,255,0.4)" }}>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#9CA3AF" }}>
             {searchQuery
               ? `No ${section.label.toLowerCase()} match your search`
               : `No ${section.label.toLowerCase()} added yet`}
@@ -1187,9 +1187,9 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                 style={{
                   padding: "0.4rem 1.2rem",
                   borderRadius: "1rem",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  background: "none",
-                  color: "rgba(255,255,255,0.6)",
+                  border: "1px solid #E5E7EB",
+                  background: "#FFFFFF",
+                  color: "#6B7280",
                   fontSize: "0.8125rem",
                   fontWeight: 500,
                   cursor: "pointer",
@@ -1197,12 +1197,12 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                   transition: "background 0.15s ease, color 0.15s ease",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
-                  e.currentTarget.style.color = "#FFFFFF"
+                  e.currentTarget.style.background = "#F3F4F6"
+                  e.currentTarget.style.color = "#374151"
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none"
-                  e.currentTarget.style.color = "rgba(255,255,255,0.6)"
+                  e.currentTarget.style.background = "#FFFFFF"
+                  e.currentTarget.style.color = "#6B7280"
                 }}
               >
                 {expanded ? "Show less" : `Show all (${filtered.length})`}
@@ -1563,7 +1563,6 @@ export default function CardholderDetailPage() {
   if (loading) {
     return (
       <div style={{
-        background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
         borderRadius: "1rem",
         padding: "2rem",
         minHeight: "400px",
@@ -1572,7 +1571,7 @@ export default function CardholderDetailPage() {
         justifyContent: "center",
         fontFamily: "Inter, system-ui, sans-serif",
       }}>
-        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.9375rem", margin: 0 }}>Loading...</p>
+        <p style={{ color: "#9CA3AF", fontSize: "0.9375rem", margin: 0 }}>Loading...</p>
       </div>
     )
   }
@@ -1580,7 +1579,6 @@ export default function CardholderDetailPage() {
   if (error) {
     return (
       <div style={{
-        background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
         borderRadius: "1rem",
         padding: "2rem",
         minHeight: "400px",
@@ -1591,8 +1589,8 @@ export default function CardholderDetailPage() {
         gap: "0.75rem",
         fontFamily: "Inter, system-ui, sans-serif",
       }}>
-        <p style={{ color: "#FCA5A5", fontSize: "0.9375rem", fontWeight: 500, margin: 0 }}>{error}</p>
-        <Link href="/dashboard/cardholders" style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem", textDecoration: "underline" }}>
+        <p style={{ color: "#EF4444", fontSize: "0.9375rem", fontWeight: 500, margin: 0 }}>{error}</p>
+        <Link href="/dashboard/cardholders" style={{ color: "#6B7280", fontSize: "0.875rem", textDecoration: "underline" }}>
           Back to Cardholders
         </Link>
       </div>
@@ -1628,7 +1626,6 @@ export default function CardholderDetailPage() {
 
   return (
     <div style={{
-      background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
       borderRadius: "1rem",
       padding: "2rem",
       display: "flex",
@@ -1644,15 +1641,15 @@ export default function CardholderDetailPage() {
           display: "inline-flex",
           alignItems: "center",
           gap: "0.375rem",
-          color: "rgba(255,255,255,0.7)",
+          color: "#6B7280",
           fontSize: "0.875rem",
           fontWeight: 500,
           textDecoration: "none",
           width: "fit-content",
           transition: "color 0.15s ease",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "#2C3E50")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "#6B7280")}
       >
         <ArrowLeft size={15} strokeWidth={2.5} />
         Back to Cardholders
@@ -1660,7 +1657,7 @@ export default function CardholderDetailPage() {
 
       {/* ── Header card ─────────────────────────────────────────────────── */}
       <div style={{
-        ...DARK_CARD,
+        background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
         borderRadius: "1rem",
         padding: "1rem 1.5rem",
         display: "flex",
@@ -1669,7 +1666,7 @@ export default function CardholderDetailPage() {
         gap: "1rem",
       }}>
         {/* Left: Photo + Profile Info */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "1.5rem" }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "1.5rem" }}>
           <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={120} borderColor={getPhotoBorderColor(cardholder.status)} />
 
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1698,7 +1695,7 @@ export default function CardholderDetailPage() {
               rel="noopener noreferrer"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "0.3rem",
-                fontSize: "0.8125rem", color: "#93C5FD",
+                fontSize: "0.8125rem", color: "rgba(255,255,255,0.7)",
                 textDecoration: "none", transition: "color 0.15s ease",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
@@ -1764,8 +1761,39 @@ export default function CardholderDetailPage() {
           </div>
         </div>
 
+        {/* Centre: Compliance DNA */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", padding: "0 1.5rem" }}>
+          <span style={{ fontSize: "0.625rem", fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+            Compliance DNA
+          </span>
+          <div style={{ display: "flex", gap: "0.625rem" }}>
+            {SECTIONS.map((s) => {
+              const count = credentials.filter(c => c.qualifications_competencies?.type === s.key).length
+              return (
+                <div key={s.key} style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                  padding: "0.625rem 0.875rem",
+                  borderRadius: "0.625rem",
+                  background: "rgba(255,255,255,0.08)",
+                  border: `1px solid ${s.color}40`,
+                  width: "110px",
+                }}>
+                  <s.Icon size={16} color={s.color} strokeWidth={2} />
+                  <span style={{ fontSize: "1.25rem", fontWeight: 800, color: count === 0 ? "rgba(255,255,255,0.3)" : "#FFFFFF", lineHeight: 1 }}>{count === 0 ? "—" : count}</span>
+                  <span style={{ fontSize: "0.625rem", fontWeight: 600, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>
+                    {s.key === "site_induction" ? "Inductions" : s.label.split(" ")[0]}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         {/* Right: QR Code - Right aligned */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
           <div style={{
             background: "#CBD5E1",
             borderRadius: "1rem",
@@ -1781,14 +1809,14 @@ export default function CardholderDetailPage() {
 
       {/* ── Credentials ─────────────────────────────────────────────────── */}
       <div style={{
-        ...DARK_CARD,
+        ...LIGHT_CARD,
         borderRadius: "1rem",
         padding: "1.75rem",
       }}>
         <div style={{ position: "relative", marginBottom: "1.75rem" }}>
           <Search
             size={15}
-            color="rgba(255,255,255,0.35)"
+            color="#9CA3AF"
             style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
           />
           <input
@@ -1800,18 +1828,18 @@ export default function CardholderDetailPage() {
               width: "100%",
               padding: "0.625rem 0.875rem",
               paddingLeft: "2.5rem",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid #E5E7EB",
               borderRadius: "0.5rem",
               fontSize: "0.9375rem",
-              color: "#FFFFFF",
+              color: "#1F2937",
               fontFamily: "inherit",
               outline: "none",
               boxSizing: "border-box",
-              background: "rgba(255,255,255,0.06)",
+              background: "#F9FAFB",
               transition: "border-color 0.15s ease",
             }}
-            onFocus={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.25)")}
-            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.1)")}
+            onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
           />
           {searchQuery && (
             <button
@@ -1819,10 +1847,10 @@ export default function CardholderDetailPage() {
               style={{
                 position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)",
                 background: "none", border: "none", cursor: "pointer", padding: 0,
-                color: "rgba(255,255,255,0.4)", display: "flex",
+                color: "#9CA3AF", display: "flex",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
             >
               <X size={15} />
             </button>
@@ -1838,9 +1866,10 @@ export default function CardholderDetailPage() {
               <div
                 key={section.key}
                 style={{
-                  background: "rgba(255,255,255,0.04)",
+                  background: "#F9FAFB",
                   borderRadius: "1rem",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid #E5E7EB",
+                  borderTop: `3px solid ${section.color}`,
                   padding: "1.5rem",
                   height: "100%",
                 }}
@@ -1863,7 +1892,7 @@ export default function CardholderDetailPage() {
 
       {/* ── Cardholder actions ───────────────────────────────────────────── */}
       <div style={{
-        ...DARK_CARD,
+        ...LIGHT_CARD,
         borderRadius: "1rem",
         padding: "1.75rem",
       }}>
@@ -1883,7 +1912,7 @@ export default function CardholderDetailPage() {
           <span style={{
             fontSize: "0.75rem",
             fontWeight: 700,
-            color: "rgba(255,255,255,0.5)",
+            color: "#6B7280",
             textTransform: "uppercase",
             letterSpacing: "0.06em",
           }}>
@@ -1908,12 +1937,12 @@ export default function CardholderDetailPage() {
                 padding: "0.6875rem 1rem",
                 borderRadius: "1rem",
                 border: key === "delete-cardholder"
-                  ? "1px solid rgba(239,68,68,0.3)"
-                  : "1px solid rgba(255,255,255,0.1)",
+                  ? "1px solid #FECACA"
+                  : "1px solid #E5E7EB",
                 background: key === "delete-cardholder"
-                  ? "rgba(239,68,68,0.08)"
-                  : "rgba(255,255,255,0.05)",
-                color: key === "delete-cardholder" ? "#FCA5A5" : "rgba(255,255,255,0.7)",
+                  ? "#FEF2F2"
+                  : "#F9FAFB",
+                color: key === "delete-cardholder" ? "#EF4444" : "#374151",
                 fontSize: "0.875rem",
                 fontWeight: 500,
                 cursor: "pointer",
@@ -1923,24 +1952,24 @@ export default function CardholderDetailPage() {
               }}
               onMouseEnter={(e) => {
                 if (key === "delete-cardholder") {
-                  e.currentTarget.style.background = "rgba(239,68,68,0.15)"
-                  e.currentTarget.style.borderColor = "rgba(239,68,68,0.6)"
-                  e.currentTarget.style.color = "#FCA5A5"
+                  e.currentTarget.style.background = "#FEE2E2"
+                  e.currentTarget.style.borderColor = "#F87171"
+                  e.currentTarget.style.color = "#EF4444"
                 } else {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.1)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"
-                  e.currentTarget.style.color = "#FFFFFF"
+                  e.currentTarget.style.background = "#F3F4F6"
+                  e.currentTarget.style.borderColor = "#D1D5DB"
+                  e.currentTarget.style.color = "#2C3E50"
                 }
               }}
               onMouseLeave={(e) => {
                 if (key === "delete-cardholder") {
-                  e.currentTarget.style.background = "rgba(239,68,68,0.08)"
-                  e.currentTarget.style.borderColor = "rgba(239,68,68,0.3)"
-                  e.currentTarget.style.color = "#FCA5A5"
+                  e.currentTarget.style.background = "#FEF2F2"
+                  e.currentTarget.style.borderColor = "#FECACA"
+                  e.currentTarget.style.color = "#EF4444"
                 } else {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
-                  e.currentTarget.style.color = "rgba(255,255,255,0.7)"
+                  e.currentTarget.style.background = "#F9FAFB"
+                  e.currentTarget.style.borderColor = "#E5E7EB"
+                  e.currentTarget.style.color = "#374151"
                 }
               }}
             >

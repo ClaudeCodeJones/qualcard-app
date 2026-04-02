@@ -6,48 +6,31 @@ import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 import { GraduationCap, Award, ClipboardCheck, Shield, ChevronRight, ArrowRight } from "lucide-react"
 
+const CARD = {
+  background: "#FFFFFF",
+  borderRadius: "0.75rem",
+  border: "1px solid #E5E7EB",
+  padding: "1.5rem",
+  boxShadow: "0 1px 3px rgba(44,62,80,0.06), 0 4px 12px rgba(44,62,80,0.08)",
+}
+
 function getStatusColour(status) {
   switch (status) {
-    case "Active":
-      return "#6EE7B7"
-    case "Expiring Soon":
-      return "#FCD34D"
-    case "Expired":
-      return "#FCA5A5"
-    case "Payment Pending":
-      return "#FDBA74"
-    default:
-      return "rgba(255,255,255,0.7)"
+    case "Active": return "#16A34A"
+    case "Expiring Soon": return "#F59E0B"
+    case "Expired": return "#EF4444"
+    case "Payment Pending": return "#0EA5E9"
+    default: return "#4A5568"
   }
 }
 
-function getStatusBarColour(status) {
+function getCardTint(status) {
   switch (status) {
-    case "Active":
-      return "#10B981"
-    case "Expiring Soon":
-      return "#D97706"
-    case "Expired":
-      return "#B84B45"
-    case "Payment Pending":
-      return "#0A9FB5"
-    default:
-      return "rgba(255,255,255,0.7)"
-  }
-}
-
-function getStatusBarBackground(status) {
-  switch (status) {
-    case "Active":
-      return "rgba(16, 185, 129, 0.12)"
-    case "Expiring Soon":
-      return "rgba(217, 119, 6, 0.12)"
-    case "Expired":
-      return "rgba(184, 75, 69, 0.12)"
-    case "Payment Pending":
-      return "rgba(10, 159, 181, 0.12)"
-    default:
-      return "transparent"
+    case "Active": return { bg: "#F0FDF4", border: "#D1E8D9", hover: "#E8FCF1", hoverBorder: "#B8E0C5" }
+    case "Expiring Soon": return { bg: "#FFF3E6", border: "#EDD4B6", hover: "#FFECCA", hoverBorder: "#E5C299" }
+    case "Payment Pending": return { bg: "#F0F7FB", border: "#D0E8F2", hover: "#E8F2F9", hoverBorder: "#B0D5E8" }
+    case "Expired": return { bg: "#FEE2E2", border: "#FECACA", hover: "#FCBDBD", hoverBorder: "#F87171" }
+    default: return { bg: "#F9FAFB", border: "#E5E7EB", hover: "#F3F4F6", hoverBorder: "#D1D5DB" }
   }
 }
 
@@ -159,17 +142,10 @@ export default function CardholdersPage() {
   }
 
   return (
-    <div style={{
-      background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
-      borderRadius: "1rem",
-      padding: "2rem",
-      display: "flex",
-      flexDirection: "column",
-      gap: "2rem",
-    }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
+        <h1 style={{ color: "#2C3E50", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
           Cardholders
         </h1>
         <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -177,43 +153,17 @@ export default function CardholdersPage() {
             <>
               <button
                 onClick={() => { setBulkMode(true); setBulkType("update"); setSelectedIds([]) }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Bulk Update
               </button>
               <button
                 onClick={() => { setBulkMode(true); setBulkType("activate"); setSelectedIds([]) }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Activate / Renew
               </button>
@@ -222,47 +172,18 @@ export default function CardholdersPage() {
           {bulkMode && bulkType === "update" && (
             <>
               <button
-                onClick={() => {
-                  const allCardholderIds = cardholders.filter(c => c.status !== "deleted").map(c => c.id)
-                  setSelectedIds(allCardholderIds)
-                }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                onClick={() => { const ids = cardholders.filter(c => c.status !== "deleted").map(c => c.id); setSelectedIds(ids) }}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Select All
               </button>
               <button
                 onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Cancel
               </button>
@@ -271,26 +192,10 @@ export default function CardholdersPage() {
           {bulkMode && bulkType === "activate" && (
             <>
               <button
-                onClick={() => {
-                  const allCardholderIds = cardholders.filter(c => c.status !== "deleted").map(c => c.id)
-                  setSelectedIds(allCardholderIds)
-                }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                onClick={() => { const ids = cardholders.filter(c => c.status !== "deleted").map(c => c.id); setSelectedIds(ids) }}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Select All
               </button>
@@ -298,43 +203,17 @@ export default function CardholdersPage() {
                 <>
                   <button
                     onClick={handleBulkActivate}
-                    style={{
-                      padding: "0.625rem 1.125rem",
-                      background: "rgba(249,115,22,0.2)",
-                      border: "1px solid rgba(249,115,22,0.4)",
-                      borderRadius: "0.5rem",
-                      color: "#FDBA74",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                      transition: "opacity 0.15s ease, transform 0.15s ease",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                    onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ padding: "0.625rem 1.125rem", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "0.5rem", color: "#F97316", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#FFEDD5"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#FFF7ED"}
                   >
                     Activate Selected
                   </button>
                   <button
                     onClick={handleBulkRenew}
-                    style={{
-                      padding: "0.625rem 1.125rem",
-                      background: "rgba(47,111,106,0.2)",
-                      border: "1px solid rgba(47,111,106,0.4)",
-                      borderRadius: "0.5rem",
-                      color: "#6EE7B7",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                      transition: "opacity 0.15s ease, transform 0.15s ease",
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                    onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                    style={{ padding: "0.625rem 1.125rem", background: "#F0FDF4", border: "1px solid #D1E8D9", borderRadius: "0.5rem", color: "#16A34A", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#DCFCE7"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#F0FDF4"}
                   >
                     Renew Selected
                   </button>
@@ -342,22 +221,9 @@ export default function CardholdersPage() {
               )}
               <button
                 onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease, transform 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Cancel
               </button>
@@ -365,35 +231,16 @@ export default function CardholdersPage() {
           )}
           <button
             onClick={() => setIsModalOpen(true)}
-            style={{
-              padding: "0.625rem 1.125rem",
-              background: "#2f6f6a",
-              border: "none",
-              borderRadius: "0.5rem",
-              color: "#fff",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              fontFamily: "inherit",
-              cursor: "pointer",
-              transition: "opacity 0.15s ease, transform 0.15s ease",
-            }}
+            style={{ padding: "0.625rem 1.125rem", background: "#2f6f6a", border: "none", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
             onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-            onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
           >
             + Add Cardholder
           </button>
         </div>
       </div>
 
-      <div style={{
-        background: "#1f3f3c",
-        borderRadius: "0.75rem",
-        border: "1px solid rgba(255,255,255,0.05)",
-        padding: "1.5rem",
-        boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
-      }}>
+      <div style={CARD}>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <select
@@ -401,10 +248,10 @@ export default function CardholdersPage() {
             onChange={e => setFilter(e.target.value)}
             style={{
               padding: "0.625rem 1rem",
-              background: "#1f3f3c",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "#F9FAFB",
+              border: "1px solid #E5E7EB",
               borderRadius: "0.5rem",
-              color: "#fff",
+              color: "#34495E",
               fontSize: "0.875rem",
               fontFamily: "inherit",
               outline: "none",
@@ -447,7 +294,7 @@ export default function CardholdersPage() {
           })
           if (filtered.length === 0) return (
             <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
-              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.9375rem", margin: 0 }}>
+              <p style={{ color: "#9CA3AF", fontSize: "0.9375rem", margin: 0 }}>
                 No cardholders found
               </p>
             </div>
@@ -455,25 +302,25 @@ export default function CardholdersPage() {
           const visible = showAll ? filtered : filtered.slice(0, 8)
           return (
             <>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
+            <p style={{ color: "#6B7280", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
               Recent Cardholders
             </p>
             <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
                 <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#4A90D9" }}></div>
-                <span style={{ color: "rgba(255,255,255,0.45)" }}>Qualifications</span>
+                <span style={{ color: "#6B7280" }}>Qualifications</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
                 <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#F97316" }}></div>
-                <span style={{ color: "rgba(255,255,255,0.45)" }}>Competencies</span>
+                <span style={{ color: "#6B7280" }}>Competencies</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
                 <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#7C3AED" }}></div>
-                <span style={{ color: "rgba(255,255,255,0.45)" }}>Site Inductions</span>
+                <span style={{ color: "#6B7280" }}>Site Inductions</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
                 <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#16A34A" }}></div>
-                <span style={{ color: "rgba(255,255,255,0.45)" }}>Permits</span>
+                <span style={{ color: "#6B7280" }}>Permits</span>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -481,6 +328,7 @@ export default function CardholdersPage() {
                 const isDisabled = status === "deleted"
                 const licenceStatus = getLicenceStatus(licence_end_date)
                 const isSelected = selectedIds.includes(id)
+                const tint = getCardTint(licenceStatus.status)
                 return (
                   <div
                     key={id}
@@ -495,21 +343,28 @@ export default function CardholdersPage() {
                       position: "relative",
                       padding: "1.25rem",
                       borderRadius: "0.75rem",
-                      border: `1px solid ${isSelected ? "rgba(47,111,106,0.5)" : "rgba(255,255,255,0.07)"}`,
-                      background: isSelected ? "rgba(47,111,106,0.1)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${isSelected ? "#2f6f6a" : tint.border}`,
+                      background: isSelected ? "#E6F4F1" : tint.bg,
                       cursor: isDisabled ? "default" : "pointer",
                       opacity: isDisabled ? 0.5 : 1,
-                      transition: "background 0.15s ease, opacity 0.15s ease",
+                      transition: "background 0.15s ease, border-color 0.15s ease",
+                      boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
                       display: "flex",
                       flexDirection: "column",
                       height: "100%",
-                      minHeight: "202px",
+                      minHeight: "160px",
                     }}
                     onMouseEnter={e => {
-                      if (!isSelected && !isDisabled) e.currentTarget.style.background = "rgba(255,255,255,0.07)"
+                      if (!isSelected && !isDisabled) {
+                        e.currentTarget.style.background = tint.hover
+                        e.currentTarget.style.borderColor = tint.hoverBorder
+                      }
                     }}
                     onMouseLeave={e => {
-                      if (!isSelected && !isDisabled) e.currentTarget.style.background = "rgba(255,255,255,0.03)"
+                      if (!isSelected && !isDisabled) {
+                        e.currentTarget.style.background = tint.bg
+                        e.currentTarget.style.borderColor = tint.border
+                      }
                     }}
                   >
                     {bulkMode && (
@@ -534,13 +389,13 @@ export default function CardholdersPage() {
                     <div style={{ paddingLeft: bulkMode ? "1.5rem" : 0, display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+                          <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
                             {full_name}
                           </p>
-                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                          <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
                         </div>
                         {licenceStatus.dateLabel && (
-                          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8125rem", margin: 0 }}>
+                          <p style={{ color: "#6B7280", fontSize: "0.8125rem", margin: 0 }}>
                             {`${licenceStatus.dateLabel} ${new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}`}
                           </p>
                         )}
@@ -550,7 +405,7 @@ export default function CardholdersPage() {
                           <img
                             src={photo_url}
                             alt={full_name}
-                            style={{ width: 56, height: 56, borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", display: "block" }}
+                            style={{ width: 48, height: 48, borderRadius: "0.375rem", border: `1px solid ${tint.border}`, objectFit: "cover", display: "block" }}
                             onError={e => {
                               e.currentTarget.style.display = "none"
                               e.currentTarget.nextSibling.style.display = "flex"
@@ -558,34 +413,32 @@ export default function CardholdersPage() {
                           />
                         ) : null}
                         <div style={{
-                          width: 56, height: 56, borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.15)",
-                          background: "rgba(255,255,255,0.05)",
+                          width: 48, height: 48, borderRadius: "0.375rem", border: `1px solid ${tint.border}`,
+                          background: tint.hover,
                           display: photo_url ? "none" : "flex",
                           alignItems: "center", justifyContent: "center",
-                          color: "rgba(255,255,255,0.6)", fontSize: "1rem", fontWeight: 700,
+                          color: "#6B7280", fontSize: "0.875rem", fontWeight: 700,
                         }}>
                           {full_name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
                         </div>
                       </div>
                     </div>
                     <div style={{ marginTop: "auto" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: "100%",
-                          padding: "0.5rem 1rem",
-                          borderRadius: "0.375rem",
-                          background: "transparent",
-                          border: `1px solid ${getStatusBarColour(licenceStatus.status)}`,
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          color: getStatusBarColour(licenceStatus.status),
-                          textAlign: "center",
-                          fontFamily: "inherit",
-                        }}
-                      >
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                        padding: "0.375rem 1rem",
+                        borderRadius: "0.375rem",
+                        background: "transparent",
+                        border: `1px solid ${getStatusColour(licenceStatus.status)}`,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        color: getStatusColour(licenceStatus.status),
+                        textAlign: "center",
+                        fontFamily: "inherit",
+                      }}>
                         {licenceStatus.status}
                       </div>
                     </div>
@@ -600,7 +453,7 @@ export default function CardholdersPage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "rgba(255,255,255,0.55)",
+                    color: "#6B7280",
                     fontSize: "0.8125rem",
                     textDecoration: "none",
                     cursor: "pointer",
@@ -611,7 +464,7 @@ export default function CardholdersPage() {
                     gap: "0.25rem",
                   }}
                   onMouseEnter={e => { e.currentTarget.style.color = "#2f6f6a"; e.currentTarget.style.textDecoration = "underline" }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.55)"; e.currentTarget.style.textDecoration = "none" }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "#6B7280"; e.currentTarget.style.textDecoration = "none" }}
                 >
                   {showAll ? "Show less" : "View all"} <ArrowRight size={13} />
                 </button>
@@ -638,25 +491,23 @@ export default function CardholdersPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: "rgba(30,35,45,0.97)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
               borderRadius: "0.75rem",
               padding: "2rem",
               width: "100%",
               maxWidth: "440px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+              boxShadow: "0 10px 25px rgba(44,62,80,0.15)",
             }}
           >
-            <h2 style={{ color: "#fff", fontSize: "1.125rem", fontWeight: 700, margin: "0 0 1.5rem", letterSpacing: "-0.02em" }}>
+            <h2 style={{ color: "#2C3E50", fontSize: "1.125rem", fontWeight: 700, margin: "0 0 1.5rem", letterSpacing: "-0.02em" }}>
               Add Cardholder
             </h2>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
               <div>
-                <label style={{ display: "block", color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
-                  Full Name <span style={{ color: "#FCA5A5" }}>*</span>
+                <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                  Full Name <span style={{ color: "#EF4444" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -665,20 +516,20 @@ export default function CardholdersPage() {
                   placeholder="e.g. Jane Smith"
                   style={{
                     width: "100%", padding: "0.75rem 1rem",
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "#F9FAFB",
+                    border: "1px solid #E5E7EB",
                     borderRadius: "0.5rem",
-                    color: "#fff", fontSize: "0.9375rem",
+                    color: "#1F2937", fontSize: "0.9375rem",
                     fontFamily: "inherit", outline: "none",
                     boxSizing: "border-box",
                   }}
-                  onFocus={e => e.target.style.borderColor = "rgba(255,255,255,0.3)"}
-                  onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"}
+                  onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+                  onBlur={e => e.target.style.borderColor = "#E5E7EB"}
                 />
               </div>
               <div>
-                <label style={{ display: "block", color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
-                  Photo <span style={{ color: "#FCA5A5" }}>*</span>
+                <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                  Photo <span style={{ color: "#EF4444" }}>*</span>
                 </label>
                 <div
                   onClick={() => document.getElementById("photo-upload").click()}
@@ -694,12 +545,12 @@ export default function CardholdersPage() {
                     setFormError("")
                   }}
                   style={{
-                    border: `2px dashed ${dragOver ? "rgba(47,111,106,0.8)" : "rgba(255,255,255,0.15)"}`,
+                    border: `2px dashed ${dragOver ? "#2f6f6a" : "#E5E7EB"}`,
                     borderRadius: "0.5rem",
                     padding: "1.25rem",
                     textAlign: "center",
                     cursor: "pointer",
-                    background: dragOver ? "rgba(47,111,106,0.08)" : "rgba(0,0,0,0.2)",
+                    background: dragOver ? "#F0FDF4" : "#F9FAFB",
                     transition: "border-color 0.15s ease, background 0.15s ease",
                     position: "relative",
                     minHeight: "100px",
@@ -729,10 +580,10 @@ export default function CardholdersPage() {
                     />
                   ) : (
                     <div>
-                      <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.875rem", margin: "0 0 0.25rem" }}>
+                      <p style={{ color: "#6B7280", fontSize: "0.875rem", margin: "0 0 0.25rem" }}>
                         Click to upload or drag and drop
                       </p>
-                      <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.75rem", margin: 0 }}>
+                      <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: 0 }}>
                         JPG, PNG or WebP
                       </p>
                     </div>
@@ -740,7 +591,7 @@ export default function CardholdersPage() {
                 </div>
               </div>
               <div>
-                <label style={{ display: "block", color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
                   Company
                 </label>
                 <input
@@ -749,10 +600,10 @@ export default function CardholdersPage() {
                   disabled
                   style={{
                     width: "100%", padding: "0.75rem 1rem",
-                    background: "rgba(0,0,0,0.2)",
-                    border: "1px solid rgba(255,255,255,0.07)",
+                    background: "#F3F4F6",
+                    border: "1px solid #E5E7EB",
                     borderRadius: "0.5rem",
-                    color: "rgba(255,255,255,0.4)", fontSize: "0.9375rem",
+                    color: "#9CA3AF", fontSize: "0.9375rem",
                     fontFamily: "inherit", outline: "none",
                     boxSizing: "border-box", cursor: "not-allowed",
                   }}
@@ -761,25 +612,15 @@ export default function CardholdersPage() {
             </div>
 
             {formError && (
-              <p style={{ color: "#FCA5A5", fontSize: "0.8125rem", margin: "0 0 1rem" }}>{formError}</p>
+              <p style={{ color: "#EF4444", fontSize: "0.8125rem", margin: "0 0 1rem" }}>{formError}</p>
             )}
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button
                 onClick={() => { setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); setNewPhotoPreview(null); setDragOver(false) }}
-                style={{
-                  padding: "0.625rem 1.125rem",
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "0.5rem",
-                  color: "rgba(255,255,255,0.7)",
-                  fontSize: "0.875rem",
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                  transition: "opacity 0.15s ease",
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontFamily: "inherit", cursor: "pointer" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
               >
                 Cancel
               </button>

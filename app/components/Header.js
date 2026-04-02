@@ -56,7 +56,7 @@ function Avatar({ fullName, email, role }) {
           height: "38px",
           borderRadius: "50%",
           background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
-          border: isQcAdmin ? "2px solid #16A34A" : "2px solid rgba(255,255,255,0.3)",
+          border: "2px solid #16A34A",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -132,9 +132,11 @@ function Avatar({ fullName, email, role }) {
   )
 }
 
-export default function Header({ user, variant = "default" }) {
+export default function Header({ user, variant = "default", logoHref = "/superadmin" }) {
   const backgroundGradient = variant === "superadmin"
     ? "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)"
+    : variant === "dashboard"
+    ? "#183532"
     : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
 
   return (
@@ -145,24 +147,33 @@ export default function Header({ user, variant = "default" }) {
       zIndex: 10,
     }}>
       <div style={{
-        maxWidth: "1280px",
-        margin: "0 auto",
-        padding: "0.875rem 1.5rem",
+        height: "136px",
+        paddingLeft: "88px",
+        paddingRight: "1.5rem",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        boxSizing: "border-box",
       }}>
-        <Link href="/superadmin" style={{ display: "flex", alignItems: "center" }}>
+        <Link href={logoHref} style={{ display: "flex", alignItems: "center" }}>
           <Image
-            src="/images/qualcard_logo_white.png?v=2"
+            src="/images/qualcard_logo_wide_white.png"
             alt="QualCard"
-            width={240}
-            height={64}
+            width={958}
+            height={413}
             priority
-            style={{ objectFit: "contain", width: "auto", height: "auto", cursor: "pointer" }}
+            style={{ objectFit: "contain", width: "auto", height: "72px", cursor: "pointer" }}
           />
         </Link>
-        <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: "0.25rem",
+        }}>
+          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
+          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
+        </div>
       </div>
     </header>
   )

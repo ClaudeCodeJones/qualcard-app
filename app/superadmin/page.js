@@ -218,18 +218,20 @@ function Header({ user }) {
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",
-        padding: "0.875rem 1.5rem",
+        height: "136px",
+        padding: "0 1.5rem",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        boxSizing: "border-box",
       }}>
         <Image
-          src="/images/qualcard_logo_white.png?v=2"
+          src="/images/qualcard_logo_wide_white.png"
           alt="QualCard"
-          width={240}
-          height={64}
+          width={958}
+          height={413}
           priority
-          style={{ objectFit: "contain", width: "auto", height: "auto" }}
+          style={{ objectFit: "contain", width: "auto", height: "72px" }}
         />
         <Avatar fullName={user?.full_name} email={user?.email} role={user?.role} />
       </div>
