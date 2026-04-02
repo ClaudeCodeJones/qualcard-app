@@ -33,6 +33,10 @@ export default function DashboardSidebar({ initials }) {
     }
   }, [menuOpen])
 
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/login")
