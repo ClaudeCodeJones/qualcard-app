@@ -154,7 +154,7 @@ export default function Header({ user, variant = "default" }) {
       }}>
         <Link href="/superadmin" style={{ display: "flex", alignItems: "center" }}>
           <Image
-            src="/images/qualcard_logo_white.png"
+            src="/images/qualcard_logo_white.png?v=2"
             alt="QualCard"
             width={240}
             height={64}

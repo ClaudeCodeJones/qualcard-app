@@ -277,7 +277,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <Image
-          src="/images/qualcard_logo_colour.png"
+          src="/images/qualcard_logo_colour.png?v=2"
           alt="QualCard"
           width={120}
           height={32}

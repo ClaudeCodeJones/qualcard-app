@@ -243,7 +243,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/50 text-[9px] font-bold tracking-[0.18em] uppercase mb-1">Powered by</p>
-              <img src="/images/qualcard_logo_white.png" alt="QualCard" className="h-10 w-auto" />
+              <img src="/images/qualcard_logo_white.png?v=2" alt="QualCard" className="h-10 w-auto" />
             </div>
             <button
               onClick={() => setShowInfo(true)}
@@ -312,7 +312,7 @@ export default function CardDisplay({ cardholder, credentials = [], companyName,
         {/* Footer */}
         <footer className="mt-6 pt-5 pb-8 px-5 flex flex-col items-center gap-2.5">
           <div className="flex items-center gap-2 text-gray-500 flex-wrap justify-center">
-            <img src="/images/qualcard_logo_colour.png" alt="QualCard" className="h-8 w-auto" />
+            <img src="/images/qualcard_logo_colour.png?v=2" alt="QualCard" className="h-8 w-auto" />
             <span className="text-gray-300">|</span>
             <span className="text-xs text-gray-400">qualcard.co.nz</span>
             <span className="text-gray-300">|</span>
