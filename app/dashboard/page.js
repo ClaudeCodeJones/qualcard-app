@@ -8,11 +8,11 @@ import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 
 const CARD = {
-  background: "#1f3f3c",
+  background: "#FFFFFF",
   borderRadius: "0.75rem",
-  border: "1px solid rgba(255,255,255,0.05)",
+  border: "1px solid #E5E7EB",
   padding: "1.5rem",
-  boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+  boxShadow: "0 1px 3px rgba(44,62,80,0.06), 0 4px 12px rgba(44,62,80,0.08)",
 }
 
 const CREDENTIAL_ICONS = {
@@ -47,7 +47,7 @@ function getStatusBarColor(status) {
     case "Payment Pending":
       return "#0A9FB5"
     default:
-      return "rgba(255,255,255,0.4)"
+      return "#D1D5DB"
   }
 }
 
@@ -61,6 +61,21 @@ function getStatusLabel(status) {
       return "Deleted"
     default:
       return status
+  }
+}
+
+function getCardTint(status) {
+  switch (status) {
+    case "Active":
+      return { bg: "#F0FDF4", border: "#D1E8D9", hover: "#E8FCF1", hoverBorder: "#B8E0C5" }
+    case "Expiring Soon":
+      return { bg: "#FFF3E6", border: "#EDD4B6", hover: "#FFECCA", hoverBorder: "#E5C299" }
+    case "Payment Pending":
+      return { bg: "#F0F7FB", border: "#D0E8F2", hover: "#E8F2F9", hoverBorder: "#B0D5E8" }
+    case "Expired":
+      return { bg: "#FEE2E2", border: "#FECACA", hover: "#FCBDBD", hoverBorder: "#F87171" }
+    default:
+      return { bg: "#F9FAFB", border: "#E5E7EB", hover: "#F3F4F6", hoverBorder: "#D1D5DB" }
   }
 }
 
@@ -252,24 +267,21 @@ export default function DashboardPage() {
 
   return (
     <div style={{
-      background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
-      borderRadius: "1rem",
-      padding: "2rem",
       display: "flex",
       flexDirection: "column",
       gap: "2rem",
     }}>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ color: "#fff", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
+        <h1 style={{ color: "#2C3E50", fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
           Dashboard
         </h1>
         <Image
-          src="/images/qualcard_logo_white.png"
+          src="/images/qualcard_logo_colour.png"
           alt="QualCard"
           width={120}
           height={32}
-          style={{ objectFit: "contain", opacity: 0.85 }}
+          style={{ objectFit: "contain", opacity: 0.9 }}
         />
       </div>
 
@@ -282,7 +294,7 @@ export default function DashboardPage() {
           {/* Search + Actions */}
           <div style={CARD}>
             <p style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "#6B7280",
               fontSize: "0.75rem",
               fontWeight: 500,
               margin: "0 0 0.875rem",
@@ -298,10 +310,10 @@ export default function DashboardPage() {
                 style={{
                   width: "100%",
                   padding: "0.75rem 1rem",
-                  background: "rgba(0,0,0,0.2)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#F9FAFB",
+                  border: "1px solid #E5E7EB",
                   borderRadius: "0.5rem",
-                  color: "#fff",
+                  color: "#1F2937",
                   fontSize: "0.9375rem",
                   outline: "none",
                   boxSizing: "border-box",
@@ -324,10 +336,10 @@ export default function DashboardPage() {
                   left: 0,
                   right: 0,
                   marginTop: "0.5rem",
-                  background: "#1f3f3c",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#FFFFFF",
+                  border: "1px solid #E5E7EB",
                   borderRadius: "0.5rem",
-                  boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                  boxShadow: "0 4px 16px rgba(44,62,80,0.12)",
                   maxHeight: "300px",
                   overflowY: "auto",
                   zIndex: 10,
@@ -340,7 +352,7 @@ export default function DashboardPage() {
                     if (filtered.length === 0) {
                       return (
                         <div style={{ padding: "1rem", textAlign: "center" }}>
-                          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", margin: 0 }}>
+                          <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
                             No cardholders found
                           </p>
                         </div>
@@ -360,11 +372,11 @@ export default function DashboardPage() {
                           alignItems: "center",
                           gap: "0.75rem",
                           padding: "0.75rem 1rem",
-                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          borderBottom: "1px solid #F3F4F6",
                           cursor: "pointer",
                           transition: "background 0.15s ease",
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+                        onMouseEnter={e => e.currentTarget.style.background = "#F9FAFB"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                       >
                         {photo_url ? (
@@ -380,11 +392,11 @@ export default function DashboardPage() {
                             width: 36,
                             height: 36,
                             borderRadius: "0.375rem",
-                            background: "rgba(255,255,255,0.05)",
+                            background: "#F3F4F6",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "rgba(255,255,255,0.5)",
+                            color: "#6B7280",
                             fontSize: "0.7rem",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -392,7 +404,7 @@ export default function DashboardPage() {
                             {getInitials(full_name)}
                           </div>
                         )}
-                        <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 500, margin: 0, flex: 1 }}>
+                        <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 500, margin: 0, flex: 1 }}>
                           {full_name}
                         </p>
                       </div>
@@ -412,19 +424,24 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   gap: "0.5rem",
                   padding: "0.75rem 1rem",
-                  background: "#2f6f6a",
-                  border: "1px solid rgba(255,255,255,0.15)",
+                  background: "#FFFFFF",
+                  border: "1px solid #2f6f6a",
                   borderRadius: "0.5rem",
-                  color: "#fff",
+                  color: "#2f6f6a",
                   fontSize: "0.9375rem",
                   fontWeight: 700,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  transition: "background 0.15s ease",
-                  boxShadow: "0 2px 8px rgba(47, 111, 106, 0.4)",
+                  transition: "all 0.15s ease",
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = "#265f5a"}
-                onMouseLeave={e => e.currentTarget.style.background = "#2f6f6a"}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "#F0F9F8"
+                  e.currentTarget.style.borderColor = "#1F5A55"
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "#FFFFFF"
+                  e.currentTarget.style.borderColor = "#2f6f6a"
+                }}
               >
                 <Plus size={18} strokeWidth={2.5} />
                 Add
@@ -437,10 +454,10 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   gap: "0.5rem",
                   padding: "0.75rem 1rem",
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#F3F4F6",
+                  border: "1px solid #E5E7EB",
                   borderRadius: "0.5rem",
-                  color: "#fff",
+                  color: "#374151",
                   fontSize: "0.875rem",
                   fontWeight: 500,
                   cursor: "pointer",
@@ -448,12 +465,12 @@ export default function DashboardPage() {
                   transition: "all 0.15s ease",
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
+                  e.currentTarget.style.background = "#E9ECEF"
+                  e.currentTarget.style.borderColor = "#D1D5DB"
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                  e.currentTarget.style.background = "#F3F4F6"
+                  e.currentTarget.style.borderColor = "#E5E7EB"
                 }}
               >
                 <Users size={16} />
@@ -467,10 +484,10 @@ export default function DashboardPage() {
                   justifyContent: "center",
                   gap: "0.5rem",
                   padding: "0.75rem 1rem",
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#F3F4F6",
+                  border: "1px solid #E5E7EB",
                   borderRadius: "0.5rem",
-                  color: "#fff",
+                  color: "#374151",
                   fontSize: "0.875rem",
                   fontWeight: 500,
                   cursor: "pointer",
@@ -478,12 +495,12 @@ export default function DashboardPage() {
                   transition: "all 0.15s ease",
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.12)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
+                  e.currentTarget.style.background = "#E9ECEF"
+                  e.currentTarget.style.borderColor = "#D1D5DB"
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.08)"
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"
+                  e.currentTarget.style.background = "#F3F4F6"
+                  e.currentTarget.style.borderColor = "#E5E7EB"
                 }}
               >
                 <ListChecks size={16} />
@@ -499,29 +516,29 @@ export default function DashboardPage() {
               alignItems: "flex-start",
               gap: "1rem",
               padding: "1.25rem 1.5rem",
-              background: "rgba(217, 119, 6, 0.2)",
-              border: "1px solid rgba(217, 119, 6, 0.5)",
+              background: "rgba(217, 119, 6, 0.1)",
+              border: "1px solid rgba(217, 119, 6, 0.25)",
               borderRadius: "0.75rem",
             }}>
               <AlertCircle size={20} style={{ color: "#D97706", flexShrink: 0, marginTop: "0.125rem" }} />
               <div style={{ flex: 1 }}>
-                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem" }}>
+                <p style={{ color: "#92400E", fontSize: "0.9375rem", fontWeight: 600, margin: "0 0 0.25rem" }}>
                   {expiringCount} cardholder subscription{expiringCount === 1 ? "" : "s"} expiring soon
                 </p>
-                <p style={{ color: "#fff", fontSize: "0.8125rem", margin: "0" }}>
+                <p style={{ color: "#92400E", fontSize: "0.8125rem", margin: "0" }}>
                   Renewals needed within 30 days
                 </p>
               </div>
               <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", flexShrink: 0 }}>
                 <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
-                  color: "#fff",
+                  color: "#92400E",
                   fontSize: "0.8125rem",
                   fontWeight: 500,
                   textDecoration: "none",
                   transition: "opacity 0.15s ease",
                   cursor: "pointer",
                 }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                   onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                 >
                   View All
@@ -531,7 +548,7 @@ export default function DashboardPage() {
                   style={{
                     background: "none",
                     border: "none",
-                    color: "rgba(255,255,255,0.5)",
+                    color: "#D97706",
                     cursor: "pointer",
                     padding: 0,
                     display: "flex",
@@ -539,8 +556,8 @@ export default function DashboardPage() {
                     justifyContent: "center",
                     transition: "color 0.15s ease",
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
-                  onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+                  onMouseEnter={e => e.currentTarget.style.color = "#92400E"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#D97706"}
                 >
                   <X size={18} />
                 </button>
@@ -552,10 +569,10 @@ export default function DashboardPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
 
             {/* Payment Required */}
-            <div style={{ ...CARD, borderTop: "3px solid #0EA5E9" }}>
+            <div style={{ ...CARD, borderTop: "3px solid #0EA5E9", background: "#F8FBFD" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
                 <p style={{
-                  color: "rgba(255,255,255,0.6)",
+                  color: "#6B7280",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   margin: 0,
@@ -573,7 +590,7 @@ export default function DashboardPage() {
                   }} />
                 )}
               </div>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
+              <p style={{ color: "#9CA3AF", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
                 Cardholders awaiting activation
               </p>
 
@@ -585,7 +602,7 @@ export default function DashboardPage() {
                         display: "flex",
                         flexDirection: "column",
                         background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "1px solid #E5E7EB",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
                         height: "112px",
@@ -598,23 +615,24 @@ export default function DashboardPage() {
                     <div key={id} style={{
                       display: "flex",
                       flexDirection: "column",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "#F0F7FB",
+                      border: "1px solid #D0E8F2",
                       borderRadius: "0.5rem",
                       overflow: "hidden",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                     }}
                       onClick={() => router.push(`/dashboard/cardholders/${id}`)}
                       onMouseEnter={e => {
                         e.currentTarget.style.transform = "translateY(-2px)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.09)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+                        e.currentTarget.style.background = "#E8F2F9"
+                        e.currentTarget.style.borderColor = "#B0D5E8"
                       }}
                       onMouseLeave={e => {
                         e.currentTarget.style.transform = "translateY(0)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                        e.currentTarget.style.background = "#F0F7FB"
+                        e.currentTarget.style.borderColor = "#D0E8F2"
                       }}
                     >
                       <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
@@ -622,7 +640,7 @@ export default function DashboardPage() {
                           <img
                             src={photo_url}
                             alt={full_name}
-                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid #D0E8F2", objectFit: "cover", flexShrink: 0 }}
                             onError={e => e.currentTarget.style.display = "none"}
                           />
                         ) : null}
@@ -631,12 +649,12 @@ export default function DashboardPage() {
                             width: 40,
                             height: 40,
                             borderRadius: "0.375rem",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid #D0E8F2",
+                            background: "#E8F2F9",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "rgba(255,255,255,0.5)",
+                            color: "#0B7EA0",
                             fontSize: "0.75rem",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -645,10 +663,10 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                          <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
                             {full_name}
                           </p>
-                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                          <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
                         </div>
                       </div>
                       <div style={{
@@ -671,7 +689,7 @@ export default function DashboardPage() {
                         display: "flex",
                         flexDirection: "column",
                         background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "1px solid #E5E7EB",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
                         height: "112px",
@@ -684,7 +702,7 @@ export default function DashboardPage() {
               {pendingCardholders.length > 0 && (
                 <div style={{ textAlign: "right" }}>
                   <a href="/dashboard/cardholders?filter=payment" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=payment") }} style={{
-                    color: "rgba(255,255,255,0.55)",
+                    color: "#6B7280",
                     fontSize: "0.8125rem",
                     textDecoration: "none",
                     display: "inline-flex",
@@ -697,7 +715,7 @@ export default function DashboardPage() {
                       e.currentTarget.style.textDecoration = "underline"
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                      e.currentTarget.style.color = "#6B7280"
                       e.currentTarget.style.textDecoration = "none"
                     }}
                   >
@@ -708,10 +726,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Expiring Soon */}
-            <div style={{ ...CARD, borderTop: "3px solid #F59E0B" }}>
+            <div style={{ ...CARD, borderTop: "3px solid #F59E0B", background: "#FFF6EB" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
                 <p style={{
-                  color: "rgba(255,255,255,0.6)",
+                  color: "#6B7280",
                   fontSize: "0.75rem",
                   fontWeight: 500,
                   margin: 0,
@@ -729,7 +747,7 @@ export default function DashboardPage() {
                   }} />
                 )}
               </div>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
+              <p style={{ color: "#9CA3AF", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
                 Subscriptions expiring within 30 days
               </p>
 
@@ -741,7 +759,7 @@ export default function DashboardPage() {
                         display: "flex",
                         flexDirection: "column",
                         background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "1px solid #E5E7EB",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
                         height: "112px",
@@ -754,23 +772,24 @@ export default function DashboardPage() {
                     <div key={id} style={{
                       display: "flex",
                       flexDirection: "column",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "#FFF3E6",
+                      border: "1px solid #EDD4B6",
                       borderRadius: "0.5rem",
                       overflow: "hidden",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                     }}
                       onClick={() => router.push(`/dashboard/cardholders/${id}`)}
                       onMouseEnter={e => {
                         e.currentTarget.style.transform = "translateY(-2px)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.09)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+                        e.currentTarget.style.background = "#FFECCA"
+                        e.currentTarget.style.borderColor = "#E5C299"
                       }}
                       onMouseLeave={e => {
                         e.currentTarget.style.transform = "translateY(0)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                        e.currentTarget.style.background = "#FFF3E6"
+                        e.currentTarget.style.borderColor = "#EDD4B6"
                       }}
                     >
                       <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
@@ -778,7 +797,7 @@ export default function DashboardPage() {
                           <img
                             src={photo_url}
                             alt={full_name}
-                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid #EDD4B6", objectFit: "cover", flexShrink: 0 }}
                             onError={e => e.currentTarget.style.display = "none"}
                           />
                         ) : null}
@@ -787,12 +806,12 @@ export default function DashboardPage() {
                             width: 40,
                             height: 40,
                             borderRadius: "0.375rem",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid #EDD4B6",
+                            background: "#FFECCA",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "rgba(255,255,255,0.5)",
+                            color: "#92400E",
                             fontSize: "0.75rem",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -801,10 +820,10 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                          <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
                             {full_name}
                           </p>
-                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                          <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
                         </div>
                       </div>
                       <div style={{
@@ -827,7 +846,7 @@ export default function DashboardPage() {
                         display: "flex",
                         flexDirection: "column",
                         background: "transparent",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "1px solid #E5E7EB",
                         borderRadius: "0.5rem",
                         overflow: "hidden",
                         height: "112px",
@@ -840,7 +859,7 @@ export default function DashboardPage() {
               {expiringCardholders.length > 0 && (
                 <div style={{ textAlign: "right" }}>
                   <a href="/dashboard/cardholders?filter=expiring" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders?filter=expiring") }} style={{
-                    color: "rgba(255,255,255,0.55)",
+                    color: "#6B7280",
                     fontSize: "0.8125rem",
                     textDecoration: "none",
                     display: "inline-flex",
@@ -853,7 +872,7 @@ export default function DashboardPage() {
                       e.currentTarget.style.textDecoration = "underline"
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                      e.currentTarget.style.color = "#6B7280"
                       e.currentTarget.style.textDecoration = "none"
                     }}
                   >
@@ -868,7 +887,7 @@ export default function DashboardPage() {
           {/* Recently Added */}
           <div style={CARD}>
             <p style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "#6B7280",
               fontSize: "0.75rem",
               fontWeight: 500,
               margin: "0 0 0.25rem",
@@ -877,7 +896,7 @@ export default function DashboardPage() {
             }}>
               Recently Added
             </p>
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.8125rem", margin: "0 0 1.25rem" }}>
               Most recently added cardholders
             </p>
 
@@ -889,7 +908,7 @@ export default function DashboardPage() {
                       display: "flex",
                       flexDirection: "column",
                       background: "transparent",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: "1px solid #E5E7EB",
                       borderRadius: "0.5rem",
                       overflow: "hidden",
                       minHeight: "100px",
@@ -900,27 +919,29 @@ export default function DashboardPage() {
                 <>
                   {recentCardholders.map(({ id, full_name, created_at, status, photo_url, licence_end_date }) => {
                   const licenceStatus = getLicenceStatus(licence_end_date)
+                  const tint = getCardTint(licenceStatus.status)
                   return (
                     <div key={id} style={{
                       display: "flex",
                       flexDirection: "column",
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: tint.bg,
+                      border: `1px solid ${tint.border}`,
                       borderRadius: "0.5rem",
                       overflow: "hidden",
                       cursor: "pointer",
                       transition: "all 0.15s ease",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                     }}
                       onClick={() => router.push(`/dashboard/cardholders/${id}`)}
                       onMouseEnter={e => {
                         e.currentTarget.style.transform = "translateY(-2px)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.09)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"
+                        e.currentTarget.style.background = tint.hover
+                        e.currentTarget.style.borderColor = tint.hoverBorder
                       }}
                       onMouseLeave={e => {
                         e.currentTarget.style.transform = "translateY(0)"
-                        e.currentTarget.style.background = "rgba(255,255,255,0.05)"
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                        e.currentTarget.style.background = tint.bg
+                        e.currentTarget.style.borderColor = tint.border
                       }}
                     >
                       <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
@@ -928,7 +949,7 @@ export default function DashboardPage() {
                           <img
                             src={photo_url}
                             alt={full_name}
-                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: "1px solid rgba(255,255,255,0.15)", objectFit: "cover", flexShrink: 0 }}
+                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: `1px solid rgba(0,0,0,0.1)`, objectFit: "cover", flexShrink: 0 }}
                             onError={e => e.currentTarget.style.display = "none"}
                           />
                         ) : null}
@@ -937,12 +958,12 @@ export default function DashboardPage() {
                             width: 40,
                             height: 40,
                             borderRadius: "0.375rem",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                            background: "rgba(255,255,255,0.05)",
+                            border: `1px solid rgba(0,0,0,0.1)`,
+                            background: "#F3F4F6",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "rgba(255,255,255,0.5)",
+                            color: "#6B7280",
                             fontSize: "0.75rem",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -952,28 +973,17 @@ export default function DashboardPage() {
                         )}
                         <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                            <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
                               {full_name}
                             </p>
-                            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0.25rem 0 0" }}>
+                            <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.25rem 0 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                               {new Date(created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: getStatusBarColor(licenceStatus.status), flexShrink: 0 }} />
+                              <span style={{ color: getStatusBarColor(licenceStatus.status), fontSize: "0.7rem", fontWeight: 600 }}>{licenceStatus.status}</span>
                             </p>
                           </div>
-                          <ChevronRight size={16} style={{ color: "rgba(255,255,255,0.4)", flexShrink: 0 }} />
+                          <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
                         </div>
-                      </div>
-                      <div style={{
-                        background: "transparent",
-                        border: `1px solid ${getStatusBarColor(licenceStatus.status)}`,
-                        borderRadius: "0.375rem",
-                        margin: "0 0.75rem 0.75rem",
-                        color: getStatusBarColor(licenceStatus.status),
-                        padding: "0.5rem 1rem",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        textAlign: "center",
-                      }}>
-                        {licenceStatus.status}
                       </div>
                     </div>
                   )
@@ -985,7 +995,7 @@ export default function DashboardPage() {
                           display: "flex",
                           flexDirection: "column",
                           background: "transparent",
-                          border: "1px solid rgba(255,255,255,0.08)",
+                          border: "1px solid #E5E7EB",
                           borderRadius: "0.5rem",
                           overflow: "hidden",
                           minHeight: "100px",
@@ -1000,7 +1010,7 @@ export default function DashboardPage() {
             {recentCardholders.length > 0 && (
               <div style={{ textAlign: "right", marginTop: "1rem" }}>
                 <a href="/dashboard/cardholders" onClick={e => { e.preventDefault(); router.push("/dashboard/cardholders") }} style={{
-                  color: "rgba(255,255,255,0.55)",
+                  color: "#6B7280",
                   fontSize: "0.8125rem",
                   textDecoration: "none",
                   display: "inline-flex",
@@ -1013,7 +1023,7 @@ export default function DashboardPage() {
                     e.currentTarget.style.textDecoration = "underline"
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                    e.currentTarget.style.color = "#6B7280"
                     e.currentTarget.style.textDecoration = "none"
                   }}
                 >
@@ -1031,7 +1041,7 @@ export default function DashboardPage() {
           {/* Company Info */}
           <div style={CARD}>
             <p style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "#6B7280",
               fontSize: "0.75rem",
               fontWeight: 500,
               margin: "0 0 1rem",
@@ -1043,7 +1053,7 @@ export default function DashboardPage() {
 
             {company && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
-                <p style={{ color: "#fff", fontSize: "0.9375rem", fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
+                <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
                   {company.company_name}
                 </p>
                 <p style={{
@@ -1066,7 +1076,7 @@ export default function DashboardPage() {
           {/* Cardholders Overview */}
           <div style={CARD}>
             <p style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "#6B7280",
               fontSize: "0.75rem",
               fontWeight: 500,
               margin: "0 0 1rem",
@@ -1076,17 +1086,17 @@ export default function DashboardPage() {
               Cardholders Overview
             </p>
 
-            <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", paddingBottom: "1rem", marginBottom: "1rem" }}>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.625rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: "1rem", marginBottom: "1rem" }}>
+              <p style={{ color: "#6B7280", fontSize: "0.75rem", margin: "0 0 0.625rem", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981" }} />
                 Active
               </p>
-              <p style={{ color: "#fff", fontSize: "2.25rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+              <p style={{ color: "#1F2937", fontSize: "2.25rem", fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
                 {activeCardholders}
               </p>
             </div>
 
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", margin: "0 0 0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <p style={{ color: "#6B7280", fontSize: "0.75rem", margin: "0 0 0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Action Items
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -1096,7 +1106,7 @@ export default function DashboardPage() {
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{
-                    color: "#fff",
+                    color: "#374151",
                     fontSize: "0.875rem",
                     display: "flex",
                     alignItems: "center",
@@ -1105,7 +1115,7 @@ export default function DashboardPage() {
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
                     {label}
                   </span>
-                  <span style={{ color: "#fff", fontSize: "1rem", fontWeight: 600 }}>{value}</span>
+                  <span style={{ color: "#1F2937", fontSize: "1rem", fontWeight: 600 }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -1114,7 +1124,7 @@ export default function DashboardPage() {
           {/* Credentials Overview */}
           <div style={CARD}>
             <p style={{
-              color: "rgba(255,255,255,0.6)",
+              color: "#6B7280",
               fontSize: "0.75rem",
               fontWeight: 500,
               margin: "0 0 1rem",
@@ -1135,17 +1145,17 @@ export default function DashboardPage() {
                     alignItems: "center",
                     gap: "0.75rem",
                     padding: "0.75rem",
-                    background: "rgba(255,255,255,0.04)",
+                    background: "#F9FAFB",
                     borderLeft: `3px solid ${color}`,
                     borderRadius: "0.375rem",
                   }}>
                     <Icon size={18} style={{ color, flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8125rem", margin: 0 }}>
+                      <p style={{ color: "#374151", fontSize: "0.8125rem", margin: 0 }}>
                         {label}
                       </p>
                     </div>
-                    <span style={{ color: "#fff", fontSize: "1rem", fontWeight: 700 }}>
+                    <span style={{ color: "#1F2937", fontSize: "1rem", fontWeight: 700 }}>
                       {count}
                     </span>
                   </div>
