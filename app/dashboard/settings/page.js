@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Trash2, Users, Building2 } from "lucide-react"
+import { Trash2, Users, Building2, User } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export default function SettingsPage() {
@@ -461,9 +461,12 @@ export default function SettingsPage() {
       {/* Primary Contact Card */}
       <div style={CARD}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-          <h2 style={{ color: "#1F2937", fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>
-            Primary Contact
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <User size={20} style={{ color: "#374151" }} />
+            <h2 style={{ color: "#1F2937", fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>
+              Primary Contact
+            </h2>
+          </div>
           <button
             onClick={() => setIsEditContactOpen(true)}
             style={{
