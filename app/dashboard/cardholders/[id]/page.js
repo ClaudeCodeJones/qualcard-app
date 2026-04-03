@@ -1418,12 +1418,13 @@ export default function CardholderDetailPage() {
 
   async function handleDeleteCredential(cred) {
     setDeleting(true)
-    const { error: delErr } = await supabase
-      .from("cardholder_credentials")
-      .delete()
-      .eq("id", cred.id)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`/api/dashboard/cardholders/${id}/credentials/${cred.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
     setDeleting(false)
-    if (!delErr) {
+    if (res.ok) {
       setCredentials((prev) => prev.filter((c) => c.id !== cred.id))
       setDeleteTarget(null)
     }

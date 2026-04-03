@@ -130,18 +130,19 @@ export async function DELETE(request, ctx) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    await Promise.all([
-      supabaseAdmin.from("cardholders").update({ company_id: null }).eq("company_id", id),
-      supabaseAdmin.from("users").update({ company_id: null }).eq("company_id", id),
-    ])
+    // Soft-delete: mark company as deleted, deactivate related users
+    await supabaseAdmin
+      .from("users")
+      .update({ account_status: "inactive" })
+      .eq("company_id", id)
 
-    const { error: deleteError } = await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("companies")
-      .delete()
+      .update({ status: "deleted" })
       .eq("id", id)
 
-    if (deleteError) {
-      return Response.json({ error: deleteError.message }, { status: 500 })
+    if (updateError) {
+      return Response.json({ error: updateError.message }, { status: 500 })
     }
 
     return Response.json({ success: true })

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 import { GraduationCap, Award, ClipboardCheck, ChevronRight, ArrowRight } from "lucide-react"
+import BulkAddCredentialModal from "./BulkAddCredentialModal"
 
 const CARD = {
   background: "#FFFFFF",
@@ -57,11 +58,14 @@ export default function CardholdersPage() {
   const [newPhotoPreview, setNewPhotoPreview] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [companyName, setCompanyName] = useState("")
+  const [companyId, setCompanyId] = useState(null)
   const [formError, setFormError] = useState("")
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkMode, setBulkMode] = useState(searchParams.get("bulk") === "true")
-  const [bulkType, setBulkType] = useState(null)
+  const [bulkType, setBulkType] = useState(searchParams.get("bulk") === "true" ? "update" : null)
   const [showAll, setShowAll] = useState(false)
+  const [showBulkCredModal, setShowBulkCredModal] = useState(false)
+  const [userInitials, setUserInitials] = useState("")
 
   useEffect(() => {
     supabase
@@ -97,11 +101,16 @@ export default function CardholdersPage() {
       if (!user) return
       supabase
         .from("users")
-        .select("company_id, companies(company_name)")
+        .select("company_id, full_name, companies(company_name)")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
           if (data?.companies?.company_name) setCompanyName(data.companies.company_name)
+          if (data?.company_id) setCompanyId(data.company_id)
+          if (data?.full_name) {
+            const parts = data.full_name.trim().split(/\s+/)
+            setUserInitials(parts.map(p => p[0]).slice(0, 2).join("").toUpperCase())
+          }
         })
     })
   }, [])
@@ -148,46 +157,16 @@ export default function CardholdersPage() {
         </h1>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {!bulkMode && (
-            <>
-              <button
-                onClick={() => { setBulkMode(true); setBulkType("update"); setSelectedIds([]) }}
-                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
-                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-              >
-                Bulk Update
-              </button>
-              <button
-                onClick={() => { setBulkMode(true); setBulkType("activate"); setSelectedIds([]) }}
-                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
-                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-              >
-                Activate / Renew
-              </button>
-            </>
+            <button
+              onClick={() => { setBulkMode(true); setBulkType("update"); setSelectedIds([]) }}
+              style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+              onMouseLeave={e => e.currentTarget.style.background = "#fff"}
+            >
+              Bulk Actions
+            </button>
           )}
-          {bulkMode && bulkType === "update" && (
-            <>
-              <button
-                onClick={() => { const ids = cardholders.filter(c => c.status !== "deleted").map(c => c.id); setSelectedIds(ids) }}
-                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
-                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-              >
-                Select All
-              </button>
-              <button
-                onClick={() => { setBulkMode(false); setSelectedIds([]); setBulkType(null) }}
-                style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
-                onMouseLeave={e => e.currentTarget.style.background = "#fff"}
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          {bulkMode && bulkType === "activate" && (
+          {bulkMode && (
             <>
               <button
                 onClick={() => { const ids = cardholders.filter(c => c.status !== "deleted").map(c => c.id); setSelectedIds(ids) }}
@@ -200,18 +179,26 @@ export default function CardholdersPage() {
               {selectedIds.length > 0 && (
                 <>
                   <button
+                    onClick={() => setShowBulkCredModal(true)}
+                    style={{ padding: "0.625rem 1.125rem", background: "#2f6f6a", border: "none", borderRadius: "0.5rem", color: "#fff", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                  >
+                    Add Credentials ({selectedIds.length})
+                  </button>
+                  <button
                     onClick={handleBulkActivate}
-                    style={{ padding: "0.625rem 1.125rem", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "0.5rem", color: "#F97316", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#FFEDD5"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#FFF7ED"}
+                    style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}
                   >
                     Activate Selected
                   </button>
                   <button
                     onClick={handleBulkRenew}
-                    style={{ padding: "0.625rem 1.125rem", background: "#F0FDF4", border: "1px solid #D1E8D9", borderRadius: "0.5rem", color: "#16A34A", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#DCFCE7"}
-                    onMouseLeave={e => e.currentTarget.style.background = "#F0FDF4"}
+                    style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontWeight: 600, fontFamily: "inherit", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                    onMouseLeave={e => e.currentTarget.style.background = "#fff"}
                   >
                     Renew Selected
                   </button>
@@ -713,6 +700,20 @@ export default function CardholdersPage() {
         </div>
       )}
 
+      {showBulkCredModal && (
+        <BulkAddCredentialModal
+          selectedCardholders={cardholders.filter(c => selectedIds.includes(c.id))}
+          companyId={companyId}
+          defaultInitials={userInitials}
+          onSuccess={() => {
+            setBulkMode(false)
+            setSelectedIds([])
+            setBulkType(null)
+            router.refresh()
+          }}
+          onClose={() => setShowBulkCredModal(false)}
+        />
+      )}
     </div>
   )
 }

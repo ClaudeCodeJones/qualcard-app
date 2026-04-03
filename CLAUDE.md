@@ -27,7 +27,7 @@ npm run lint
 
 ## What This Project Is
 
-QualCard is a SaaS credential management platform for the NZ construction and trades industry.
+QualCard is a SaaS credential management platform for the NZ construction and trades industry. i have a working model made in Zite by Fillout, which i can always get info from. Either screenshots or explanation of logic
 
 ---
 
@@ -74,10 +74,6 @@ Rules:
 
 * All activation MUST go through API routes
 * Direct Supabase client mutations are NOT allowed
-
-Current state:
-
-* Dashboard bulk activation bypasses API → MUST be refactored
 
 Licence dates:
 
@@ -219,6 +215,10 @@ Current duplication is technical debt and must be removed.
 
 ---
 
+## Making Changes 
+
+Do not many any changes until you have 95% confidence in what you need to build. Ask me follow up questions until you reach that confidence
+
 ## Hard Rules
 
 * No TypeScript going forward (existing file must be converted)
@@ -232,8 +232,7 @@ Current duplication is technical debt and must be removed.
 
 ## Known Issues
 
-* Bulk activation bypasses API
-* page.tsx exists
+* Company delete is a hard delete (should be soft-delete)
 * UI duplication across components
 
 ---
@@ -241,9 +240,8 @@ Current duplication is technical debt and must be removed.
 ## Next
 
 * Stripe integration
-* Fix bulk activation to API
 * Build shared component system
-* Standardise colours across UI
+* Fix company delete to soft-delete
 
 ---
 

@@ -19,4 +19,11 @@
 
 ## QC Admin - when i add a person and select active it shows as payment pending on the cardhodlers page, it should go to active and show todays date in one year in the susbcription exipry field
 
-
+## Tech Debt / Production Readiness
+- Create `.env.example` with required environment variables documented
+- Add `robots.txt` and sitemap for public pages
+- Add OG meta tags for public card pages (`/card/[slug]`)
+- Centralise duplicated status colour logic (`getStatusColour`, `getCardTint`, `getStatusBarColor`) into shared utility
+- Add `loading.js` files for key route segments
+- Add caching strategy (React Query/SWR) for Supabase queries
+- Move single-add credential modal to use API route instead of direct Supabase

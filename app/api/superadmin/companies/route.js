@@ -27,7 +27,7 @@ export async function GET(request) {
     }
 
     const [{ data: companies, error: companiesError }, { data: cardholders }] = await Promise.all([
-      supabaseAdmin.from("companies").select("*").order("created_at", { ascending: false }),
+      supabaseAdmin.from("companies").select("*").neq("status", "deleted").order("created_at", { ascending: false }),
       supabaseAdmin.from("cardholders").select("company_id").neq("status", "deleted"),
     ])
 
