@@ -182,28 +182,16 @@ function sortCredentials(creds, type) {
 }
 
 function ProfilePhoto({ name, url }) {
-  const [loaded, setLoaded] = useState(false)
   const initials = name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
 
   return (
-    <div className="w-44 h-44 rounded-full border-4 border-white shadow-xl -mt-32 z-10 overflow-hidden shrink-0" style={{ position: "relative" }}>
-      <div className="w-full h-full flex items-center justify-center text-3xl font-bold" style={{ backgroundColor: "#D1D5DB", color: "#6B7280" }}>
-        {initials}
-      </div>
-      {url && (
-        <img
-          src={url}
-          alt={name}
-          onLoad={() => setLoaded(true)}
-          className="w-full h-full object-cover"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            opacity: loaded ? 1 : 0,
-            transition: "opacity 0.3s ease",
-          }}
-        />
+    <div className="w-44 h-44 rounded-full border-4 border-white shadow-xl -mt-32 z-10 overflow-hidden shrink-0">
+      {url ? (
+        <img src={url} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-3xl font-bold" style={{ backgroundColor: "#D1D5DB", color: "#6B7280" }}>
+          {initials}
+        </div>
       )}
     </div>
   )
