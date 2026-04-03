@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -21,7 +22,7 @@ export async function DELETE(request, { params }) {
 
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
-      .select("role, account_status, company_id")
+      .select("role, account_status, company_id, full_name")
       .eq("id", user.id)
       .single()
 
@@ -41,10 +42,10 @@ export async function DELETE(request, { params }) {
     if (chError || !cardholder) return Response.json({ error: "Cardholder not found" }, { status: 404 })
     if (cardholder.company_id !== userData.company_id) return Response.json({ error: "Forbidden" }, { status: 403 })
 
-    // Verify credential belongs to this cardholder
+    // Verify credential belongs to this cardholder and get its name
     const { data: credential, error: credError } = await supabaseAdmin
       .from("cardholder_credentials")
-      .select("id")
+      .select("id, qualifications_competencies(name, type)")
       .eq("id", credentialId)
       .eq("cardholder_id", cardholderId)
       .single()
@@ -58,6 +59,17 @@ export async function DELETE(request, { params }) {
       .eq("id", credentialId)
 
     if (deleteError) return Response.json({ error: deleteError.message }, { status: 500 })
+
+    await writeAuditLog(supabaseAdmin, {
+      entityType: "cardholder",
+      entityId: cardholderId,
+      action: "credential_removed",
+      oldValue: credential.qualifications_competencies?.name ?? null,
+      performedBy: user.id,
+      performedByRole: "company_admin",
+      performedByName: userData.full_name,
+      metadata: { credential_id: credentialId, type: credential.qualifications_competencies?.type ?? null },
+    })
 
     return Response.json({ success: true })
   } catch (error) {

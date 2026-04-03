@@ -55,7 +55,7 @@ export default async function DashboardLayout({ children }) {
       <Header variant="dashboard" logoHref="/dashboard" />
       <div style={{ display: "flex", flex: 1 }}>
         <DashboardSidebar initials={initials} />
-        <main style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
+        <main style={{ flex: 1, padding: "2rem" }}>
           {children}
         </main>
       </div>

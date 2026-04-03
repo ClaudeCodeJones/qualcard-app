@@ -27,8 +27,17 @@ function Avatar({ fullName, email, role }) {
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
     }
-    if (open) document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    function handleScroll() {
+      setOpen(false)
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside)
+      window.addEventListener("scroll", handleScroll, true)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      window.removeEventListener("scroll", handleScroll, true)
+    }
   }, [open])
 
   async function handleLogout() {
@@ -83,8 +92,9 @@ function Avatar({ fullName, email, role }) {
       {open && (
         <div style={{
           position: "absolute",
-          top: "calc(100% + 0.75rem)",
-          right: 0,
+          top: "50%",
+          right: "calc(100% + 0.75rem)",
+          transform: "translateY(-50%)",
           backgroundColor: "#FFFFFF",
           borderRadius: "1rem",
           boxShadow: "0 8px 24px rgba(44, 62, 80, 0.12), 0 2px 8px rgba(44, 62, 80, 0.08)",
@@ -147,7 +157,7 @@ export default function Header({ user, variant = "default", logoHref = "/superad
       <div style={{
         height: "88px",
         paddingLeft: hasSidebar ? "88px" : "1.5rem",
-        paddingRight: "1.5rem",
+        paddingRight: hasSidebar ? "2.25rem" : "1.5rem",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

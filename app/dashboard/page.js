@@ -919,7 +919,7 @@ export default function DashboardPage() {
                       borderRadius: "0.5rem",
                       overflow: "hidden",
                       cursor: "pointer",
-                      transition: "all 0.15s ease",
+                      transition: "border-color 0.15s ease, background 0.15s ease, transform 0.15s ease",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                     }}
                       onClick={() => router.push(`/dashboard/cardholders/${id}`)}
@@ -934,45 +934,60 @@ export default function DashboardPage() {
                         e.currentTarget.style.borderColor = tint.border
                       }}
                     >
-                      <div style={{ padding: "0.875rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", flex: 1 }}>
-                        {photo_url ? (
-                          <img
-                            src={photo_url}
-                            alt={full_name}
-                            style={{ width: 40, height: 40, borderRadius: "0.375rem", border: `1px solid rgba(0,0,0,0.1)`, objectFit: "cover", flexShrink: 0 }}
-                            onError={e => e.currentTarget.style.display = "none"}
-                          />
-                        ) : null}
-                        {!photo_url && (
-                          <div style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: "0.375rem",
-                            border: `1px solid rgba(0,0,0,0.1)`,
-                            background: "#F3F4F6",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#6B7280",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            flexShrink: 0,
-                          }}>
-                            {getInitials(full_name)}
-                          </div>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem", flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          {photo_url ? (
+                            <img
+                              src={photo_url}
+                              alt={full_name}
+                              style={{ width: 44, height: 44, borderRadius: "0.375rem", border: "1px solid rgba(0,0,0,0.1)", objectFit: "cover", flexShrink: 0 }}
+                              onError={e => e.currentTarget.style.display = "none"}
+                            />
+                          ) : (
+                            <div style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: "0.375rem",
+                              border: "1px solid rgba(0,0,0,0.1)",
+                              background: "#F3F4F6",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#6B7280",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              flexShrink: 0,
+                            }}>
+                              {getInitials(full_name)}
+                            </div>
+                          )}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: "0", lineHeight: 1.2 }}>
+                            <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: 0, lineHeight: 1.2 }}>
                               {full_name}
-                            </p>
-                            <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.25rem 0 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                              {new Date(created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
-                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: getStatusBarColor(licenceStatus.status), flexShrink: 0 }} />
-                              <span style={{ color: getStatusBarColor(licenceStatus.status), fontSize: "0.7rem", fontWeight: 600 }}>{licenceStatus.status}</span>
                             </p>
                           </div>
                           <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "0.625rem" }}>
+                          <p style={{ color: "#6B7280", fontSize: "0.7rem", margin: 0, display: "flex", justifyContent: "space-between" }}>
+                            <span>Created</span>
+                            <span style={{ fontWeight: 500, color: "#374151" }}>{new Date(created_at).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}</span>
+                          </p>
+                          <p style={{ color: "#6B7280", fontSize: "0.7rem", margin: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span>Expires</span>
+                            <span style={{ fontWeight: 500, color: "#374151" }}>
+                              {licence_end_date
+                                ? new Date(licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+                                : "Not set"}
+                            </span>
+                          </p>
+                          <p style={{ color: "#6B7280", fontSize: "0.7rem", margin: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span>Status</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: getStatusBarColor(licenceStatus.status), flexShrink: 0 }} />
+                              <span style={{ color: getStatusBarColor(licenceStatus.status), fontSize: "0.7rem", fontWeight: 600 }}>{licenceStatus.status}</span>
+                            </span>
+                          </p>
                         </div>
                       </div>
                     </div>

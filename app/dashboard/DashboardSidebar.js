@@ -22,7 +22,11 @@ export default function DashboardSidebar({ initials }) {
     if (!menuOpen) return
     const close = () => setMenuOpen(false)
     document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
+    window.addEventListener("scroll", close, true)
+    return () => {
+      document.removeEventListener("mousedown", close)
+      window.removeEventListener("scroll", close, true)
+    }
   }, [menuOpen])
 
   useEffect(() => { setMenuOpen(false) }, [pathname])
@@ -97,7 +101,7 @@ export default function DashboardSidebar({ initials }) {
 
       {/* Divider + avatar */}
       <div style={{ width: "50%", height: "1px", background: "rgba(255,255,255,0.1)", margin: "0.75rem 0" }} />
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", zIndex: 1001 }}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           style={{
@@ -124,9 +128,9 @@ export default function DashboardSidebar({ initials }) {
         {menuOpen && (
           <div style={{
             position: "absolute",
-            bottom: "calc(100% + 0.5rem)",
-            left: "50%",
-            transform: "translateX(-50%)",
+            top: "50%",
+            left: "calc(100% + 0.75rem)",
+            transform: "translateY(-50%)",
             background: "#1f3f3c",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "0.5rem",

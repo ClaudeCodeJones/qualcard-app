@@ -15,6 +15,7 @@ import {
   GraduationCap, Award, ClipboardCheck, ShieldCheck,
   Pencil, Trash2, Search, X, ChevronDown, ChevronUp,
   Camera, RefreshCw, Archive, RotateCcw, Building2, Users,
+  History,
 } from "lucide-react"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -163,10 +164,11 @@ function PhotoCircle({ photoUrl, name, size = 80, borderColor = "rgba(255,255,25
       <div style={{
         width: size,
         height: size,
-        borderRadius: "50%",
+        borderRadius: "1rem",
         overflow: "hidden",
         flexShrink: 0,
         border: `2.5px solid ${borderColor}`,
+        boxShadow: "inset 0 0 6px rgba(255,255,255,0.1)",
       }}>
         <Image
           src={photoUrl}
@@ -182,7 +184,7 @@ function PhotoCircle({ photoUrl, name, size = 80, borderColor = "rgba(255,255,25
     <div style={{
       width: size,
       height: size,
-      borderRadius: "50%",
+      borderRadius: "1rem",
       backgroundColor: "rgba(255,255,255,0.15)",
       border: `2.5px solid ${borderColor}`,
       display: "flex",
@@ -1118,7 +1120,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
             onClick={() => onResetOrder(section.key)}
             style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: "0.75rem", fontWeight: 500, color: "#6B7280",
+              fontSize: "0.75rem", fontWeight: 500, color: "#9CA3AF",
               fontFamily: "inherit", padding: "0.25rem 0.25rem",
               textDecoration: "none", transition: "color 0.15s ease",
             }}
@@ -1127,7 +1129,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
               e.currentTarget.style.textDecoration = "underline"
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#6B7280"
+              e.currentTarget.style.color = "#9CA3AF"
               e.currentTarget.style.textDecoration = "none"
             }}
           >
@@ -1139,12 +1141,12 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           onClick={onAdd}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            fontSize: "0.8125rem", fontWeight: 600, color: "#6B7280",
+            fontSize: "0.8125rem", fontWeight: 600, color: "#9CA3AF",
             fontFamily: "inherit", padding: "0.25rem 0.5rem",
             transition: "color 0.15s ease",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = section.color)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#6B7280")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
           onMouseDown={(e) => (e.currentTarget.style.color = section.color)}
         >
           + Add
@@ -1523,6 +1525,10 @@ export default function CardholderDetailPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState("")
 
+  // audit log state
+  const [auditLogs, setAuditLogs] = useState([])
+  const [auditLoading, setAuditLoading] = useState(false)
+
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -1560,6 +1566,13 @@ export default function CardholderDetailPage() {
       setCompany(json.company)
       setCredentials(json.credentials ?? [])
       setLoading(false)
+
+      // Fetch audit logs in background
+      fetch(`/api/superadmin/cardholders/${id}/audit-logs`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+        .then((r) => r.ok ? r.json() : { logs: [] })
+        .then((data) => setAuditLogs(data.logs ?? []))
     }
 
     load()
@@ -1578,17 +1591,20 @@ export default function CardholderDetailPage() {
     if (res.ok) {
       setCredentials((prev) => prev.filter((c) => c.id !== cred.id))
       setDeleteTarget(null)
+      refreshAuditLogs()
     }
   }
 
   function handleCredentialAdded(newCred) {
     setCredentials((prev) => [newCred, ...prev])
     setAddSection(null)
+    refreshAuditLogs()
   }
 
   function handleCredentialEdited(updated) {
     setCredentials((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
     setEditTarget(null)
+    refreshAuditLogs()
   }
 
   async function handleResetOrder(sectionKey) {
@@ -1663,6 +1679,17 @@ export default function CardholderDetailPage() {
     setActionModal(key)
   }
 
+  async function refreshAuditLogs() {
+    if (!token) return
+    const res = await fetch(`/api/superadmin/cardholders/${id}/audit-logs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setAuditLogs(data.logs ?? [])
+    }
+  }
+
   async function patchCardholder(updates) {
     setActionLoading(true)
     setActionError("")
@@ -1675,6 +1702,7 @@ export default function CardholderDetailPage() {
     setActionLoading(false)
     if (!res.ok) { setActionError(json.error ?? "Failed to update."); return false }
     setCardholder((prev) => ({ ...prev, ...json.cardholder }))
+    refreshAuditLogs()
     return true
   }
 
@@ -1811,92 +1839,127 @@ export default function CardholderDetailPage() {
         <div style={{
           background: GRADIENT,
           borderRadius: "1rem",
-          padding: "2rem",
+          padding: "1.5rem 2rem",
           marginBottom: "1.5rem",
           display: "flex",
-          alignItems: "center",
-          gap: "1.75rem",
+          flexDirection: "column",
+          gap: "1rem",
           boxShadow: "0 4px 20px rgba(44, 62, 80, 0.2), 0 1px 4px rgba(44, 62, 80, 0.12)",
         }}>
-          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={120} borderColor={getPhotoBorderColor(cardholder.status)} />
+          {/* Row 1: Photo + Name + QR */}
+          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+            <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={80} borderColor={getPhotoBorderColor(cardholder.status)} />
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h1 style={{
-              margin: "0 0 0.25rem",
-              fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
-              fontWeight: 800,
-              color: "#FFFFFF",
-              textTransform: "uppercase",
-              letterSpacing: "0.03em",
-              lineHeight: 1.15,
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{
+                margin: 0,
+                fontSize: "1.75rem",
+                fontWeight: 800,
+                color: "#FFFFFF",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+                lineHeight: 1.15,
+              }}>
+                {cardholder.full_name}
+              </h1>
+
+              {company && (
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", fontWeight: 400 }}>
+                  {company.company_name}
+                </p>
+              )}
+            </div>
+
+            <div style={{ flexShrink: 0 }}>
+              <div style={{ background: "#FFFFFF", borderRadius: "0.75rem", padding: "0.75rem", display: "inline-flex", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+                <QRCodeSVG value={profileUrl} size={56} />
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Status bar */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.625rem",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            paddingTop: "1rem",
+          }}>
+            <span style={{
+              display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+              fontSize: "0.6875rem", fontWeight: 600,
+              color: "rgba(255,255,255,0.65)",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(255,255,255,0.25)", whiteSpace: "nowrap",
             }}>
-              {cardholder.full_name}
-            </h1>
-
-            {company && (
-              <p style={{ margin: "0 0 0.625rem", fontSize: "1.0625rem", color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>
-                {company.company_name}
-              </p>
+              Created: {new Date(cardholder.created_at).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}
+            </span>
+            <span style={{
+              display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+              fontSize: "0.6875rem", fontWeight: 600,
+              color: "rgba(255,255,255,0.65)",
+              backgroundColor: "transparent",
+              border: "1px solid rgba(255,255,255,0.25)", whiteSpace: "nowrap",
+            }}>
+              {licenceStatus.dateLabel ? `${licenceStatus.dateLabel}: ${new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}` : "No expiry"}
+            </span>
+            {(() => {
+              const keyMap = {
+                "Active": "active",
+                "Expiring Soon": "expiring",
+                "Expired": "expired",
+                "Payment Pending": "payment_pending",
+              }
+              return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
+            })()}
+            {headerAction && (
+              <button
+                onClick={headerAction.onClick}
+                style={{
+                  padding: "0.2rem 0.75rem", borderRadius: "1rem", border: "none",
+                  background: headerAction.bg, color: "#FFFFFF", fontSize: "0.6875rem", fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                  transition: "opacity 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                {headerAction.label}
+              </button>
             )}
 
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.875rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
+
+            {SECTIONS.map((section) => {
+              const count = credentials.filter(c => c.qualifications_competencies?.type === section.key).length
+              return (
+                <div key={section.key} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                  <section.Icon size={13} color={section.color} strokeWidth={2} style={{ opacity: 0.7 }} />
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: count === 0 ? "rgba(255,255,255,0.3)" : "#FFFFFF" }}>
+                    {count}
+                  </span>
+                </div>
+              )
+            })}
+
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginLeft: "auto" }}>
               <a
                 href={profileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.3rem",
-                  fontSize: "0.8125rem", color: "#93C5FD",
+                  display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                  fontSize: "0.6875rem", color: "rgba(255,255,255,0.5)",
                   textDecoration: "none", transition: "color 0.15s ease",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
               >
-                Click here for Profile URL
-                <ExternalLink size={12} strokeWidth={2} />
+                View Profile
+                <ExternalLink size={11} strokeWidth={2} />
               </a>
               <CopyButton textToCopy={profileUrl} />
-            </div>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              {(() => {
-                const keyMap = {
-                  "Active": "active",
-                  "Expiring Soon": "expiring",
-                  "Expired": "expired",
-                  "Payment Pending": "payment_pending",
-                }
-                return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
-              })()}
-              <span style={{
-                display: "inline-block", padding: "0.25rem 0.75rem", borderRadius: "1rem",
-                fontSize: "0.75rem", fontWeight: 400, color: "#FFFFFF",
-                backgroundColor: "transparent",
-                border: "1.5px solid rgba(255,255,255,0.8)", whiteSpace: "nowrap",
-              }}>
-                {licenceStatus.dateLabel ? `${licenceStatus.dateLabel}: ${new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}` : "No expiry"}
-              </span>
-              {headerAction && (
-                <button
-                  onClick={headerAction.onClick}
-                  style={{
-                    padding: "0.25rem 0.875rem", borderRadius: "1rem", border: "none",
-                    background: headerAction.bg, color: "#FFFFFF", fontSize: "0.75rem", fontWeight: 600,
-                    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                    transition: "opacity 0.15s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                >
-                  {headerAction.label}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div style={{ flexShrink: 0 }}>
-            <div style={{ background: "#FFFFFF", borderRadius: "0.5rem", padding: "0.5rem", display: "inline-flex" }}>
-              <QRCodeSVG value={profileUrl} size={80} />
             </div>
           </div>
         </div>
@@ -1955,10 +2018,10 @@ export default function CardholderDetailPage() {
                 <div
                   key={section.key}
                   style={{
-                    background: "#FFFFFF",
+                    background: "#F9FAFB",
                     borderRadius: "1rem",
                     border: "1px solid #E5E7EB",
-                    boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+                    borderTop: `3px solid ${section.color}`,
                     padding: "1.5rem",
                     height: "100%",
                   }}
@@ -2003,7 +2066,7 @@ export default function CardholderDetailPage() {
             <span style={{
               fontSize: "0.75rem",
               fontWeight: 700,
-              color: "#374151",
+              color: "#6B7280",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}>
@@ -2067,6 +2130,125 @@ export default function CardholderDetailPage() {
             ))}
           </div>
         </div>
+
+        {/* ── Section 5: Activity Log ──────────────────────────────────── */}
+        {auditLogs.length > 0 && (
+          <div style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: "1rem",
+            padding: "1.75rem",
+            marginTop: "1.5rem",
+            boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.875rem", marginBottom: "1.5rem" }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: "0.625rem",
+                background: "#34495E",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <History size={18} color="#FFFFFF" strokeWidth={2} />
+              </div>
+              <span style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "#374151",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}>
+                Activity Log
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {auditLogs.map((log, i) => {
+                const actionLabels = {
+                  created: "Created",
+                  activation: "Activated",
+                  archive: "Archived",
+                  restore: "Restored",
+                  delete: "Deleted",
+                  status_change: "Status changed",
+                  name_change: "Name changed",
+                  photo_change: "Photo updated",
+                  company_reassign: "Company reassigned",
+                  credential_added: "Credential added",
+                  credential_edited: "Credential edited",
+                  credential_removed: "Credential removed",
+                }
+                const actionColors = {
+                  created: "#2f6f6a",
+                  activation: "#16A34A",
+                  archive: "#4A5568",
+                  restore: "#16A34A",
+                  delete: "#EF4444",
+                  status_change: "#F59E0B",
+                  name_change: "#34495E",
+                  photo_change: "#34495E",
+                  company_reassign: "#34495E",
+                  credential_added: "#2f6f6a",
+                  credential_edited: "#F59E0B",
+                  credential_removed: "#EF4444",
+                }
+                const label = actionLabels[log.action] ?? log.action
+                const color = actionColors[log.action] ?? "#374151"
+                const date = new Date(log.created_at)
+                const dateStr = date.toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })
+                const timeStr = date.toLocaleTimeString("en-NZ", { hour: "2-digit", minute: "2-digit" })
+
+                return (
+                  <div key={log.id} style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "1rem",
+                    padding: "0.875rem 0",
+                    borderBottom: i < auditLogs.length - 1 ? "1px solid #E5E7EB" : "none",
+                  }}>
+                    <div style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      backgroundColor: color,
+                      marginTop: "0.375rem",
+                      flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "0.875rem", fontWeight: 600, color }}>
+                          {label}
+                        </span>
+                        {(log.new_value && ["credential_added", "credential_edited", "credential_removed", "name_change"].includes(log.action)) && (
+                          <span style={{ fontSize: "0.8125rem", color: "#6B7280" }}>
+                            {log.action === "credential_removed" ? log.old_value : log.new_value}
+                          </span>
+                        )}
+                        {log.old_value && !["credential_added", "credential_edited", "credential_removed", "name_change"].includes(log.action) && (
+                          <span style={{ fontSize: "0.8125rem", color: "#6B7280" }}>
+                            from {log.old_value}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.8125rem", color: "#6B7280", marginTop: "0.125rem" }}>
+                        by {log.performed_by_name ?? log.performed_by_role ?? "System"}
+                        {" "}&middot;{" "}
+                        {dateStr} at {timeStr}
+                      </div>
+                      {log.metadata?.licence_start_date && (
+                        <div style={{ fontSize: "0.75rem", color: "#6B7280", marginTop: "0.25rem" }}>
+                          Licence: {log.metadata.licence_start_date} to {log.metadata.licence_end_date}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
       </div>
 

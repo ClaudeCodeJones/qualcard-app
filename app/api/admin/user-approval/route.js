@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -23,7 +24,7 @@ export async function POST(request) {
 
     const { data: caller } = await supabaseAdmin
       .from("users")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single()
 
@@ -56,6 +57,30 @@ export async function POST(request) {
     if (userError || companyError) {
       return Response.json({ error: "Update failed" }, { status: 500 })
     }
+
+    const auditAction = action === "approve" ? "approval" : "decline"
+    await Promise.all([
+      writeAuditLog(supabaseAdmin, {
+        entityType: "user",
+        entityId: userId,
+        action: auditAction,
+        oldValue: "pending",
+        newValue: userStatus,
+        performedBy: user.id,
+        performedByRole: "qc_admin",
+        performedByName: caller.full_name,
+      }),
+      writeAuditLog(supabaseAdmin, {
+        entityType: "company",
+        entityId: companyId,
+        action: auditAction,
+        oldValue: "pending",
+        newValue: companyStatus,
+        performedBy: user.id,
+        performedByRole: "qc_admin",
+        performedByName: caller.full_name,
+      }),
+    ])
 
     return Response.json({ success: true })
   } catch (error) {

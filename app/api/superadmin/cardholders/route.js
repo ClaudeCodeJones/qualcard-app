@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -10,9 +11,10 @@ function adminClient() {
 
 async function verifyQcAdmin(token, supabaseAdmin) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !user) return false
-  const { data } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single()
-  return data?.role === "qc_admin"
+  if (error || !user) return null
+  const { data } = await supabaseAdmin.from("users").select("role, full_name").eq("id", user.id).single()
+  if (data?.role !== "qc_admin") return null
+  return { id: user.id, role: data.role, fullName: data.full_name }
 }
 
 export async function GET(request) {
@@ -26,6 +28,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url)
+
     const search = searchParams.get("search") ?? ""
     const company = searchParams.get("company") ?? ""
     const status = searchParams.get("status") ?? ""
@@ -77,7 +80,8 @@ export async function POST(request) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    const caller = await verifyQcAdmin(token, supabaseAdmin)
+    if (!caller) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -104,6 +108,17 @@ export async function POST(request) {
     if (insertError) {
       return Response.json({ error: insertError.message }, { status: 500 })
     }
+
+    await writeAuditLog(supabaseAdmin, {
+      entityType: "cardholder",
+      entityId: inserted.id,
+      action: "created",
+      newValue: status ?? "pending_activation",
+      performedBy: caller.id,
+      performedByRole: caller.role,
+      performedByName: caller.fullName,
+      metadata: { full_name: full_name.trim(), company_id },
+    })
 
     return Response.json({
       cardholder: {

@@ -694,66 +694,47 @@ function AddCredentialModal({ section, cardholderId, companyId, credentialsLibra
 
     setSaving(true)
 
-    let resolvedQualId = qualId
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setError("Not authenticated."); setSaving(false); return }
+
+    const payload = {
+      issue_date: issueDate,
+      expiry_date: expiryDate || null,
+      confirmation_initials: initials.trim(),
+    }
+
     if (isOther) {
-      const insertQual = {
+      payload.custom_credential = {
         name: otherName.trim(),
         type: section.key,
         scope_company_id: companyId ?? null,
-        [typeConfig.codeField]: otherCode.trim() || null,
+        code_field: typeConfig.codeField,
+        code_value: otherCode.trim() || null,
       }
-      const { data: createdQual, error: qualErr } = await supabase
-        .from("qualifications_competencies")
-        .insert(insertQual)
-        .select("id")
-        .single()
-      if (qualErr) { setError(qualErr.message); setSaving(false); return }
-      resolvedQualId = createdQual.id
+    } else {
+      payload.qual_comp_id = qualId
     }
 
-    let resolvedProviderId = providerId
     if (isOtherProvider) {
-      const provFilter = companyId
-        ? `is_global.eq.true,company_id.eq.${companyId}`
-        : `is_global.eq.true`
-      const { data: existing } = await supabase
-        .from("training_providers")
-        .select("id")
-        .ilike("provider_name", otherProviderName.trim())
-        .or(provFilter)
-        .limit(1)
-
-      if (existing?.[0]) {
-        resolvedProviderId = existing[0].id
-      } else {
-        const { data: created, error: provErr } = await supabase
-          .from("training_providers")
-          .insert({ provider_name: otherProviderName.trim(), is_global: false, company_id: companyId ?? null, status: "active" })
-          .select("id")
-          .single()
-        if (provErr) { setError(provErr.message); setSaving(false); return }
-        resolvedProviderId = created.id
-      }
+      payload.custom_provider = { provider_name: otherProviderName.trim() }
+    } else {
+      payload.training_provider_id = providerId
     }
 
-    const { data: newCred, error: insertErr } = await supabase
-      .from("cardholder_credentials")
-      .insert({
-        cardholder_id: cardholderId,
-        qual_comp_id: resolvedQualId,
-        training_provider_id: resolvedProviderId,
-        issue_date: issueDate,
-        expiry_date: expiryDate || null,
-        confirmation_checked: true,
-        confirmation_initials: initials.trim().toUpperCase(),
-        confirmation_date: new Date().toISOString(),
-      })
-      .select("*, qualifications_competencies(*)")
-      .single()
+    const res = await fetch(`/api/dashboard/cardholders/${cardholderId}/credentials`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    })
 
+    const json = await res.json()
     setSaving(false)
-    if (insertErr) { setError(insertErr.message); return }
-    onSave(newCred)
+
+    if (!res.ok) { setError(json.error ?? "Failed to add credential."); return }
+    onSave(json.credential)
   }
 
   return (
@@ -970,11 +951,12 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
       display: "flex",
       alignItems: "center",
       gap: "0.75rem",
-      padding: "0.75rem 1.25rem 0.75rem 0.75rem",
+      padding: "1rem 1.25rem 1rem 0.75rem",
       background: "#FFFFFF",
       borderRadius: "0.75rem",
       border: "1px solid #E5E7EB",
       borderLeft: `4px solid ${sectionColor}`,
+      boxShadow: "0 4px 16px rgba(44, 62, 80, 0.12), 0 1px 4px rgba(44, 62, 80, 0.08)",
     }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "0", flexShrink: 0 }}>
         {arrowBtn(isFirst, "Move up", onMoveUp, ChevronUp)}
@@ -982,7 +964,7 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#1F2937", lineHeight: 1.3 }}>
+        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
           {name}
         </p>
         {cred.issue_date && (
@@ -1187,9 +1169,9 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                 style={{
                   padding: "0.4rem 1.2rem",
                   borderRadius: "1rem",
-                  border: "1px solid #E5E7EB",
-                  background: "#FFFFFF",
-                  color: "#6B7280",
+                  border: "1.5px solid #2f6f6a",
+                  background: "none",
+                  color: "#2f6f6a",
                   fontSize: "0.8125rem",
                   fontWeight: 500,
                   cursor: "pointer",
@@ -1197,12 +1179,12 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                   transition: "background 0.15s ease, color 0.15s ease",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#F3F4F6"
-                  e.currentTarget.style.color = "#374151"
+                  e.currentTarget.style.background = "#2f6f6a"
+                  e.currentTarget.style.color = "#FFFFFF"
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#FFFFFF"
-                  e.currentTarget.style.color = "#6B7280"
+                  e.currentTarget.style.background = "none"
+                  e.currentTarget.style.color = "#2f6f6a"
                 }}
               >
                 {expanded ? "Show less" : `Show all (${filtered.length})`}
@@ -1373,7 +1355,7 @@ export default function CardholderDetailPage() {
 
       const { data: ch, error: chErr } = await supabase
         .from("cardholders")
-        .select("id, full_name, status, licence_start_date, licence_end_date, photo_url, slug, company_id, companies(id, company_name)")
+        .select("id, full_name, status, licence_start_date, licence_end_date, photo_url, slug, company_id, created_at, companies(id, company_name)")
         .eq("id", id)
         .single()
 
@@ -1628,11 +1610,14 @@ export default function CardholderDetailPage() {
   return (
     <div style={{
       borderRadius: "1rem",
-      padding: "2rem",
+      padding: "0 0 2rem",
       display: "flex",
       flexDirection: "column",
-      gap: "1.5rem",
+      gap: "1.25rem",
       fontFamily: "Inter, system-ui, sans-serif",
+      maxWidth: "1280px",
+      margin: "0 auto",
+      width: "100%",
     }}>
 
       {/* ── Back button ─────────────────────────────────────────────────── */}
@@ -1709,15 +1694,16 @@ export default function CardholderDetailPage() {
           borderTop: "1px solid rgba(255,255,255,0.1)",
           paddingTop: "1rem",
         }}>
-          {(() => {
-            const keyMap = {
-              "Active": "active",
-              "Expiring Soon": "expiring",
-              "Expired": "expired",
-              "Payment Pending": "payment_pending",
-            }
-            return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
-          })()}
+          <span style={{
+            display: "inline-block", padding: "0.2rem 0.625rem", borderRadius: "1rem",
+            fontSize: "0.6875rem", fontWeight: 600,
+            color: "rgba(255,255,255,0.65)",
+            backgroundColor: "transparent",
+            border: "1px solid rgba(255,255,255,0.25)",
+            whiteSpace: "nowrap",
+          }}>
+            Created: {new Date(cardholder.created_at).toLocaleDateString("en-NZ", { day: "2-digit", month: "2-digit", year: "numeric" })}
+          </span>
 
           {(() => {
             const fullDateLabel = getFullDateLabel(licenceStatus.dateLabel)
@@ -1733,6 +1719,16 @@ export default function CardholderDetailPage() {
                 {fullDateLabel}
               </span>
             ) : null
+          })()}
+
+          {(() => {
+            const keyMap = {
+              "Active": "active",
+              "Expiring Soon": "expiring",
+              "Expired": "expired",
+              "Payment Pending": "payment_pending",
+            }
+            return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
           })()}
 
           {headerAction && (
@@ -1767,9 +1763,8 @@ export default function CardholderDetailPage() {
             )
           })}
 
-          <span style={{ color: "rgba(255,255,255,0.2)" }}>|</span>
 
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", marginLeft: "auto" }}>
             <a
               href={profileUrl}
               target="_blank"
@@ -1924,11 +1919,9 @@ export default function CardholderDetailPage() {
                 padding: "0.6875rem 1rem",
                 borderRadius: "1rem",
                 border: key === "delete-cardholder"
-                  ? "1px solid #FECACA"
-                  : "1px solid #E5E7EB",
-                background: key === "delete-cardholder"
-                  ? "#FEF2F2"
-                  : "#F9FAFB",
+                  ? "1.5px solid rgba(239,68,68,0.35)"
+                  : "1.5px solid #E5E7EB",
+                background: "#FFFFFF",
                 color: key === "delete-cardholder" ? "#EF4444" : "#374151",
                 fontSize: "0.875rem",
                 fontWeight: 500,
@@ -1939,22 +1932,20 @@ export default function CardholderDetailPage() {
               }}
               onMouseEnter={(e) => {
                 if (key === "delete-cardholder") {
-                  e.currentTarget.style.background = "#FEE2E2"
-                  e.currentTarget.style.borderColor = "#F87171"
-                  e.currentTarget.style.color = "#EF4444"
+                  e.currentTarget.style.background = "rgba(239,68,68,0.04)"
+                  e.currentTarget.style.borderColor = "#EF4444"
                 } else {
-                  e.currentTarget.style.background = "#F3F4F6"
-                  e.currentTarget.style.borderColor = "#D1D5DB"
-                  e.currentTarget.style.color = "#2C3E50"
+                  e.currentTarget.style.background = "#F9FAFB"
+                  e.currentTarget.style.borderColor = "#2f6f6a"
+                  e.currentTarget.style.color = "#2f6f6a"
                 }
               }}
               onMouseLeave={(e) => {
                 if (key === "delete-cardholder") {
-                  e.currentTarget.style.background = "#FEF2F2"
-                  e.currentTarget.style.borderColor = "#FECACA"
-                  e.currentTarget.style.color = "#EF4444"
+                  e.currentTarget.style.background = "#FFFFFF"
+                  e.currentTarget.style.borderColor = "rgba(239,68,68,0.35)"
                 } else {
-                  e.currentTarget.style.background = "#F9FAFB"
+                  e.currentTarget.style.background = "#FFFFFF"
                   e.currentTarget.style.borderColor = "#E5E7EB"
                   e.currentTarget.style.color = "#374151"
                 }

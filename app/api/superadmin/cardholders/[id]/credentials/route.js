@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -10,9 +11,10 @@ function adminClient() {
 
 async function verifyQcAdmin(token, supabaseAdmin) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !user) return false
-  const { data } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single()
-  return data?.role === "qc_admin"
+  if (error || !user) return null
+  const { data } = await supabaseAdmin.from("users").select("role, full_name").eq("id", user.id).single()
+  if (data?.role !== "qc_admin") return null
+  return { id: user.id, role: data.role, fullName: data.full_name }
 }
 
 async function resolveProvider(supabaseAdmin, custom_provider) {
@@ -55,7 +57,8 @@ export async function POST(request, { params }) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    const caller = await verifyQcAdmin(token, supabaseAdmin)
+    if (!caller) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -154,6 +157,20 @@ export async function POST(request, { params }) {
     if (error) {
       return Response.json({ error: error.message }, { status: 500 })
     }
+
+    await writeAuditLog(supabaseAdmin, {
+      entityType: "cardholder",
+      entityId: cardholder_id,
+      action: "credential_added",
+      newValue: data.qualifications_competencies?.name ?? null,
+      performedBy: caller.id,
+      performedByRole: caller.role,
+      performedByName: caller.fullName,
+      metadata: {
+        credential_id: data.id,
+        type: data.qualifications_competencies?.type ?? null,
+      },
+    })
 
     return Response.json({ credential: data })
   } catch (error) {

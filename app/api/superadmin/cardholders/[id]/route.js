@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -10,9 +11,10 @@ function adminClient() {
 
 async function verifyQcAdmin(token, supabaseAdmin) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !user) return false
-  const { data } = await supabaseAdmin.from("users").select("role").eq("id", user.id).single()
-  return data?.role === "qc_admin"
+  if (error || !user) return null
+  const { data } = await supabaseAdmin.from("users").select("role, full_name").eq("id", user.id).single()
+  if (data?.role !== "qc_admin") return null
+  return { id: user.id, role: data.role, fullName: data.full_name }
 }
 
 export async function GET(request, { params }) {
@@ -21,7 +23,8 @@ export async function GET(request, { params }) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    const caller = await verifyQcAdmin(token, supabaseAdmin)
+    if (!caller) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -78,7 +81,8 @@ export async function PATCH(request, { params }) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    const caller = await verifyQcAdmin(token, supabaseAdmin)
+    if (!caller) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -93,6 +97,17 @@ export async function PATCH(request, { params }) {
 
     if (Object.keys(updates).length === 0) {
       return Response.json({ error: "No valid fields provided" }, { status: 400 })
+    }
+
+    // Fetch current state for licence logic and audit trail
+    let oldStatus = null
+    if (updates.status) {
+      const { data: prev } = await supabaseAdmin
+        .from("cardholders")
+        .select("status")
+        .eq("id", id)
+        .single()
+      if (prev) oldStatus = prev.status
     }
 
     if (updates.status === "active") {
@@ -130,6 +145,64 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: error.message }, { status: 500 })
     }
 
+    // Audit log for non-status changes (name, photo, company reassign)
+    if (updates.full_name) {
+      await writeAuditLog(supabaseAdmin, {
+        entityType: "cardholder",
+        entityId: id,
+        action: "name_change",
+        oldValue: null,
+        newValue: updates.full_name,
+        performedBy: caller.id,
+        performedByRole: caller.role,
+        performedByName: caller.fullName,
+      })
+    }
+    if (updates.photo_url) {
+      await writeAuditLog(supabaseAdmin, {
+        entityType: "cardholder",
+        entityId: id,
+        action: "photo_change",
+        performedBy: caller.id,
+        performedByRole: caller.role,
+        performedByName: caller.fullName,
+      })
+    }
+    if (updates.company_id) {
+      await writeAuditLog(supabaseAdmin, {
+        entityType: "cardholder",
+        entityId: id,
+        action: "company_reassign",
+        newValue: updates.company_id,
+        performedBy: caller.id,
+        performedByRole: caller.role,
+        performedByName: caller.fullName,
+      })
+    }
+
+    if (updates.status && oldStatus !== updates.status) {
+      const actionMap = {
+        active: "activation",
+        archived: "archive",
+        deleted: "delete",
+        pending_activation: "status_change",
+      }
+      await writeAuditLog(supabaseAdmin, {
+        entityType: "cardholder",
+        entityId: id,
+        action: actionMap[updates.status] ?? "status_change",
+        oldValue: oldStatus,
+        newValue: updates.status,
+        performedBy: caller.id,
+        performedByRole: caller.role,
+        performedByName: caller.fullName,
+        metadata: updates.licence_start_date ? {
+          licence_start_date: updates.licence_start_date,
+          licence_end_date: updates.licence_end_date,
+        } : {},
+      })
+    }
+
     return Response.json({ cardholder: data })
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 })
@@ -142,11 +215,18 @@ export async function DELETE(request, { params }) {
     if (!token) return Response.json({ error: "Unauthorized" }, { status: 401 })
 
     const supabaseAdmin = adminClient()
-    if (!await verifyQcAdmin(token, supabaseAdmin)) {
+    const caller = await verifyQcAdmin(token, supabaseAdmin)
+    if (!caller) {
       return Response.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const { id } = await params
+
+    const { data: prev } = await supabaseAdmin
+      .from("cardholders")
+      .select("status")
+      .eq("id", id)
+      .single()
 
     const { error } = await supabaseAdmin
       .from("cardholders")
@@ -156,6 +236,17 @@ export async function DELETE(request, { params }) {
     if (error) {
       return Response.json({ error: error.message }, { status: 500 })
     }
+
+    await writeAuditLog(supabaseAdmin, {
+      entityType: "cardholder",
+      entityId: id,
+      action: "delete",
+      oldValue: prev?.status ?? null,
+      newValue: "deleted",
+      performedBy: caller.id,
+      performedByRole: caller.role,
+      performedByName: caller.fullName,
+    })
 
     return Response.json({ success: true })
   } catch (error) {

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -21,7 +22,7 @@ export async function PATCH(request, { params }) {
 
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
-      .select("role, account_status, company_id")
+      .select("role, account_status, company_id, full_name")
       .eq("id", user.id)
       .single()
 
@@ -106,6 +107,21 @@ export async function PATCH(request, { params }) {
     if (updateError) {
       return Response.json({ error: updateError.message }, { status: 500 })
     }
+
+    await writeAuditLog(supabaseAdmin, {
+      entityType: "cardholder",
+      entityId: id,
+      action: "activation",
+      oldValue: cardholder.status,
+      newValue: "active",
+      performedBy: user.id,
+      performedByRole: "company_admin",
+      performedByName: userData.full_name,
+      metadata: {
+        licence_start_date: licenceStartDate,
+        licence_end_date: licenceEndDate,
+      },
+    })
 
     return Response.json({
       success: true,

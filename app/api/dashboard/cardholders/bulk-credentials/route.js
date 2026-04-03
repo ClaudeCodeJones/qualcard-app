@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { writeAuditLog } from "@/lib/auditLog"
 
 function adminClient() {
   return createClient(
@@ -21,7 +22,7 @@ export async function POST(request) {
 
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
-      .select("role, account_status, company_id")
+      .select("role, account_status, company_id, full_name")
       .eq("id", user.id)
       .single()
 
@@ -203,6 +204,16 @@ export async function POST(request) {
           .from("cardholders")
           .update({ updated_at: new Date().toISOString() })
           .eq("id", cardholderId)
+
+        await writeAuditLog(supabaseAdmin, {
+          entityType: "cardholder",
+          entityId: cardholderId,
+          action: "credential_added",
+          performedBy: user.id,
+          performedByRole: "company_admin",
+          performedByName: userData.full_name,
+          metadata: { bulk: true },
+        })
 
         results.push({ id: cardholderId, name: cardholder.full_name, success: true })
       } catch (err) {
