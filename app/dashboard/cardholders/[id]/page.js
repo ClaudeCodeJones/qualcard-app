@@ -7,6 +7,7 @@ import Image from "next/image"
 import { QRCodeSVG } from "qrcode.react"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
+import { useIsMobile } from "@/lib/useIsMobile"
 import {
   ArrowLeft, ExternalLink, Copy, Check,
   GraduationCap, Award, ClipboardCheck, ShieldCheck,
@@ -43,11 +44,11 @@ function getInitials(name) {
 
 function formatDate(dateStr) {
   if (!dateStr) return ""
-  return new Date(dateStr).toLocaleDateString("en-NZ", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
+  const d = new Date(dateStr)
+  const day = String(d.getDate()).padStart(2, "0")
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const year = String(d.getFullYear()).slice(-2)
+  return `${day}/${month}/${year}`
 }
 
 function getLicenceBadge(licenceEndDate) {
@@ -921,7 +922,7 @@ function AddCredentialModal({ section, cardholderId, companyId, credentialsLibra
 
 // ─── CredentialRow ────────────────────────────────────────────────────────────
 
-function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor }) {
+function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor, isMobile }) {
   const qc = cred.qualifications_competencies ?? {}
   const name = qc.name ?? "Unknown"
   const code = getCredentialCode(cred)
@@ -964,7 +965,7 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
+        <p style={{ margin: 0, fontSize: "0.8125rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
           {name}
         </p>
         {cred.issue_date && (
@@ -977,9 +978,11 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
             Expires {formatDate(cred.expiry_date)}
           </p>
         )}
-        <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
-          {code || "\u00A0"}
-        </p>
+        {!isMobile && (
+          <p style={{ margin: "0.1rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
+            {code || "\u00A0"}
+          </p>
+        )}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", flexShrink: 0 }}>
@@ -1041,7 +1044,7 @@ function sortCredentials(creds, sectionKey) {
 
 // ─── CredentialSection ────────────────────────────────────────────────────────
 
-function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, onDelete, onReorder, onResetOrder }) {
+function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, onDelete, onReorder, onResetOrder, isMobile }) {
   const [expanded, setExpanded] = useState(false)
 
   const sorted = sortCredentials(credentials, section.key)
@@ -1050,7 +1053,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
   )
 
   const hasManual = credentials.some((c) => c.is_manually_ordered)
-  const DEFAULT_VISIBLE = 3
+  const DEFAULT_VISIBLE = isMobile ? 0 : 3
   const showToggle = filtered.length > DEFAULT_VISIBLE
   const visible = expanded ? filtered : filtered.slice(0, DEFAULT_VISIBLE)
 
@@ -1126,24 +1129,26 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
           onMouseDown={(e) => (e.currentTarget.style.color = section.color)}
         >
-          + Add
+          Add
         </button>
       </div>
 
       {filtered.length === 0 ? (
-        <div style={{
-          padding: "1.5rem 0.5rem",
-          minHeight: "80px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#9CA3AF" }}>
-            {searchQuery
-              ? `No ${section.label.toLowerCase()} match your search`
-              : `No ${section.label.toLowerCase()} added yet`}
-          </p>
-        </div>
+        (!isMobile || searchQuery) ? (
+          <div style={{
+            padding: "1.5rem 0.5rem",
+            minHeight: isMobile ? "0" : "80px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <p style={{ margin: 0, fontSize: "0.9rem", color: "#9CA3AF" }}>
+              {searchQuery
+                ? `No ${section.label.toLowerCase()} match your search`
+                : `No ${section.label.toLowerCase()} added yet`}
+            </p>
+          </div>
+        ) : null
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -1158,6 +1163,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                 isFirst={i === 0}
                 isLast={i === visible.length - 1}
                 sectionColor={section.mutedColor}
+                isMobile={isMobile}
               />
             ))}
           </div>
@@ -1167,24 +1173,22 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
               <button
                 onClick={() => setExpanded((v) => !v)}
                 style={{
-                  padding: "0.4rem 1.2rem",
-                  borderRadius: "1rem",
-                  border: "1.5px solid #2f6f6a",
+                  padding: 0,
+                  border: "none",
                   background: "none",
                   color: "#2f6f6a",
-                  fontSize: "0.8125rem",
+                  fontSize: isMobile ? "0.6875rem" : "0.8125rem",
                   fontWeight: 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  transition: "background 0.15s ease, color 0.15s ease",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#2f6f6a"
-                  e.currentTarget.style.color = "#FFFFFF"
+                  e.currentTarget.style.textDecoration = "underline"
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none"
-                  e.currentTarget.style.color = "#2f6f6a"
+                  e.currentTarget.style.textDecoration = "none"
                 }}
               >
                 {expanded ? "Show less" : `Show all (${filtered.length})`}
@@ -1317,6 +1321,7 @@ function DeleteCardholderModal({ onConfirm, onClose, loading, error }) {
 export default function CardholderDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const isMobile = useIsMobile()
 
   const [cardholder, setCardholder] = useState(null)
   const [company, setCompany] = useState(null)
@@ -1622,7 +1627,7 @@ export default function CardholderDetailPage() {
 
       {/* ── Back button ─────────────────────────────────────────────────── */}
       <Link
-        href="/dashboard/cardholders"
+        href={isMobile ? "/dashboard" : "/dashboard/cardholders"}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -1638,26 +1643,26 @@ export default function CardholderDetailPage() {
         onMouseLeave={(e) => (e.currentTarget.style.color = "#6B7280")}
       >
         <ArrowLeft size={15} strokeWidth={2.5} />
-        Back to Cardholders
+        {isMobile ? "Back" : "Back to Cardholders"}
       </Link>
 
       {/* ── Header card ─────────────────────────────────────────────────── */}
       <div style={{
         background: "linear-gradient(to bottom, #214f4b, #2a5f5b, #35736f)",
         borderRadius: "1rem",
-        padding: "1.5rem 2rem",
+        padding: isMobile ? "1rem 1.25rem" : "1.5rem 2rem",
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
       }}>
-        {/* Row 1: Photo + Name + QR */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={80} borderColor={getPhotoBorderColor(cardholder.status)} />
+        {/* Row 1: Photo + Name + QR (simplified on mobile) */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "1rem" : "1.5rem" }}>
+          <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={isMobile ? 56 : 80} borderColor={getPhotoBorderColor(cardholder.status)} />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <h1 style={{
               margin: 0,
-              fontSize: "1.75rem",
+              fontSize: isMobile ? "1.25rem" : "1.75rem",
               fontWeight: 800,
               color: "#FFFFFF",
               textTransform: "uppercase",
@@ -1666,28 +1671,49 @@ export default function CardholderDetailPage() {
             }}>
               {cardholder.full_name}
             </h1>
-            {company && (
+            {isMobile && licenceStatus.dateLabel && cardholder.licence_end_date && (
+              <p style={{ margin: "0.375rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.65)", fontWeight: 500 }}>
+                {licenceStatus.dateLabel}: {new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            )}
+            {isMobile && (
+              <a
+                href={profileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                  fontSize: "0.75rem", color: "rgba(255,255,255,0.5)",
+                  textDecoration: "none", marginTop: "0.375rem",
+                }}
+              >
+                View Profile <ExternalLink size={10} strokeWidth={2} />
+              </a>
+            )}
+            {!isMobile && company && (
               <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", fontWeight: 400 }}>
                 {company.company_name}
               </p>
             )}
           </div>
 
-          <div style={{
-            background: "#FFFFFF",
-            borderRadius: "0.75rem",
-            padding: "0.75rem",
-            display: "inline-flex",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            flexShrink: 0,
-          }}>
-            <QRCodeSVG value={profileUrl} size={56} />
-          </div>
+          {!isMobile && (
+            <div style={{
+              background: "#FFFFFF",
+              borderRadius: "0.75rem",
+              padding: "0.75rem",
+              display: "inline-flex",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              flexShrink: 0,
+            }}>
+              <QRCodeSVG value={profileUrl} size={56} />
+            </div>
+          )}
         </div>
 
-        {/* Row 2: Company, status, creds, actions */}
+        {/* Row 2: Company, status, creds, actions (hidden on mobile - simplified header) */}
         <div style={{
-          display: "flex",
+          display: isMobile ? "none" : "flex",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "0.625rem",
@@ -1839,7 +1865,7 @@ export default function CardholderDetailPage() {
           )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1.25rem", alignItems: "stretch" }}>
           {SECTIONS.map((section) => {
             const sectionCreds = credentials.filter(
               (c) => c.qualifications_competencies?.type === section.key
@@ -1865,6 +1891,7 @@ export default function CardholderDetailPage() {
                   onDelete={(cred) => setDeleteTarget(cred)}
                   onReorder={handleReorder}
                   onResetOrder={handleResetOrder}
+                  isMobile={isMobile}
                 />
               </div>
             )
@@ -1904,7 +1931,7 @@ export default function CardholderDetailPage() {
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
           gap: "0.75rem",
         }}>
           {visibleActions.map(({ key, label, Icon }) => (

@@ -91,6 +91,7 @@ export async function POST(request) {
     if (!full_name?.trim()) return Response.json({ error: "Full name is required" }, { status: 400 })
     if (!company_id) return Response.json({ error: "Company is required" }, { status: 400 })
     if (!slug) return Response.json({ error: "Slug is required" }, { status: 400 })
+    if (!photo_url) return Response.json({ error: "Photo is required" }, { status: 400 })
 
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from("cardholders")

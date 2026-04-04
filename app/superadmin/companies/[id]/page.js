@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
+import { useIsMobile } from "@/lib/useIsMobile"
 import Header from "@/app/components/Header"
 import StatusBadge from "@/app/components/StatusBadge"
 import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, FileText, Image as ImageIcon } from "lucide-react"
@@ -677,6 +678,7 @@ function AddNoteModal({ companyId, token, currentUser, onAdd, onClose }) {
 export default function CompanyDetailPage() {
   const router = useRouter()
   const { id } = useParams()
+  const isMobile = useIsMobile()
 
   const [token, setToken] = useState(null)
   const [company, setCompany] = useState(null)
@@ -832,6 +834,237 @@ export default function CompanyDetailPage() {
     },
   ]
 
+  // ── Mobile view ──
+  if (isMobile) {
+    const mobileFilteredCh = cardholderSearch.trim()
+      ? filteredCardholders
+      : []
+
+    return (
+      <div style={{
+        minHeight: "100vh",
+        background: "#D9DEE5",
+        fontFamily: "Inter, system-ui, sans-serif",
+      }}>
+        <Header user={currentUser} variant="superadmin" hasSidebar={false} />
+        <div style={{ padding: "1rem" }}>
+
+          <Link
+            href="/superadmin?tab=companies"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "0.375rem",
+              color: "#374151", fontSize: "0.875rem", fontWeight: 500,
+              textDecoration: "none", marginBottom: "1rem",
+            }}
+          >
+            <ArrowLeft size={15} strokeWidth={2.5} />
+            Back
+          </Link>
+
+          {/* Header - name only */}
+          <div style={{
+            background: GRADIENT,
+            borderRadius: "0.75rem",
+            padding: "1.25rem 1rem",
+            marginBottom: "1rem",
+          }}>
+            <h1 style={{
+              margin: 0,
+              fontSize: "1.25rem",
+              fontWeight: 800,
+              color: "#FFFFFF",
+              textTransform: "uppercase",
+              letterSpacing: "0.03em",
+              lineHeight: 1.1,
+            }}>
+              {company.company_name}
+            </h1>
+            <div style={{ marginTop: "0.5rem" }}>
+              <StatusBadge status={company.status} />
+            </div>
+          </div>
+
+          {successMsg && (
+            <div style={{
+              marginBottom: "1rem", padding: "0.75rem 1rem",
+              background: "#2f6f6a", color: "#FFFFFF",
+              borderRadius: "0.75rem", fontSize: "0.875rem", fontWeight: 500,
+            }}>
+              {successMsg}
+            </div>
+          )}
+
+          {/* Cardholders - search + add only */}
+          <div style={{
+            background: "#FFFFFF", borderRadius: "0.75rem",
+            marginBottom: "1rem", overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}>
+            <div style={{
+              padding: "1rem", borderBottom: "1px solid #E5E7EB",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#333333", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Cardholders
+              </p>
+              <button
+                style={{
+                  padding: "0.375rem 0.75rem", borderRadius: "0.5rem", border: "none",
+                  background: "#2f6f6a", color: "#fff", fontSize: "0.75rem",
+                  fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                + Add
+              </button>
+            </div>
+            <div style={{ padding: "0.75rem 1rem" }}>
+              <input
+                type="text"
+                placeholder="Search cardholders..."
+                value={cardholderSearch}
+                onChange={(e) => { setCardholderSearch(e.target.value); setShowAllCardholders(false) }}
+                style={{ ...inputStyle, fontSize: "0.9375rem" }}
+                onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
+                onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+              />
+            </div>
+            {cardholderSearch.trim() && (
+              mobileFilteredCh.length === 0 ? (
+                <div style={{ padding: "1rem", textAlign: "center" }}>
+                  <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>No cardholders found</p>
+                </div>
+              ) : (
+                mobileFilteredCh.slice(0, 20).map(ch => (
+                  <div
+                    key={ch.id}
+                    onClick={() => router.push(`/superadmin/cardholders/${ch.id}`)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "0.75rem",
+                      padding: "0.75rem 1rem", borderTop: "1px solid #F3F4F6", cursor: "pointer",
+                    }}
+                  >
+                    <span style={{ flex: 1, fontSize: "0.875rem", fontWeight: 500, color: "#333333" }}>
+                      {ch.full_name}
+                    </span>
+                    {(() => {
+                      const ls = getLicenceStatus(ch.licence_end_date)
+                      const keyMap = { "Active": "active", "Expiring Soon": "expiring", "Expired": "expired", "Payment Pending": "payment_pending" }
+                      return <StatusBadge status={keyMap[ls.status] ?? "inactive"} />
+                    })()}
+                  </div>
+                ))
+              )
+            )}
+            {!cardholderSearch.trim() && (
+              <div style={{ padding: "1rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.8125rem", margin: 0 }}>
+                  {cardholders.length} cardholder{cardholders.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div style={{
+            background: "#FFFFFF", borderRadius: "0.75rem",
+            marginBottom: "1rem", overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}>
+            <div style={{
+              padding: "1rem", borderBottom: "1px solid #E5E7EB",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 700, color: "#333333", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Notes <span style={{ fontWeight: 400, color: "#9CA3AF" }}>({notes.length})</span>
+              </p>
+              <button
+                onClick={() => setModal("addNote")}
+                style={{
+                  padding: "0.375rem 0.75rem", borderRadius: "0.5rem", border: "none",
+                  background: "#2f6f6a", color: "#fff", fontSize: "0.75rem",
+                  fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                + Add
+              </button>
+            </div>
+            {notes.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ margin: 0, color: "#9CA3AF", fontSize: "0.875rem" }}>No notes yet</p>
+              </div>
+            ) : (
+              notes.map((n, i) => (
+                <div key={n.id} style={{ padding: "0.875rem 1rem", borderTop: i === 0 ? "none" : "1px solid #F3F4F6" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                    <p style={{ margin: 0, fontSize: "0.75rem", fontWeight: 600, color: "#374151" }}>
+                      {n.author_name ?? "QualCard Admin"}
+                    </p>
+                    <p style={{ margin: 0, fontSize: "0.6875rem", color: "#9CA3AF" }}>
+                      {formatDate(n.created_at)}
+                    </p>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "#333333", lineHeight: 1.6 }}>
+                    {n.note}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Actions - stacked */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+            {actions.map((action) => {
+              const { Icon, label, iconBg, destructive, key } = action
+              return (
+                <button
+                  key={key}
+                  onClick={() => setModal(key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "0.75rem",
+                    width: "100%", padding: "0.875rem 1rem",
+                    background: "#FFFFFF", border: "1px solid #E5E7EB",
+                    borderRadius: "0.75rem", cursor: "pointer", fontFamily: "inherit",
+                    textAlign: "left",
+                    boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+                  }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "0.5rem",
+                    background: iconBg, display: "flex",
+                    alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    <Icon size={16} color="#FFFFFF" />
+                  </div>
+                  <span style={{
+                    fontSize: "0.875rem", fontWeight: 600,
+                    color: destructive ? "#EF4444" : "#34495E",
+                  }}>
+                    {label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Modals */}
+        {modal === "editCompanyName" && (
+          <EditCompanyNameModal company={company} token={token} onSave={(updated) => handleSave(updated, "Company name updated")} onClose={() => setModal(null)} />
+        )}
+        {modal === "changeStatus" && (
+          <ChangeStatusModal company={company} token={token} onSave={(updated) => handleSave(updated, "Status updated")} onClose={() => setModal(null)} />
+        )}
+        {modal === "delete" && (
+          <DeleteModal company={company} token={token} router={router} onClose={() => setModal(null)} />
+        )}
+        {modal === "addNote" && (
+          <AddNoteModal companyId={id} token={token} currentUser={currentUser} onAdd={(newNote) => { setNotes((prev) => [newNote, ...prev]); setModal(null); showSuccess("Note added") }} onClose={() => setModal(null)} />
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop view ──
   return (
     <div style={{
       minHeight: "100vh",

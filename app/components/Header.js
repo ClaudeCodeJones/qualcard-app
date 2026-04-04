@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { LogOut } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useIsMobile } from "@/lib/useIsMobile"
 
 function getInitials(fullName, email) {
   if (fullName) {
@@ -18,6 +19,7 @@ function getInitials(fullName, email) {
 
 function Avatar({ fullName, email, role }) {
   const initials = getInitials(fullName, email)
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const ref = useRef(null)
@@ -61,22 +63,22 @@ function Avatar({ fullName, email, role }) {
         }}
       >
         <div style={{
-          width: "32px",
-          height: "32px",
+          width: isMobile ? "24px" : "32px",
+          height: isMobile ? "24px" : "32px",
           borderRadius: "50%",
           background: isQcAdmin ? "rgba(47, 111, 106, 0.15)" : "#FFFFFF",
-          border: "2px solid #16A34A",
+          border: isMobile ? "1.5px solid #16A34A" : "2px solid #16A34A",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "0.75rem",
+          fontSize: isMobile ? "0.5625rem" : "0.75rem",
           fontWeight: 700,
           color: isQcAdmin ? "#FFFFFF" : "#34495E",
           letterSpacing: "0.02em",
         }}>
           {initials}
         </div>
-        {isQcAdmin && (
+        {isQcAdmin && !isMobile && (
           <span style={{
             fontSize: "0.625rem",
             fontWeight: 700,
@@ -143,9 +145,13 @@ function Avatar({ fullName, email, role }) {
 }
 
 export default function Header({ user, variant = "default", logoHref = "/superadmin", hasSidebar = true }) {
+  const isMobile = useIsMobile()
+  const router = useRouter()
   const backgroundGradient = (variant === "superadmin" || variant === "dashboard")
     ? "#344e4b"
     : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
+
+  const showMobileLogout = isMobile && variant === "dashboard"
 
   return (
     <header style={{
@@ -155,14 +161,14 @@ export default function Header({ user, variant = "default", logoHref = "/superad
       zIndex: 10,
     }}>
       <div style={{
-        height: "88px",
-        paddingLeft: hasSidebar ? "88px" : "1.5rem",
-        paddingRight: hasSidebar ? "2.25rem" : "1.5rem",
+        height: isMobile ? "56px" : "88px",
+        paddingLeft: isMobile ? "1rem" : (hasSidebar ? "88px" : "1.5rem"),
+        paddingRight: isMobile ? "1rem" : (hasSidebar ? "2.25rem" : "1.5rem"),
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         boxSizing: "border-box",
-        ...(hasSidebar ? {} : { maxWidth: "1280px", margin: "0 auto", width: "100%" }),
+        ...(hasSidebar && !isMobile ? {} : { maxWidth: "1280px", margin: "0 auto", width: "100%" }),
       }}>
         <Link href={logoHref} style={{ display: "flex", alignItems: "center" }}>
           <Image
@@ -171,21 +177,47 @@ export default function Header({ user, variant = "default", logoHref = "/superad
             width={958}
             height={413}
             priority
-            style={{ objectFit: "contain", width: "auto", height: "48px", cursor: "pointer" }}
+            style={{ objectFit: "contain", width: "auto", height: isMobile ? "32px" : "48px", cursor: "pointer" }}
           />
         </Link>
-        {user ? (
+        {showMobileLogout ? (
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.push("/login")
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              padding: "0.375rem 0.75rem",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "0.375rem",
+              color: "rgba(255,255,255,0.7)",
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <LogOut size={14} />
+            Logout
+          </button>
+        ) : user ? (
           <Avatar fullName={user.full_name} email={user.email} role={user.role} />
         ) : (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: "0.25rem",
-          }}>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
-          </div>
+          !isMobile && (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: "0.25rem",
+            }}>
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
+              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
+            </div>
+          )
         )}
       </div>
     </header>

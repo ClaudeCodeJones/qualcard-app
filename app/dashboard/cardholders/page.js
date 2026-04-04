@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
 import { GraduationCap, Award, ClipboardCheck, ChevronRight, ArrowRight } from "lucide-react"
+import { useIsMobile } from "@/lib/useIsMobile"
 import BulkAddCredentialModal from "./BulkAddCredentialModal"
 
 const CARD = {
@@ -49,6 +50,11 @@ function getStatusSortOrder(licenceStatus) {
 export default function CardholdersPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (isMobile && searchParams.get("add") !== "true") router.replace("/dashboard")
+  }, [isMobile, router, searchParams])
   const [cardholders, setCardholders] = useState([])
   const [credentials, setCredentials] = useState({})
   const [filter, setFilter] = useState(searchParams.get("filter") || "all")
@@ -148,6 +154,217 @@ export default function CardholdersPage() {
     router.refresh()
   }
 
+  if (isMobile && !isModalOpen) return null
+
+  // ── Mobile: only render the add modal ──
+  if (isMobile && isModalOpen) {
+    return (
+      <div
+        onClick={() => { setIsModalOpen(false); router.replace("/dashboard") }}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.6)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 50,
+          padding: "1rem",
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: "#FFFFFF",
+            border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem",
+            padding: "1.5rem",
+            width: "100%",
+            maxWidth: "440px",
+            boxShadow: "0 10px 25px rgba(44,62,80,0.15)",
+          }}
+        >
+          <h2 style={{ color: "#2C3E50", fontSize: "1.125rem", fontWeight: 700, margin: "0 0 1.5rem", letterSpacing: "-0.02em" }}>
+            Add Cardholder
+          </h2>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div>
+              <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                Full Name <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={newName}
+                onChange={e => { setNewName(e.target.value); setFormError("") }}
+                placeholder="e.g. Jane Smith"
+                style={{
+                  width: "100%", padding: "0.75rem 1rem",
+                  background: "#F9FAFB",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "0.5rem",
+                  color: "#1F2937", fontSize: "0.9375rem",
+                  fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box",
+                }}
+                onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+                onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                Photo <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <div
+                onClick={() => document.getElementById("photo-upload-mobile").click()}
+                style={{
+                  border: `2px dashed ${dragOver ? "#2f6f6a" : "#E5E7EB"}`,
+                  borderRadius: "0.5rem",
+                  padding: "1.25rem",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: dragOver ? "#F0FDF4" : "#F9FAFB",
+                  position: "relative",
+                  minHeight: "80px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <input
+                  id="photo-upload-mobile"
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files[0]
+                    if (!file) return
+                    setNewPhoto(file)
+                    if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
+                    setNewPhotoPreview(URL.createObjectURL(file))
+                    setFormError("")
+                  }}
+                  style={{ display: "none" }}
+                />
+                {newPhotoPreview ? (
+                  <img
+                    src={newPhotoPreview}
+                    alt="Preview"
+                    style={{ maxHeight: "80px", maxWidth: "100%", borderRadius: "0.375rem", objectFit: "cover" }}
+                  />
+                ) : (
+                  <p style={{ color: "#6B7280", fontSize: "0.875rem", margin: 0 }}>
+                    Tap to upload photo
+                  </p>
+                )}
+              </div>
+            </div>
+            <div>
+              <label style={{ display: "block", color: "#6B7280", fontSize: "0.8125rem", marginBottom: "0.375rem" }}>
+                Company
+              </label>
+              <input
+                type="text"
+                value={companyName || "Your Company"}
+                disabled
+                style={{
+                  width: "100%", padding: "0.75rem 1rem",
+                  background: "#F3F4F6",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "0.5rem",
+                  color: "#9CA3AF", fontSize: "0.9375rem",
+                  fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box", cursor: "not-allowed",
+                }}
+              />
+            </div>
+          </div>
+
+          {formError && (
+            <p style={{ color: "#EF4444", fontSize: "0.8125rem", margin: "0 0 1rem" }}>{formError}</p>
+          )}
+
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => { setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview); setNewPhotoPreview(null); router.replace("/dashboard") }}
+              style={{ padding: "0.625rem 1.125rem", background: "#fff", border: "1px solid #E5E7EB", borderRadius: "0.5rem", color: "#34495E", fontSize: "0.875rem", fontFamily: "inherit", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!newPhoto) return setFormError("A photo is required.")
+                if (!newName.trim()) return setFormError("Full name is required.")
+
+                const { data: { user }, error: authError } = await supabase.auth.getUser()
+                if (authError || !user) return setFormError("Not authenticated.")
+
+                const { data: userData, error: userError } = await supabase
+                  .from("users")
+                  .select("company_id")
+                  .eq("id", user.id)
+                  .single()
+                if (userError || !userData?.company_id) return setFormError("Could not fetch company.")
+
+                const filePath = `${Date.now()}-${newPhoto.name}`
+                const { error: uploadError } = await supabase.storage
+                  .from("cardholder-photos")
+                  .upload(filePath, newPhoto)
+                if (uploadError) return setFormError("Photo upload failed.")
+
+                const { data: { publicUrl } } = supabase.storage
+                  .from("cardholder-photos")
+                  .getPublicUrl(filePath)
+
+                const nameParts = newName.trim().toLowerCase().split(/\s+/)
+                const randomDigits = Math.random().toString().slice(2, 14).padEnd(12, '0')
+                const slug = `${nameParts.join('-')}-${randomDigits}`
+
+                const { data: existingSlug } = await supabase
+                  .from("cardholders")
+                  .select("id")
+                  .eq("slug", slug)
+                  .limit(1)
+                if (existingSlug && existingSlug.length > 0) return setFormError("Slug collision. Please try again.")
+
+                const { data: inserted, error: insertError } = await supabase
+                  .from("cardholders")
+                  .insert({
+                    full_name: newName.trim(),
+                    photo_url: publicUrl,
+                    slug,
+                    status: "pending_activation",
+                    company_id: userData.company_id,
+                    created_by: "company_admin",
+                    licence_start_date: null,
+                    licence_end_date: null,
+                  })
+                  .select("id")
+                  .single()
+                if (insertError) return setFormError(`Failed to save: ${insertError.message}`)
+
+                setIsModalOpen(false); setFormError(""); setNewName(""); setNewPhoto(null); if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview); setNewPhotoPreview(null)
+                router.push(`/dashboard/cardholders/${inserted.id}`)
+              }}
+              style={{
+                padding: "0.625rem 1.125rem",
+                background: "#2f6f6a",
+                border: "none",
+                borderRadius: "0.5rem",
+                color: "#fff",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                fontFamily: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Desktop view ──
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
 

@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
-import { ClipboardCheck, Building2, Users, GraduationCap, Search, X, Pencil, Plus, Trash2, Archive } from "lucide-react"
+import { ClipboardCheck, Building2, Users, GraduationCap, Search, X, Pencil, Plus, Trash2, Archive, ChevronDown } from "lucide-react"
 import Image from "next/image"
 import Header from "@/app/components/Header"
 import FileUploadArea from "@/app/components/FileUploadArea"
 import StatusBadge from "@/app/components/StatusBadge"
+import { useIsMobile } from "@/lib/useIsMobile"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1022,6 +1023,7 @@ function UserPanel({ user, companies, onClose, onUserUpdated }) {
 }
 
 function UsersTab() {
+  const isMobile = useIsMobile()
   const [users, setUsers] = useState([])
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
@@ -1087,6 +1089,96 @@ function UsersTab() {
     verticalAlign: "middle",
   }
 
+  // ── Mobile: search only ──
+  if (isMobile) {
+    const mobileFiltered = search.trim()
+      ? users.filter(u =>
+          u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+          u.email?.toLowerCase().includes(search.toLowerCase())
+        )
+      : []
+
+    return (
+      <div style={{ padding: "1rem" }}>
+        <h2 style={{ margin: "0 0 1rem", fontSize: "1.125rem", fontWeight: 700, color: "#34495E" }}>
+          Users
+        </h2>
+
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%", padding: "0.875rem 1rem",
+            background: "#FFFFFF", border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem", color: "#1F2937", fontSize: "1rem",
+            outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}
+          onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+          onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+        />
+
+        {search.trim() && (
+          <div style={{
+            marginTop: "0.75rem", background: "#FFFFFF", borderRadius: "0.75rem",
+            border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            overflow: "hidden",
+          }}>
+            {mobileFiltered.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>No users found</p>
+              </div>
+            ) : (
+              mobileFiltered.slice(0, 20).map(u => (
+                <div
+                  key={u.id}
+                  onClick={() => setSelectedUser(u)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "0.875rem 1rem", borderBottom: "1px solid #F3F4F6", cursor: "pointer",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: 0 }}>
+                      {u.full_name || u.email}
+                    </p>
+                    <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.125rem 0 0" }}>
+                      {u.companies?.company_name ?? "System"}
+                    </p>
+                  </div>
+                  <StatusBadge status={u.account_status} />
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {!search.trim() && !loading && (
+          <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+              Start typing to find a user
+            </p>
+          </div>
+        )}
+
+        {selectedUser && (
+          <UserPanel
+            user={selectedUser}
+            companies={companies}
+            onClose={() => setSelectedUser(null)}
+            onUserUpdated={(updated) => {
+              setUsers((prev) => prev.map((u) => u.id === updated.id ? updated : u))
+              setSelectedUser(updated)
+            }}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop ──
   return (
     <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
@@ -1376,6 +1468,7 @@ function CompanyPanel({ company, onClose }) {
 }
 
 function CreateCompanyModal({ onClose, onCreated }) {
+  const isMobile = useIsMobile()
   const [form, setForm] = useState({
     company_name: "", street_address: "", suburb: "", city: "",
     phone: "", general_email: "", status: "active",
@@ -1475,7 +1568,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
             <input style={inputStyle} value={form.street_address} onChange={(e) => set("street_address", e.target.value)} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0.75rem" }}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Suburb <span style={{ color: "#EF4444" }}>*</span></label>
               <input style={inputStyle} value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
@@ -1486,7 +1579,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0.75rem" }}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Phone <span style={{ color: "#EF4444" }}>*</span></label>
               <input style={inputStyle} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
@@ -1520,7 +1613,7 @@ function CreateCompanyModal({ onClose, onCreated }) {
             <input style={inputStyle} placeholder="e.g. Health & Safety Manager" value={form.primary_contact_role} onChange={(e) => set("primary_contact_role", e.target.value)} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0.75rem" }}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Contact Email <span style={{ color: "#EF4444" }}>*</span></label>
               <input style={inputStyle} type="email" value={form.primary_contact_email} onChange={(e) => set("primary_contact_email", e.target.value)} />
@@ -1566,6 +1659,8 @@ function CreateCompanyModal({ onClose, onCreated }) {
 }
 
 function CompaniesTab() {
+  const isMobile = useIsMobile()
+  const router = useRouter()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCompany, setSelectedCompany] = useState(null)
@@ -1614,6 +1709,109 @@ function CompaniesTab() {
     borderBottom: "1px solid #EFF3F7", verticalAlign: "middle",
   }
 
+  // ── Mobile: search + create only ──
+  if (isMobile) {
+    const mobileFiltered = search.trim()
+      ? companies.filter(c => c.company_name?.toLowerCase().includes(search.toLowerCase()))
+      : []
+
+    return (
+      <div style={{ padding: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#34495E" }}>
+            Companies
+          </h2>
+          <button
+            onClick={() => setShowCreate(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: "none",
+              background: "#2f6f6a", color: "#fff", fontSize: "0.8125rem",
+              fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            <Plus size={14} /> Create
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search by company name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%", padding: "0.875rem 1rem",
+            background: "#FFFFFF", border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem", color: "#1F2937", fontSize: "1rem",
+            outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}
+          onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+          onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+        />
+
+        {search.trim() && (
+          <div style={{
+            marginTop: "0.75rem", background: "#FFFFFF", borderRadius: "0.75rem",
+            border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            overflow: "hidden",
+          }}>
+            {mobileFiltered.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>No companies found</p>
+              </div>
+            ) : (
+              mobileFiltered.slice(0, 20).map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => router.push(`/superadmin/companies/${c.id}`)}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "0.875rem 1rem", borderBottom: "1px solid #F3F4F6", cursor: "pointer",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: 0 }}>
+                      {c.company_name}
+                    </p>
+                    <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.125rem 0 0" }}>
+                      {c.city || "No city"} · {c.cardholder_count} cardholders
+                    </p>
+                  </div>
+                  <StatusBadge status={c.status} />
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {!search.trim() && !loading && (
+          <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+              Start typing to find a company
+            </p>
+          </div>
+        )}
+
+        {showCreate && (
+          <CreateCompanyModal
+            onClose={() => setShowCreate(false)}
+            onCreated={(company) => {
+              setCompanies((prev) => [company, ...prev])
+              setShowCreate(false)
+              setToast({ message: "Company created", type: "success" })
+            }}
+          />
+        )}
+
+        {toast && (
+          <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop ──
   return (
     <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
@@ -1811,7 +2009,7 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
     setForm((prev) => ({ ...prev, [key]: val }))
   }
 
-  const isValid = form.full_name.trim() && form.company_id && form.status
+  const isValid = form.full_name.trim() && form.company_id && form.status && photoFile
 
   function generateSlug(fullName) {
     const base = fullName
@@ -1970,7 +2168,7 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
           </div>
 
           <div>
-            <label style={labelStyle}>Photo (optional)</label>
+            <label style={labelStyle}>Photo <span style={{ color: "#EF4444" }}>*</span></label>
             <FileUploadArea
               accept="image/jpeg,image/png,image/webp"
               file={photoFile}
@@ -2113,6 +2311,7 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
 }
 
 function CardholdersTab() {
+  const isMobile = useIsMobile()
   const router = useRouter()
   const [cardholders, setCardholders] = useState([])
   const [companies, setCompanies] = useState([])
@@ -2241,6 +2440,121 @@ function CardholdersTab() {
     verticalAlign: "middle",
   }
 
+  // ── Mobile: search + add only ──
+  if (isMobile) {
+    const mobileFiltered = search.trim()
+      ? cardholders.filter(c => c.full_name?.toLowerCase().includes(search.toLowerCase()))
+      : []
+
+    return (
+      <div style={{ padding: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#34495E" }}>
+            Cardholders
+          </h2>
+          <button
+            onClick={() => setShowAdd(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: "none",
+              background: "#2f6f6a", color: "#fff", fontSize: "0.8125rem",
+              fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            <Plus size={14} /> Add
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%", padding: "0.875rem 1rem",
+            background: "#FFFFFF", border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem", color: "#1F2937", fontSize: "1rem",
+            outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}
+          onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+          onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+        />
+
+        {search.trim() && (
+          <div style={{
+            marginTop: "0.75rem", background: "#FFFFFF", borderRadius: "0.75rem",
+            border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            overflow: "hidden",
+          }}>
+            {mobileFiltered.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>No cardholders found</p>
+              </div>
+            ) : (
+              mobileFiltered.slice(0, 20).map(ch => {
+                const licenceStatus = getLicenceStatus(ch.licence_end_date)
+                return (
+                  <div
+                    key={ch.id}
+                    onClick={() => router.push(`/superadmin/cardholders/${ch.id}`)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "0.875rem 1rem", borderBottom: "1px solid #F3F4F6", cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 600, margin: 0 }}>
+                        {ch.full_name}
+                      </p>
+                      <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.125rem 0 0" }}>
+                        {ch.company_name || "No company"}
+                      </p>
+                    </div>
+                    <StatusBadge status={(() => {
+                      const s = licenceStatus.status
+                      if (s === "Active") return "active"
+                      if (s === "Expiring Soon") return "expiring"
+                      if (s === "Expired") return "expired"
+                      if (s === "Payment Pending") return "payment_pending"
+                      return "inactive"
+                    })()} />
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {!search.trim() && !loading && (
+          <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+              Start typing to find a cardholder
+            </p>
+          </div>
+        )}
+
+        {showAdd && (
+          <AddCardholderModal
+            token={token}
+            companies={companies}
+            onCreated={(ch) => {
+              setCardholders((prev) => [ch, ...prev])
+              setShowAdd(false)
+              setToast({ message: "Cardholder created", type: "success" })
+            }}
+            onClose={() => setShowAdd(false)}
+          />
+        )}
+
+        {toast && (
+          <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop ──
   return (
     <div style={{ padding: "2rem 1.5rem 4rem", maxWidth: "1280px", margin: "0 auto" }}>
       <div style={{
@@ -2542,6 +2856,108 @@ function CredModalActions({ onSave, onCancel, saveLabel, saving }) {
   )
 }
 
+function ScopeSearchSelect({ companies, value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const ref = useRef(null)
+
+  const selected = companies.find(c => c.id === value)
+  const filtered = companies.filter(c =>
+    c.company_name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    if (open) document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => { setOpen(v => !v); setSearch("") }}
+        style={{
+          ...credInput,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          textAlign: "left",
+          borderColor: open ? "#2f6f6a" : "#E5E7EB",
+        }}
+      >
+        <span style={{ color: selected ? "#333333" : "#6B7280" }}>
+          {selected ? selected.company_name : "Global"}
+        </span>
+        <ChevronDown size={14} color="#6B7280" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 4px)",
+          left: 0,
+          right: 0,
+          background: "#FFFFFF",
+          border: "1.5px solid #E5E7EB",
+          borderRadius: "0.5rem",
+          boxShadow: "0 4px 16px rgba(44,62,80,0.12)",
+          zIndex: 50,
+          overflow: "hidden",
+        }}>
+          <div style={{ padding: "0.5rem", borderBottom: "1px solid #F3F4F6" }}>
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search companies..."
+              style={{ ...credInput, fontSize: "0.8125rem" }}
+              onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+              onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+            />
+          </div>
+          <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+            <button
+              type="button"
+              onClick={() => { onChange(""); setOpen(false); setSearch("") }}
+              style={{
+                display: "block", width: "100%", padding: "0.625rem 1rem",
+                background: !value ? "#F0F9F8" : "transparent",
+                border: "none", textAlign: "left", fontSize: "0.875rem",
+                color: "#333333", cursor: "pointer", fontFamily: "inherit",
+                fontWeight: !value ? 600 : 400,
+              }}
+            >
+              Global
+            </button>
+            {filtered.length === 0 ? (
+              <p style={{ padding: "0.75rem 1rem", fontSize: "0.8125rem", color: "#9CA3AF", margin: 0 }}>No companies found</p>
+            ) : filtered.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onChange(c.id); setOpen(false); setSearch("") }}
+                style={{
+                  display: "block", width: "100%", padding: "0.625rem 1rem",
+                  background: c.id === value ? "#F0F9F8" : "transparent",
+                  border: "none", textAlign: "left", fontSize: "0.875rem",
+                  color: "#333333", cursor: "pointer", fontFamily: "inherit",
+                  fontWeight: c.id === value ? 600 : 400,
+                }}
+              >
+                {c.company_name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AddCatalogueCredentialModal({ token, companies, onSave, onClose }) {
   const [name, setName] = useState("")
   const [type, setType] = useState("qualification")
@@ -2591,10 +3007,7 @@ function AddCatalogueCredentialModal({ token, companies, onSave, onClose }) {
           </div>
           <div>
             <label style={credFieldLabel}>Scope</label>
-            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
-              <option value="">Global</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-            </select>
+            <ScopeSearchSelect companies={companies} value={scopeCompanyId} onChange={setScopeCompanyId} />
           </div>
           {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
         </div>
@@ -2649,10 +3062,7 @@ function EditCatalogueCredentialModal({ token, credential, companies, onSave, on
           </div>
           <div>
             <label style={credFieldLabel}>Scope</label>
-            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
-              <option value="">Global</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-            </select>
+            <ScopeSearchSelect companies={companies} value={scopeCompanyId} onChange={setScopeCompanyId} />
           </div>
           {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
         </div>
@@ -2700,10 +3110,7 @@ function AddProviderModal({ token, companies, onSave, onClose }) {
           </div>
           <div>
             <label style={credFieldLabel}>Scope</label>
-            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
-              <option value="">Global</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-            </select>
+            <ScopeSearchSelect companies={companies} value={scopeCompanyId} onChange={setScopeCompanyId} />
           </div>
           {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
         </div>
@@ -2751,10 +3158,7 @@ function EditProviderModal({ token, provider, companies, onSave, onClose }) {
           </div>
           <div>
             <label style={credFieldLabel}>Scope</label>
-            <select value={scopeCompanyId} onChange={(e) => setScopeCompanyId(e.target.value)} style={{ ...credInput, cursor: "pointer" }}>
-              <option value="">Global</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-            </select>
+            <ScopeSearchSelect companies={companies} value={scopeCompanyId} onChange={setScopeCompanyId} />
           </div>
           {error && <p style={{ margin: 0, fontSize: "0.8125rem", color: "#EF4444" }}>{error}</p>}
         </div>
@@ -2767,6 +3171,7 @@ function EditProviderModal({ token, provider, companies, onSave, onClose }) {
 // ─── CredentialsTab ───────────────────────────────────────────────────────────
 
 function CredentialsTab() {
+  const isMobile = useIsMobile()
   const [token, setToken] = useState(null)
   const [credentials, setCredentials] = useState([])
   const [providers, setProviders] = useState([])
@@ -2908,6 +3313,112 @@ function CredentialsTab() {
       }}>
         {config.label}
       </span>
+    )
+  }
+
+  // ── Mobile: search + add only ──
+  if (isMobile) {
+    const mobileFiltered = credSearch.trim()
+      ? credentials.filter(c => c.name?.toLowerCase().includes(credSearch.toLowerCase()))
+      : []
+
+    return (
+      <div style={{ padding: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 700, color: "#34495E" }}>
+            Credentials
+          </h2>
+          <button
+            onClick={() => setAddCredModal(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.5rem 0.875rem", borderRadius: "0.5rem", border: "none",
+              background: "#2f6f6a", color: "#fff", fontSize: "0.8125rem",
+              fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}
+          >
+            <Plus size={14} /> Add
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search credentials..."
+          value={credSearch}
+          onChange={(e) => setCredSearch(e.target.value)}
+          style={{
+            width: "100%", padding: "0.875rem 1rem",
+            background: "#FFFFFF", border: "1px solid #E5E7EB",
+            borderRadius: "0.75rem", color: "#1F2937", fontSize: "1rem",
+            outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+          }}
+          onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+          onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+        />
+
+        {credSearch.trim() && (
+          <div style={{
+            marginTop: "0.75rem", background: "#FFFFFF", borderRadius: "0.75rem",
+            border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            overflow: "hidden",
+          }}>
+            {mobileFiltered.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>No credentials found</p>
+              </div>
+            ) : (
+              mobileFiltered.slice(0, 20).map(c => {
+                const typeConfig = CRED_TYPE_CONFIG[c.type]
+                const code = getCredCode(c)
+                return (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "0.875rem 1rem", borderBottom: "1px solid #F3F4F6",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: "#1F2937", fontSize: "0.875rem", fontWeight: 600, margin: 0 }}>
+                        {c.name}
+                      </p>
+                      <p style={{ color: "#9CA3AF", fontSize: "0.75rem", margin: "0.125rem 0 0" }}>
+                        {typeConfig?.label || c.type}{code ? ` · ${code}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        {!credSearch.trim() && !loading && (
+          <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+              Start typing to find a credential
+            </p>
+          </div>
+        )}
+
+        {addCredModal && (
+          <AddCatalogueCredentialModal
+            token={token}
+            companies={companies}
+            onSave={(qual) => {
+              setCredentials((prev) => [...prev, qual].sort((a, b) => a.name.localeCompare(b.name)))
+              setAddCredModal(false)
+              setToast({ message: "Credential added", type: "success" })
+            }}
+            onClose={() => setAddCredModal(false)}
+          />
+        )}
+
+        {toast && (
+          <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+        )}
+      </div>
     )
   }
 
@@ -3372,9 +3883,178 @@ function TabContent({ activeTab, setActiveTab }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// ─── Mobile Superadmin ───────────────────────────────────────────────────────
+
+function MobileActionCard({ icon, label, count, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        width: "100%",
+        padding: "1rem",
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
+        borderRadius: "0.75rem",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        textAlign: "left",
+        boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+      }}
+    >
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: "0.5rem",
+        background: "rgba(44,62,80,0.07)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <span style={{ flex: 1, fontSize: "0.875rem", fontWeight: 600, color: "#34495E" }}>
+        {label}
+      </span>
+      {count != null && count > 0 && (
+        <span style={{
+          background: "#2f6f6a",
+          color: "#fff",
+          fontSize: "0.6875rem",
+          fontWeight: 700,
+          padding: "0.125rem 0.5rem",
+          borderRadius: "1rem",
+          flexShrink: 0,
+        }}>
+          {count}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function MobileSuperAdmin({ user, activeTab, setActiveTab }) {
+  const router = useRouter()
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    async function fetchStats() {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch("/api/superadmin/stats", {
+        headers: { "Authorization": `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setStats(data)
+      }
+    }
+    if (activeTab === "Overview") fetchStats()
+  }, [activeTab])
+
+  // If a tab is selected, show that tab's content with a back button
+  if (activeTab !== "Overview") {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "#F5F7F9",
+        fontFamily: "Inter, system-ui, sans-serif",
+      }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 10 }}>
+          <Header user={user} variant="superadmin" hasSidebar={false} />
+        </div>
+        <div style={{ padding: "0.75rem 1rem 0" }}>
+          <button
+            onClick={() => setActiveTab("Overview")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              background: "none",
+              border: "none",
+              color: "#6B7280",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: 0,
+            }}
+          >
+            ← Back
+          </button>
+        </div>
+        <main style={{ flex: 1 }}>
+          <TabContent activeTab={activeTab} setActiveTab={setActiveTab} />
+        </main>
+      </div>
+    )
+  }
+
+  // Overview - simple action cards
+  return (
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      backgroundColor: "#F5F7F9",
+      fontFamily: "Inter, system-ui, sans-serif",
+    }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 10 }}>
+        <Header user={user} variant="superadmin" hasSidebar={false} />
+      </div>
+      <main style={{ flex: 1, padding: "1rem" }}>
+        <h1 style={{
+          margin: "0 0 1rem",
+          fontSize: "1.25rem",
+          fontWeight: 700,
+          color: "#34495E",
+          letterSpacing: "-0.03em",
+        }}>
+          Admin
+        </h1>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+          <MobileActionCard
+            icon={<ClipboardCheck size={18} color="#34495E" />}
+            label="Pending Approvals"
+            onClick={() => setActiveTab("Pending Approvals")}
+          />
+          <MobileActionCard
+            icon={<Building2 size={18} color="#34495E" />}
+            label="Companies"
+            onClick={() => setActiveTab("Companies")}
+          />
+          <MobileActionCard
+            icon={<Users size={18} color="#34495E" />}
+            label="Cardholders"
+            onClick={() => setActiveTab("Cardholders")}
+          />
+          <MobileActionCard
+            icon={<GraduationCap size={18} color="#34495E" />}
+            label="Credentials"
+            onClick={() => setActiveTab("Credentials")}
+          />
+          <MobileActionCard
+            icon={<Users size={18} color="#34495E" />}
+            label="Users"
+            onClick={() => setActiveTab("Users")}
+          />
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 function SuperAdminPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isMobile = useIsMobile()
   const [user, setUser] = useState(null)
   const tabParam = searchParams.get("tab")
   const initialTab = TABS.find((t) => t.toLowerCase() === tabParam?.replace(/_/g, " ").toLowerCase()) ?? "Overview"
@@ -3424,6 +4104,10 @@ function SuperAdminPageInner() {
   }, [router])
 
   if (loading) return <LoadingScreen />
+
+  if (isMobile) {
+    return <MobileSuperAdmin user={user} activeTab={activeTab} setActiveTab={setActiveTab} />
+  }
 
   return (
     <div style={{

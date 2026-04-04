@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import DashboardSidebar from "./DashboardSidebar"
+import DashboardShell from "./DashboardShell"
 import Header from "@/app/components/Header"
 
 export default async function DashboardLayout({ children }) {
@@ -53,12 +53,9 @@ export default async function DashboardLayout({ children }) {
   return (
     <div style={{ minHeight: "100vh", background: "#D9DEE5", display: "flex", flexDirection: "column" }}>
       <Header variant="dashboard" logoHref="/dashboard" />
-      <div style={{ display: "flex", flex: 1 }}>
-        <DashboardSidebar initials={initials} />
-        <main style={{ flex: 1, padding: "2rem" }}>
-          {children}
-        </main>
-      </div>
+      <DashboardShell initials={initials}>
+        {children}
+      </DashboardShell>
     </div>
   )
 }

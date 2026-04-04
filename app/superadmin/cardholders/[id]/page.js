@@ -7,6 +7,7 @@ import Image from "next/image"
 import { QRCodeSVG } from "qrcode.react"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
+import { useIsMobile } from "@/lib/useIsMobile"
 import Header from "@/app/components/Header"
 import FileUploadArea from "@/app/components/FileUploadArea"
 import StatusBadge from "@/app/components/StatusBadge"
@@ -936,7 +937,7 @@ function AddCredentialModal({ section, cardholderId, companyId, userInitials, us
 
 // ─── CredentialRow ────────────────────────────────────────────────────────────
 
-function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor }) {
+function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, isLast, sectionColor, isMobile }) {
   const qc = cred.qualifications_competencies ?? {}
   const name = qc.name ?? "Unknown"
   const code = getCredentialCode(cred)
@@ -981,7 +982,7 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ margin: 0, fontSize: "0.9375rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
+        <p style={{ margin: 0, fontSize: isMobile ? "0.8125rem" : "0.9375rem", fontWeight: 600, color: "#333333", lineHeight: 1.4 }}>
           {name}
         </p>
         {cred.issue_date && (
@@ -994,9 +995,11 @@ function CredentialRow({ cred, onEdit, onDelete, onMoveUp, onMoveDown, isFirst, 
             Expires {formatDate(cred.expiry_date)}
           </p>
         )}
-        <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
-          {code || "\u00A0"}
-        </p>
+        {!isMobile && (
+          <p style={{ margin: "0.15rem 0 0", fontSize: "0.8125rem", visibility: code ? "visible" : "hidden", color: "#6B7280" }}>
+            {code || "\u00A0"}
+          </p>
+        )}
       </div>
 
       {/* Right actions */}
@@ -1064,7 +1067,7 @@ function sortCredentials(creds, sectionKey) {
 
 // ─── CredentialSection ────────────────────────────────────────────────────────
 
-function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, onDelete, onReorder, onResetOrder, token, cardholderId }) {
+function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, onDelete, onReorder, onResetOrder, token, cardholderId, isMobile }) {
   const [expanded, setExpanded] = useState(false)
 
   const sorted = sortCredentials(credentials, section.key)
@@ -1072,7 +1075,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
     (c.qualifications_competencies?.name ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   )
   const hasManual = credentials.some((c) => c.is_manually_ordered)
-  const DEFAULT_VISIBLE = 3
+  const DEFAULT_VISIBLE = isMobile ? 0 : 3
   const showToggle = filtered.length > DEFAULT_VISIBLE
   const visible = expanded ? filtered : filtered.slice(0, DEFAULT_VISIBLE)
 
@@ -1149,25 +1152,27 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
           onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
           onMouseDown={(e) => (e.currentTarget.style.color = section.color)}
         >
-          + Add
+          Add
         </button>
       </div>
 
       {/* Rows */}
       {filtered.length === 0 ? (
-        <div style={{
-          padding: "1.5rem 0.5rem",
-          minHeight: "80px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#6B7280" }}>
-            {searchQuery
-              ? `No ${section.label.toLowerCase()} match your search`
-              : `No ${section.label.toLowerCase()} added yet`}
-          </p>
-        </div>
+        (!isMobile || searchQuery) ? (
+          <div style={{
+            padding: "1.5rem 0.5rem",
+            minHeight: isMobile ? "0" : "80px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <p style={{ margin: 0, fontSize: "0.9rem", color: "#6B7280" }}>
+              {searchQuery
+                ? `No ${section.label.toLowerCase()} match your search`
+                : `No ${section.label.toLowerCase()} added yet`}
+            </p>
+          </div>
+        ) : null
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -1182,6 +1187,7 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
                 isFirst={i === 0}
                 isLast={i === visible.length - 1}
                 sectionColor={section.color}
+                isMobile={isMobile}
               />
             ))}
           </div>
@@ -1191,24 +1197,22 @@ function CredentialSection({ section, credentials, searchQuery, onAdd, onEdit, o
               <button
                 onClick={() => setExpanded((v) => !v)}
                 style={{
-                  padding: "0.4rem 1.2rem",
-                  borderRadius: "1rem",
-                  border: "1.5px solid #2f6f6a",
+                  padding: 0,
+                  border: "none",
                   background: "none",
                   color: "#2f6f6a",
-                  fontSize: "0.8125rem",
+                  fontSize: isMobile ? "0.6875rem" : "0.8125rem",
                   fontWeight: 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  transition: "background 0.15s ease, color 0.15s ease",
+                  textDecoration: "none",
+                  transition: "color 0.15s ease",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#2f6f6a"
-                  e.currentTarget.style.color = "#FFFFFF"
+                  e.currentTarget.style.textDecoration = "underline"
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "none"
-                  e.currentTarget.style.color = "#2f6f6a"
+                  e.currentTarget.style.textDecoration = "none"
                 }}
               >
                 {expanded ? "Show less" : `Show all (${filtered.length})`}
@@ -1502,6 +1506,7 @@ function DeleteCardholderModal({ name, onConfirm, onClose, loading, error }) {
 export default function CardholderDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const isMobile = useIsMobile()
 
   const [cardholder, setCardholder] = useState(null)
   const [company, setCompany] = useState(null)
@@ -1810,7 +1815,7 @@ export default function CardholderDetailPage() {
       <div style={{
         maxWidth: "1280px",
         margin: "0 auto",
-        padding: "2rem 1.5rem 4rem",
+        padding: isMobile ? "1rem" : "2rem 1.5rem 4rem",
       }}>
 
         {/* ── Section 1: Back button ───────────────────────────────────── */}
@@ -1832,14 +1837,14 @@ export default function CardholderDetailPage() {
           onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.8")}
         >
           <ArrowLeft size={15} strokeWidth={2.5} />
-          Back to Cardholders
+          {isMobile ? "Back" : "Back to Cardholders"}
         </Link>
 
         {/* ── Section 2: Header card ───────────────────────────────────── */}
         <div style={{
           background: GRADIENT,
           borderRadius: "1rem",
-          padding: "1.5rem 2rem",
+          padding: isMobile ? "1rem 1.25rem" : "1.5rem 2rem",
           marginBottom: "1.5rem",
           display: "flex",
           flexDirection: "column",
@@ -1847,13 +1852,13 @@ export default function CardholderDetailPage() {
           boxShadow: "0 4px 20px rgba(44, 62, 80, 0.2), 0 1px 4px rgba(44, 62, 80, 0.12)",
         }}>
           {/* Row 1: Photo + Name + QR */}
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={80} borderColor={getPhotoBorderColor(cardholder.status)} />
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "1rem" : "1.5rem" }}>
+            <PhotoCircle photoUrl={cardholder.photo_url} name={cardholder.full_name} size={isMobile ? 56 : 80} borderColor={getPhotoBorderColor(cardholder.status)} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
                 margin: 0,
-                fontSize: "1.75rem",
+                fontSize: isMobile ? "1.25rem" : "1.75rem",
                 fontWeight: 800,
                 color: "#FFFFFF",
                 textTransform: "uppercase",
@@ -1863,23 +1868,44 @@ export default function CardholderDetailPage() {
                 {cardholder.full_name}
               </h1>
 
-              {company && (
+              {isMobile && licenceStatus.dateLabel && cardholder.licence_end_date && (
+                <p style={{ margin: "0.375rem 0 0", fontSize: "0.8125rem", color: "rgba(255,255,255,0.65)", fontWeight: 500 }}>
+                  {licenceStatus.dateLabel}: {new Date(cardholder.licence_end_date).toLocaleDateString("en-NZ", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              )}
+              {isMobile && (
+                <a
+                  href={profileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                    fontSize: "0.75rem", color: "rgba(255,255,255,0.5)",
+                    textDecoration: "none", marginTop: "0.375rem",
+                  }}
+                >
+                  View Profile <ExternalLink size={10} strokeWidth={2} />
+                </a>
+              )}
+              {!isMobile && company && (
                 <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", color: "rgba(255,255,255,0.6)", fontWeight: 400 }}>
                   {company.company_name}
                 </p>
               )}
             </div>
 
-            <div style={{ flexShrink: 0 }}>
-              <div style={{ background: "#FFFFFF", borderRadius: "0.75rem", padding: "0.75rem", display: "inline-flex", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
-                <QRCodeSVG value={profileUrl} size={56} />
+            {!isMobile && (
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ background: "#FFFFFF", borderRadius: "0.75rem", padding: "0.75rem", display: "inline-flex", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+                  <QRCodeSVG value={profileUrl} size={56} />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Row 2: Status bar */}
+          {/* Row 2: Status bar (hidden on mobile) */}
           <div style={{
-            display: "flex",
+            display: isMobile ? "none" : "flex",
             alignItems: "center",
             flexWrap: "wrap",
             gap: "0.625rem",
@@ -2009,7 +2035,7 @@ export default function CardholderDetailPage() {
           </div>
 
           {/* Four sections — 2x2 grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", alignItems: "stretch" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1.25rem", alignItems: "stretch" }}>
             {SECTIONS.map((section) => {
               const sectionCreds = credentials.filter(
                 (c) => c.qualifications_competencies?.type === section.key
@@ -2035,6 +2061,7 @@ export default function CardholderDetailPage() {
                     onDelete={(cred) => setDeleteTarget(cred)}
                     onReorder={handleReorder}
                     onResetOrder={handleResetOrder}
+                    isMobile={isMobile}
                   />
                 </div>
               )
@@ -2077,7 +2104,7 @@ export default function CardholderDetailPage() {
           {/* Action grid */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
             gap: "0.75rem",
           }}>
             {visibleActions.map(({ key, label, Icon }) => (

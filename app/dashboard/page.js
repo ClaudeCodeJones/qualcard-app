@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowRight, AlertCircle, Plus, Users, ListChecks, GraduationCap, Award, ClipboardCheck, ShieldCheck, X, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getLicenceStatus } from "@/lib/licenceStatus"
+import { useIsMobile } from "@/lib/useIsMobile"
 
 const CARD = {
   background: "#FFFFFF",
@@ -88,6 +89,7 @@ function getInitials(name) {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [company, setCompany] = useState(null)
   const [pendingCardholders, setPendingCardholders] = useState([])
   const [expiringCardholders, setExpiringCardholders] = useState([])
@@ -267,6 +269,149 @@ export default function DashboardPage() {
   }, [])
 
 
+  // ── Mobile: search + add only ──
+  if (isMobile) {
+    const mobileFiltered = searchTerm.trim()
+      ? allCardholders.filter(c =>
+          c.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : []
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ color: "#2C3E50", fontSize: "1.25rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
+            Cardholders
+          </h1>
+          <button
+            onClick={() => router.push("/dashboard/cardholders?add=true")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              padding: "0.625rem 1rem",
+              background: "#2f6f6a",
+              border: "none",
+              borderRadius: "0.5rem",
+              color: "#fff",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            Add
+          </button>
+        </div>
+
+        {/* Search bar */}
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Search by name..."
+            value={searchTerm}
+            onChange={e => {
+              setSearchTerm(e.target.value)
+              setShowSearchDropdown(e.target.value.length > 0)
+            }}
+            style={{
+              width: "100%",
+              padding: "0.875rem 1rem",
+              background: "#FFFFFF",
+              border: "1px solid #E5E7EB",
+              borderRadius: "0.75rem",
+              color: "#1F2937",
+              fontSize: "1rem",
+              outline: "none",
+              boxSizing: "border-box",
+              fontFamily: "inherit",
+              boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            }}
+            onFocus={e => e.target.style.borderColor = "#2f6f6a"}
+            onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+          />
+        </div>
+
+        {/* Results */}
+        {searchTerm.trim() && (
+          <div style={{
+            background: "#FFFFFF",
+            borderRadius: "0.75rem",
+            border: "1px solid #E5E7EB",
+            boxShadow: "0 1px 3px rgba(44,62,80,0.06)",
+            overflow: "hidden",
+          }}>
+            {mobileFiltered.length === 0 ? (
+              <div style={{ padding: "1.5rem", textAlign: "center" }}>
+                <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+                  No cardholders found
+                </p>
+              </div>
+            ) : (
+              mobileFiltered.slice(0, 20).map(({ id, full_name, photo_url }) => (
+                <div
+                  key={id}
+                  onClick={() => {
+                    router.push(`/dashboard/cardholders/${id}`)
+                    setSearchTerm("")
+                    setShowSearchDropdown(false)
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: "0.875rem 1rem",
+                    borderBottom: "1px solid #F3F4F6",
+                    cursor: "pointer",
+                  }}
+                >
+                  {photo_url ? (
+                    <img
+                      src={photo_url}
+                      alt={full_name}
+                      style={{ width: 40, height: 40, borderRadius: "0.375rem", objectFit: "cover", flexShrink: 0 }}
+                      onError={e => e.currentTarget.style.display = "none"}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "0.375rem",
+                      background: "#F3F4F6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#6B7280",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      flexShrink: 0,
+                    }}>
+                      {getInitials(full_name)}
+                    </div>
+                  )}
+                  <p style={{ color: "#1F2937", fontSize: "0.9375rem", fontWeight: 500, margin: 0, flex: 1 }}>
+                    {full_name}
+                  </p>
+                  <ChevronRight size={16} style={{ color: "#9CA3AF", flexShrink: 0 }} />
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {!searchTerm.trim() && (
+          <div style={{ padding: "2rem 1rem", textAlign: "center" }}>
+            <p style={{ color: "#9CA3AF", fontSize: "0.875rem", margin: 0 }}>
+              Start typing to find a cardholder
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Desktop view ──
   return (
     <div style={{
       display: "flex",
