@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut } from "lucide-react"
+import { LogOut, Menu, X, Settings, CreditCard } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useIsMobile } from "@/lib/useIsMobile"
 
@@ -144,6 +144,121 @@ function Avatar({ fullName, email, role }) {
   )
 }
 
+function MobileHamburger({ variant }) {
+  const [open, setOpen] = useState(false)
+  const router = useRouter()
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
+
+  const isDashboard = variant === "dashboard"
+
+  const menuItems = isDashboard
+    ? [
+        { label: "Billing", href: "/dashboard/billing", Icon: CreditCard },
+        { label: "Settings", href: "/dashboard/settings", Icon: Settings },
+      ]
+    : []
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 36,
+          height: 36,
+          borderRadius: "0.5rem",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          color: "#FFFFFF",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        {open ? <X size={18} /> : <Menu size={18} />}
+      </button>
+
+      {open && (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              top: "56px",
+              background: "rgba(0,0,0,0.3)",
+              zIndex: 999,
+            }}
+          />
+          <div style={{
+            position: "fixed",
+            top: "56px",
+            left: 0,
+            right: 0,
+            background: "#1f3f3c",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            padding: "0.5rem",
+            zIndex: 1000,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+          }}>
+            {menuItems.map(({ label, href, Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  padding: "0.875rem 1rem",
+                  color: "#FFFFFF",
+                  textDecoration: "none",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.9375rem",
+                  fontWeight: 500,
+                }}
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            ))}
+            {isDashboard && (
+              <div style={{ height: 1, background: "rgba(255,255,255,0.08)", margin: "0.25rem 0" }} />
+            )}
+            <button
+              onClick={handleLogout}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                width: "100%",
+                padding: "0.875rem 1rem",
+                background: "transparent",
+                border: "none",
+                color: "#FCA5A5",
+                textAlign: "left",
+                fontSize: "0.9375rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                borderRadius: "0.5rem",
+              }}
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
 export default function Header({ user, variant = "default", logoHref = "/superadmin", hasSidebar = true }) {
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -151,7 +266,7 @@ export default function Header({ user, variant = "default", logoHref = "/superad
     ? "#344e4b"
     : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
 
-  const showMobileLogout = isMobile && variant === "dashboard"
+  const showMobileMenu = isMobile && (variant === "dashboard" || variant === "superadmin")
 
   return (
     <header style={{
@@ -180,30 +295,8 @@ export default function Header({ user, variant = "default", logoHref = "/superad
             style={{ objectFit: "contain", width: "auto", height: isMobile ? "32px" : "48px", cursor: "pointer" }}
           />
         </Link>
-        {showMobileLogout ? (
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.push("/login")
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              padding: "0.375rem 0.75rem",
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "0.375rem",
-              color: "rgba(255,255,255,0.7)",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            <LogOut size={14} />
-            Logout
-          </button>
+        {showMobileMenu ? (
+          <MobileHamburger variant={variant} />
         ) : user ? (
           <Avatar fullName={user.full_name} email={user.email} role={user.role} />
         ) : (
