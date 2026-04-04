@@ -16,7 +16,7 @@ export default function DashboardShell({ initials, children }) {
         </main>
         <footer style={{
           background: "#344e4b",
-          padding: "0.875rem 1rem",
+          padding: "0.875rem 1rem calc(0.875rem + env(safe-area-inset-bottom))",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
