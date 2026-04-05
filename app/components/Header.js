@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, Menu, X, Settings, CreditCard } from "lucide-react"
+import { LogOut, Menu, X, Settings, CreditCard, Home } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useIsMobile } from "@/lib/useIsMobile"
 
@@ -157,6 +157,7 @@ function MobileHamburger({ variant }) {
 
   const menuItems = isDashboard
     ? [
+        { label: "Home", href: "/dashboard", Icon: Home },
         { label: "Billing", href: "/dashboard/billing", Icon: CreditCard },
         { label: "Settings", href: "/dashboard/settings", Icon: Settings },
       ]
@@ -261,7 +262,6 @@ function MobileHamburger({ variant }) {
 
 export default function Header({ user, variant = "default", logoHref = "/superadmin", hasSidebar = true }) {
   const isMobile = useIsMobile()
-  const router = useRouter()
   const backgroundGradient = (variant === "superadmin" || variant === "dashboard")
     ? "#344e4b"
     : "radial-gradient(circle, #34495E 0%, #2C3E50 100%)"
@@ -301,15 +301,9 @@ export default function Header({ user, variant = "default", logoHref = "/superad
           <Avatar fullName={user.full_name} email={user.email} role={user.role} />
         ) : (
           !isMobile && (
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: "0.25rem",
-            }}>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>info@qualcard.co.nz</span>
-              <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>027 QUALCARD</span>
-            </div>
+            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8125rem", fontWeight: 400 }}>
+              info@qualcard.co.nz <span style={{ margin: "0 0.5rem" }}>|</span> 027 QUALCARD
+            </span>
           )
         )}
       </div>

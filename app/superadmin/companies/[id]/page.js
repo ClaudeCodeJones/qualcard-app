@@ -9,8 +9,9 @@ import { getLicenceStatus } from "@/lib/licenceStatus"
 import { useIsMobile } from "@/lib/useIsMobile"
 import Header from "@/app/components/Header"
 import StatusBadge from "@/app/components/StatusBadge"
-import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, FileText, Image as ImageIcon } from "lucide-react"
+import { ArrowLeft, Edit2, UserCircle, ToggleLeft, Trash2, Lock, ChevronDown, Image as ImageIcon, Upload } from "lucide-react"
 import FileUploadArea from "@/app/components/FileUploadArea"
+import BulkUploadCardholdersModal from "./BulkUploadCardholdersModal"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -172,6 +173,7 @@ function CardholderAvatar({ photoUrl, name }) {
   }
   return (
     <div style={{
+      position: "relative",
       width: 40,
       height: 40,
       borderRadius: "50%",
@@ -186,6 +188,19 @@ function CardholderAvatar({ photoUrl, name }) {
       letterSpacing: "-0.01em",
     }}>
       {getInitials(name)}
+      <span
+        title="Photo needed"
+        style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          background: "#F59E0B",
+          border: "2px solid #FFFFFF",
+        }}
+      />
     </div>
   )
 }
@@ -688,8 +703,10 @@ export default function CompanyDetailPage() {
   const [error, setError] = useState(null)
   const [contactTab, setContactTab] = useState("general")
   const [modal, setModal] = useState(null)
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
   const [successMsg, setSuccessMsg] = useState(null)
   const [cardholderSearch, setCardholderSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [showAllCardholders, setShowAllCardholders] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
 
@@ -734,6 +751,16 @@ export default function CompanyDetailPage() {
 
     if (id) load()
   }, [id, router])
+
+  async function refetchCardholders() {
+    if (!token) return
+    const res = await fetch(`/api/superadmin/companies/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    setCardholders(data.cardholders ?? [])
+  }
 
   function showSuccess(msg) {
     setSuccessMsg(msg)
@@ -799,17 +826,32 @@ export default function CompanyDetailPage() {
   ]
 
   const unpaidCount = cardholders.filter((ch) => ch.status === "pending_activation").length
-  const filteredCardholders = cardholders.filter((ch) =>
-    ch.full_name?.toLowerCase().includes(cardholderSearch.toLowerCase())
-  )
+  const filteredCardholders = cardholders.filter((ch) => {
+    if (!ch.full_name?.toLowerCase().includes(cardholderSearch.toLowerCase())) return false
+    if (statusFilter === "all") return true
+    const ls = getLicenceStatus(ch.licence_end_date).status
+    if (statusFilter === "active") return ls === "Active"
+    if (statusFilter === "payment_pending") return ls === "Payment Pending"
+    if (statusFilter === "expiring") return ls === "Expiring Soon"
+    if (statusFilter === "expired") return ls === "Expired"
+    return true
+  })
   const INITIAL_SHOW = 3
-  const displayedCardholders = cardholderSearch
+  const isFiltering = Boolean(cardholderSearch) || statusFilter !== "all"
+  const displayedCardholders = isFiltering
     ? filteredCardholders
     : showAllCardholders ? filteredCardholders : filteredCardholders.slice(0, INITIAL_SHOW)
-  const hasMore = !cardholderSearch && !showAllCardholders && filteredCardholders.length > INITIAL_SHOW
+  const hasMore = !isFiltering && !showAllCardholders && filteredCardholders.length > INITIAL_SHOW
   const moreCount = filteredCardholders.length - INITIAL_SHOW
 
   const actions = [
+    {
+      key: "editCompanyName",
+      Icon: Edit2,
+      label: "Edit Company Name",
+      desc: "Update the company's trading name",
+      iconBg: "#2f6f6a",
+    },
     {
       key: "changeStatus",
       Icon: ToggleLeft,
@@ -824,13 +866,6 @@ export default function CompanyDetailPage() {
       desc: "Permanently remove",
       iconBg: "#EF4444",
       destructive: true,
-    },
-    {
-      key: "editCompanyName",
-      Icon: Edit2,
-      label: "Edit Company Name",
-      desc: "Update the company's trading name",
-      iconBg: "#2f6f6a",
     },
   ]
 
@@ -908,6 +943,7 @@ export default function CompanyDetailPage() {
                 Cardholders
               </p>
               <button
+                onClick={() => router.push("/superadmin?tab=Cardholders")}
                 style={{
                   padding: "0.375rem 0.75rem", borderRadius: "0.5rem", border: "none",
                   background: "#2f6f6a", color: "#fff", fontSize: "0.75rem",
@@ -1190,25 +1226,32 @@ export default function CompanyDetailPage() {
               onClick={() => setModal("editLogo")}
               style={{
                 position: "absolute",
-                bottom: 0,
-                right: 0,
-                background: "#2f6f6a",
-                border: "none",
+                bottom: -4,
+                right: -4,
+                background: "#FFFFFF",
+                border: "1px solid #E5E7EB",
                 borderRadius: "50%",
-                width: 32,
-                height: 32,
+                width: 24,
+                height: 24,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                color: "#FFFFFF",
-                transition: "background 0.15s ease",
+                color: "#2f6f6a",
+                boxShadow: "0 2px 6px rgba(44, 62, 80, 0.15)",
+                transition: "color 0.15s ease, border-color 0.15s ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "#1F2937" }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "#2f6f6a" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#1F2937"
+                e.currentTarget.style.borderColor = "#2f6f6a"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#2f6f6a"
+                e.currentTarget.style.borderColor = "#E5E7EB"
+              }}
               title="Edit logo"
             >
-              <Edit2 size={16} />
+              <Edit2 size={12} strokeWidth={2.25} />
             </button>
           </div>
         </div>
@@ -1328,26 +1371,28 @@ export default function CompanyDetailPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {["Bulk Update", "Bulk Upload"].map((label) => (
-                <button
-                  key={label}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    borderRadius: "1rem",
-                    border: "1.5px solid #E5E7EB",
-                    background: "#FFFFFF",
-                    color: "#374151",
-                    fontSize: "0.8125rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#34495E")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#E5E7EB")}
-                >
-                  {label}
-                </button>
-              ))}
+              <button
+                onClick={() => setBulkUploadOpen(true)}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "1rem",
+                  border: "1.5px solid #E5E7EB",
+                  background: "#FFFFFF",
+                  color: "#374151",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.375rem",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#34495E")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#E5E7EB")}
+              >
+                <Upload size={14} />
+                Bulk Upload
+              </button>
               <button
                 style={{
                   padding: "0.5rem 1rem",
@@ -1395,24 +1440,47 @@ export default function CompanyDetailPage() {
             </div>
           )}
 
-          {/* Search */}
-          <div style={{ padding: "1rem 1.5rem" }}>
+          {/* Search + filter */}
+          <div style={{ padding: "1rem 1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <input
               type="text"
               placeholder="Search cardholders by name..."
               value={cardholderSearch}
               onChange={(e) => { setCardholderSearch(e.target.value); setShowAllCardholders(false) }}
-              style={inputStyle}
+              style={{ ...inputStyle, flex: 1, minWidth: "200px" }}
               onFocus={(e) => (e.target.style.borderColor = "#2f6f6a")}
               onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
             />
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setShowAllCardholders(false) }}
+              style={{
+                padding: "0.625rem 0.875rem",
+                border: "1.5px solid #E5E7EB",
+                borderRadius: "0.5rem",
+                fontSize: "0.875rem",
+                color: "#333333",
+                fontFamily: "inherit",
+                outline: "none",
+                background: "#FFFFFF",
+                cursor: "pointer",
+              }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="expiring">Expiring Soon</option>
+              <option value="payment_pending">Payment Pending</option>
+              <option value="expired">Expired</option>
+            </select>
           </div>
 
           {/* List */}
           {filteredCardholders.length === 0 ? (
             <div style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
               <p style={{ margin: 0, color: "#9CA3AF", fontSize: "0.9375rem" }}>
-                {cardholderSearch ? "No cardholders match your search" : "No cardholders yet"}
+                {cardholderSearch || statusFilter !== "all"
+                  ? "No cardholders match your filters"
+                  : "No cardholders yet"}
               </p>
             </div>
           ) : (
@@ -1496,23 +1564,20 @@ export default function CompanyDetailPage() {
             justifyContent: "space-between",
             gap: "1rem",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-              <FileText size={16} color="#6B7280" />
-              <div>
-                <p style={{
-                  margin: "0 0 0.125rem",
-                  fontSize: "0.8125rem",
-                  fontWeight: 700,
-                  color: "#333333",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}>
-                  Notes
-                </p>
-                <p style={{ margin: 0, fontSize: "0.8125rem", color: "#6B7280" }}>
-                  {notes.length} {notes.length === 1 ? "note" : "notes"} &middot; <span style={{ color: "#9CA3AF" }}>QC Admin only — not visible to the company</span>
-                </p>
-              </div>
+            <div>
+              <p style={{
+                margin: "0 0 0.125rem",
+                fontSize: "0.8125rem",
+                fontWeight: 700,
+                color: "#333333",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}>
+                Notes
+              </p>
+              <p style={{ margin: 0, fontSize: "0.8125rem", color: "#6B7280" }}>
+                {notes.length} {notes.length === 1 ? "note" : "notes"} &middot; <span style={{ color: "#9CA3AF" }}>QC Admin only, not visible to the company</span>
+              </p>
             </div>
             <button
               onClick={() => setModal("addNote")}
@@ -1725,6 +1790,17 @@ export default function CompanyDetailPage() {
             showSuccess("Note added")
           }}
           onClose={() => setModal(null)}
+        />
+      )}
+      {bulkUploadOpen && (
+        <BulkUploadCardholdersModal
+          companyId={id}
+          companyName={company.company_name}
+          onClose={() => setBulkUploadOpen(false)}
+          onSuccess={(count) => {
+            refetchCardholders()
+            showSuccess(`Imported ${count} cardholder${count === 1 ? "" : "s"}`)
+          }}
         />
       )}
     </div>

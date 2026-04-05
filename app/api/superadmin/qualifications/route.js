@@ -30,6 +30,8 @@ export async function GET(request) {
     const company_id = searchParams.get("company_id") ?? ""
     const admin_view = searchParams.get("admin_view") === "true"
 
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
     let query = supabaseAdmin
       .from("qualifications_competencies")
       .select("id, name, type, unit_standard_number, competency_code, permit_number, induction_code, company_id, status")
@@ -37,11 +39,16 @@ export async function GET(request) {
 
     if (type) query = query.eq("type", type)
 
+    // Hide inactive creds from non-admin consumers (e.g. cred-add dropdowns).
+    // Admin view (credential management tab) still sees all so they can manage them.
+    if (!admin_view) query = query.eq("status", "active")
+
     if (!admin_view) {
       if (company_id) {
-        const parsed = parseInt(company_id, 10)
-        if (!Number.isInteger(parsed)) return Response.json({ error: "Invalid company_id" }, { status: 400 })
-        query = query.or(`company_id.is.null,company_id.eq.${parsed}`)
+        if (!UUID_RE.test(company_id)) {
+          return Response.json({ error: "Invalid company_id" }, { status: 400 })
+        }
+        query = query.or(`company_id.is.null,company_id.eq.${company_id}`)
       } else {
         query = query.is("company_id", null)
       }

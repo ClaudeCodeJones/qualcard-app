@@ -1939,6 +1939,19 @@ export default function CardholderDetailPage() {
               }
               return <StatusBadge status={keyMap[licenceStatus.status] ?? "inactive"} />
             })()}
+            {!cardholder.photo_url && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: "0.25rem",
+                padding: "0.2rem 0.625rem", borderRadius: "1rem",
+                fontSize: "0.6875rem", fontWeight: 600,
+                color: "#F59E0B",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(245, 158, 11, 0.6)",
+                whiteSpace: "nowrap",
+              }}>
+                Photo needed
+              </span>
+            )}
             {headerAction && (
               <button
                 onClick={headerAction.onClick}

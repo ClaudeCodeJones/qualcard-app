@@ -53,8 +53,11 @@ export default function CardholdersPage() {
   const isMobile = useIsMobile()
 
   useEffect(() => {
-    if (isMobile && searchParams.get("add") !== "true") router.replace("/dashboard")
-  }, [isMobile, router, searchParams])
+    if (typeof window === "undefined") return
+    if (window.innerWidth < 768 && searchParams.get("add") !== "true") {
+      router.replace("/dashboard")
+    }
+  }, [router, searchParams])
   const [cardholders, setCardholders] = useState([])
   const [credentials, setCredentials] = useState({})
   const [filter, setFilter] = useState(searchParams.get("filter") || "all")
@@ -237,6 +240,12 @@ export default function CardholdersPage() {
                   onChange={e => {
                     const file = e.target.files[0]
                     if (!file) return
+                    if (file.size > 2 * 1024 * 1024) {
+                      const mb = (file.size / (1024 * 1024)).toFixed(1)
+                      setFormError(`Photo is too large (${mb}MB). Maximum size is 2MB.`)
+                      e.target.value = ""
+                      return
+                    }
                     setNewPhoto(file)
                     if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
                     setNewPhotoPreview(URL.createObjectURL(file))
@@ -308,7 +317,7 @@ export default function CardholdersPage() {
                 const { error: uploadError } = await supabase.storage
                   .from("cardholder-photos")
                   .upload(filePath, newPhoto)
-                if (uploadError) return setFormError("Photo upload failed.")
+                if (uploadError) return setFormError(`Photo upload failed: ${uploadError.message}`)
 
                 const { data: { publicUrl } } = supabase.storage
                   .from("cardholder-photos")
@@ -504,27 +513,6 @@ export default function CardholdersPage() {
           const visible = showAll ? filtered : filtered.slice(0, 8)
           return (
             <>
-            <p style={{ color: "#6B7280", fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", margin: "0 0 1rem" }}>
-              Recent Cardholders
-            </p>
-            <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
-                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#4A90D9" }}></div>
-                <span style={{ color: "#6B7280" }}>Qualifications</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
-                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#F97316" }}></div>
-                <span style={{ color: "#6B7280" }}>Competencies</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
-                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#7C3AED" }}></div>
-                <span style={{ color: "#6B7280" }}>Site Inductions</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem" }}>
-                <div style={{ width: "12px", height: "12px", borderRadius: "0.25rem", background: "#16A34A" }}></div>
-                <span style={{ color: "#6B7280" }}>Permits</span>
-              </div>
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {visible.map(({ id, full_name, status, licence_end_date, photo_url }) => {
                 const isDisabled = status === "deleted"
@@ -742,6 +730,11 @@ export default function CardholdersPage() {
                     setDragOver(false)
                     const file = e.dataTransfer.files[0]
                     if (!file) return
+                    if (file.size > 2 * 1024 * 1024) {
+                      const mb = (file.size / (1024 * 1024)).toFixed(1)
+                      setFormError(`Photo is too large (${mb}MB). Maximum size is 2MB.`)
+                      return
+                    }
                     setNewPhoto(file)
                     if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
                     setNewPhotoPreview(URL.createObjectURL(file))
@@ -769,6 +762,12 @@ export default function CardholdersPage() {
                     onChange={e => {
                       const file = e.target.files[0]
                       if (!file) return
+                      if (file.size > 2 * 1024 * 1024) {
+                        const mb = (file.size / (1024 * 1024)).toFixed(1)
+                        setFormError(`Photo is too large (${mb}MB). Maximum size is 2MB.`)
+                        e.target.value = ""
+                        return
+                      }
                       setNewPhoto(file)
                       if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview)
                       setNewPhotoPreview(URL.createObjectURL(file))
@@ -847,7 +846,7 @@ export default function CardholdersPage() {
                   const { error: uploadError } = await supabase.storage
                     .from("cardholder-photos")
                     .upload(filePath, newPhoto)
-                  if (uploadError) { return setFormError("Photo upload failed.") }
+                  if (uploadError) { return setFormError(`Photo upload failed: ${uploadError.message}`) }
 
                   const { data: { publicUrl } } = supabase.storage
                     .from("cardholder-photos")

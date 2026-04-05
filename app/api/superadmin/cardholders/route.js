@@ -86,24 +86,55 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { full_name, company_id, status, photo_url, slug, created_by } = body
+    const {
+      full_name,
+      company_id,
+      status,
+      photo_url,
+      slug,
+      created_by,
+      licence_start_date: providedStartDate,
+      licence_end_date: providedEndDate,
+    } = body
 
     if (!full_name?.trim()) return Response.json({ error: "Full name is required" }, { status: 400 })
     if (!company_id) return Response.json({ error: "Company is required" }, { status: 400 })
     if (!slug) return Response.json({ error: "Slug is required" }, { status: 400 })
     if (!photo_url) return Response.json({ error: "Photo is required" }, { status: 400 })
 
+    const resolvedStatus = status ?? "pending_activation"
+
+    const insertPayload = {
+      full_name: full_name.trim(),
+      company_id,
+      status: resolvedStatus,
+      photo_url: photo_url ?? null,
+      slug,
+      created_by: created_by ?? "qc_admin",
+      licence_start_date: providedStartDate ?? null,
+      licence_end_date: providedEndDate ?? null,
+    }
+
+    // Superadmin creating an Active cardholder starts the licence immediately,
+    // but only if the client did not explicitly supply a licence_end_date.
+    let licenceStartDate = providedStartDate ?? null
+    let licenceEndDate = providedEndDate ?? null
+    if (resolvedStatus === "active" && !providedEndDate) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const fmt = (d) => d.toISOString().split("T")[0]
+      const endDate = new Date(today)
+      endDate.setFullYear(endDate.getFullYear() + 1)
+      licenceStartDate = fmt(today)
+      licenceEndDate = fmt(endDate)
+      insertPayload.licence_start_date = licenceStartDate
+      insertPayload.licence_end_date = licenceEndDate
+    }
+
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from("cardholders")
-      .insert({
-        full_name: full_name.trim(),
-        company_id,
-        status: status ?? "pending_activation",
-        photo_url: photo_url ?? null,
-        slug,
-        created_by: created_by ?? "qc_admin",
-      })
-      .select("id, full_name, photo_url, status, company_id, created_at, licence_end_date, companies(id, company_name)")
+      .insert(insertPayload)
+      .select("id, full_name, photo_url, status, company_id, created_at, licence_start_date, licence_end_date, companies(id, company_name)")
       .single()
 
     if (insertError) {
@@ -114,11 +145,16 @@ export async function POST(request) {
       entityType: "cardholder",
       entityId: inserted.id,
       action: "created",
-      newValue: status ?? "pending_activation",
+      newValue: resolvedStatus,
       performedBy: caller.id,
       performedByRole: caller.role,
       performedByName: caller.fullName,
-      metadata: { full_name: full_name.trim(), company_id },
+      metadata: {
+        full_name: full_name.trim(),
+        company_id,
+        ...(licenceStartDate ? { licence_start_date: licenceStartDate } : {}),
+        ...(licenceEndDate ? { licence_end_date: licenceEndDate } : {}),
+      },
     })
 
     return Response.json({

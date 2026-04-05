@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /card/
+Disallow: /dashboard/
+Disallow: /superadmin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /register/confirm
+
+Allow: /
+Allow: /login
+Allow: /register/company

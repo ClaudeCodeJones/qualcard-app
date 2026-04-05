@@ -2260,7 +2260,6 @@ function AddCardholderModal({ token, companies, onCreated, onClose }) {
             >
               <option value="pending_activation">Payment Pending</option>
               <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
             </select>
           </div>
 
@@ -2579,26 +2578,6 @@ function CardholdersTab() {
             All Cardholders
           </h2>
           <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
-            {["Bulk Update", "Bulk Upload"].map((label) => (
-              <button
-                key={label}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "1rem",
-                  border: "1.5px solid #E5E7EB",
-                  backgroundColor: "#FFFFFF",
-                  color: "#374151",
-                  fontSize: "0.8125rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#E5E7EB")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FFFFFF")}
-              >
-                {label}
-              </button>
-            ))}
             <button
               onClick={exportCSV}
               style={{

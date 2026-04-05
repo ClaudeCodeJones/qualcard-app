@@ -141,11 +141,12 @@ export default function DashboardPage() {
           if (data) setCompany(data)
         })
 
-      // Pending activations
+      // Pending activations (licence_end_date null → licence status "Payment Pending")
       supabase
         .from("cardholders")
         .select("id, full_name, status, photo_url")
-        .eq("status", "pending_activation")
+        .is("licence_end_date", null)
+        .neq("status", "deleted")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false })
         .limit(2)
@@ -203,11 +204,12 @@ export default function DashboardPage() {
           if (count !== null) setActiveCardholders(count)
         })
 
-      // Pending count
+      // Pending count (licence_end_date null → licence status "Payment Pending")
       supabase
         .from("cardholders")
         .select("id", { count: "exact", head: true })
-        .eq("status", "pending_activation")
+        .is("licence_end_date", null)
+        .neq("status", "deleted")
         .eq("company_id", companyId)
         .then(({ count }) => {
           if (count !== null) setPendingCount(count)

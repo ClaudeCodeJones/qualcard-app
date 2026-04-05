@@ -154,6 +154,7 @@ export default function BulkAddCredentialModal({ selectedCardholders, companyId,
         supabase
           .from("qualifications_competencies")
           .select("id, name, type")
+          .eq("status", "active")
           .or(companyId ? `company_id.is.null,company_id.eq.${companyId}` : `company_id.is.null`)
           .order("name"),
         supabase

@@ -3,6 +3,23 @@ import CardDisplay from "./CardDisplay"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ""
 
+export const metadata = {
+  title: "QualCard",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-snippet": -1,
+      "max-image-preview": "none",
+      "max-video-preview": -1,
+    },
+  },
+}
+
 export default async function Page({ params }) {
   const { slug } = await params
 
